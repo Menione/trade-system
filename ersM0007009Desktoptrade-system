@@ -1,0 +1,47 @@
+[33mcommit adf7c7a54fd1d2af9adb5f116a643b9a68a7f6c8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Menione <menione08085615910@gmail.com>
+Date:   Sat May 9 16:20:22 2026 +0900
+
+    force minimal reset
+
+[33mcommit 093578b445b317552e93d2e1ea56337c7eff9bca[m
+Author: Menione <menione08085615910@gmail.com>
+Date:   Sat May 9 16:16:47 2026 +0900
+
+    reset minimal
+
+[33mcommit c7f98771a4419281819059d754b4bfc1f7c85be3[m
+Author: Menione <menione08085615910@gmail.com>
+Date:   Sat May 9 16:00:19 2026 +0900
+
+    fix test
+
+[33mcommit 530c5cca8653b6763bd6e159004b227665df5288[m
+Author: Menione <menione08085615910@gmail.com>
+Date:   Sat May 9 15:31:22 2026 +0900
+
+    update: 混載カートン・組織設定・エラーナビ等
+
+[33mcommit 1af9bf3cf2ca11ae6fd5ec74bb1eda5106b2cae0[m
+Author: Menione <menione08085615910@gmail.com>
+Date:   Sat May 9 13:34:48 2026 +0900
+
+    fix
+
+[33mcommit cc7304d4cd52aa8a481f440e2657e4e61930dac3[m
+Author: Menione <menione08085615910@gmail.com>
+Date:   Sat May 9 11:52:34 2026 +0900
+
+    fix typescript errors
+
+[33mcommit fb6a1379ba9fa83172e5365ffd3dcfab376d2d6e[m
+Author: 大石 千晴 Chiharu Ohishi <c-ohishi@menicon.co.jp>
+Date:   Sat May 9 11:16:53 2026 +0900
+
+    first commit
+
+[33mcommit 19fa189822699cded0015fbc8687145351f543f1[m
+Author: 大石 千晴 Chiharu Ohishi <c-ohishi@menicon.co.jp>
+Date:   Sat May 9 10:57:45 2026 +0900
+
+    Initial commit from Create Next App
