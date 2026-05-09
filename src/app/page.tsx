@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useRef } from "react";
 
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
@@ -673,7 +673,7 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
                           <div className="mixed-carton-items">
                             {(p.mixedItems||[]).map((mi:any)=>(
                               <div key={mi.id} className="mixed-carton-item">
-                                <span style={{fontSize:11,color:"var(--text-muted)",minWidth:16}}>┗</span>
+                                <span style={{fontSize:11,color:"var(--text-muted)",minWidth:16}}>></span>
                                 <input className="input" style={{flex:2}} value={mi.productName||""} placeholder="製品名" onChange={(e:any)=>updateMixedItem(p.id,mi.id,"productName",e.target.value)}/>
                                 <input className="input" style={{width:70}} type="number" value={mi.quantity||""} placeholder="数量" onChange={(e:any)=>updateMixedItem(p.id,mi.id,"quantity",e.target.value)}/>
                                 <span style={{fontSize:11,color:"var(--text-muted)"}}>個</span>
@@ -874,7 +874,7 @@ function OutputPage({invoice,packingItems,onBack,orgSettings}:any) {
                       return p.mixedItems.map((mi:any,j:number)=>(
                         <tr key={`${i}-${j}`}>
                           <td>{j===0?p.cartonNo:""}</td>
-                          <td style={{paddingLeft:j===0?6:20}}>{j>0?"┗ "}{mi.productName}</td>
+                          <td style={{paddingLeft:j===0?6:20}}>{j>0?"> "}{mi.productName}</td>
                           <td style={{textAlign:"right"}}>{mi.quantity}</td>
                           <td style={{textAlign:"right"}}>{j===0?Number(p.grossWeight||0).toFixed(2):""}</td>
                           <td style={{textAlign:"right"}}>{j===0?Number(p.netWeight||0).toFixed(2):""}</td>
