@@ -1049,3 +1049,236 @@ function CustomerMasterPage({customers,setCustomers}:any) {
                 {c.email&&<span className="tag tag-purple">✉ {c.email}</span>}
               </div>
               {c.address&&<div style={{fontSize:12,color:"var(--text-muted)",marginTop:4}}>{c.address}</div>}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PRODUCT MASTER
+// ============================================================
+function ProductMasterPage({products,setProducts}:any) {
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({name:"",hsCode:"",unit:"pcs",unitPrice:"",currency:"JPY",weight:"",dimensions:""});
+  const save=()=>{
+    if(!form.name.trim())return alert("製品名を入力してください");
+    setProducts((v:any[])=>[...v,{id:Date.now(),...form}]);
+    setForm({name:"",hsCode:"",unit:"pcs",unitPrice:"",currency:"JPY",weight:"",dimensions:""});
+    setShowForm(false);
+  };
+  return (
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">🗂️ 製品マスタ</div><div className="card-subtitle">登録した製品はInvoice作成時に自動補完できます</div></div>
+          <button className="btn btn-primary btn-sm" onClick={()=>setShowForm(v=>!v)}>+ 製品追加</button>
+        </div>
+        {showForm&&(
+          <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:16}}>
+            <div className="grid-2" style={{marginBottom:12}}>
+              <div className="field"><label className="label"><span className="required-dot">*</span>製品名</label>
+                <input className="input" value={form.name} placeholder="Product Name" onChange={(e:any)=>setForm(v=>({...v,name:e.target.value}))}/></div>
+              <div className="field"><label className="label">HSコード</label>
+                <AutocompleteInput value={form.hsCode} suggestions={SAMPLE_HS_CODES} placeholder="0000.00" onChange={(val:string)=>setForm(v=>({...v,hsCode:val}))}/></div>
+            </div>
+            <div className="grid-4" style={{marginBottom:12}}>
+              <div className="field"><label className="label">単位</label>
+                <input className="input" value={form.unit} placeholder="pcs" onChange={(e:any)=>setForm(v=>({...v,unit:e.target.value}))}/></div>
+              <div className="field"><label className="label">標準単価</label>
+                <input className="input" type="number" value={form.unitPrice} placeholder="0" onChange={(e:any)=>setForm(v=>({...v,unitPrice:e.target.value}))}/></div>
+              <div className="field"><label className="label">通貨</label>
+                <select className="input" value={form.currency} onChange={(e:any)=>setForm(v=>({...v,currency:e.target.value}))}>
+                  {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></div>
+              <div className="field"><label className="label">重量(kg/個)</label>
+                <input className="input" type="number" value={form.weight} placeholder="0.00" onChange={(e:any)=>setForm(v=>({...v,weight:e.target.value}))}/></div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button className="btn btn-primary btn-sm" onClick={save}>保存</button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>setShowForm(false)}>キャンセル</button>
+            </div>
+          </div>
+        )}
+        {products.length===0?(
+          <div className="empty-state"><div className="empty-icon">🗂️</div><div className="empty-text">製品を登録してください</div></div>
+        ):(
+          products.map((p:any)=>(
+            <div key={p.id} className="history-item">
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <strong style={{fontSize:14}}>{p.name}</strong>
+                <button className="btn btn-danger btn-xs" onClick={()=>setProducts((v:any[])=>v.filter((x:any)=>x.id!==p.id))}>削除</button>
+              </div>
+              <div className="history-meta" style={{marginTop:6}}>
+                {p.hsCode&&<span className="tag tag-purple" style={{fontFamily:"monospace"}}>HS: {p.hsCode}</span>}
+                <span className="tag tag-gray">{p.unit}</span>
+                {p.unitPrice&&<span className="tag tag-green">{p.currency} {Number(p.unitPrice).toLocaleString()}</span>}
+                {p.weight&&<span className="tag tag-amber">{p.weight}kg/個</span>}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ORG SETTINGS PAGE
+// ============================================================
+function OrgSettingsPage({orgSettings,setOrgSettings}:any) {
+  const fileRef=useRef<HTMLInputElement>(null);
+  const handleLogo=(e:any)=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>setOrgSettings((v:any)=>({...v,logoUrl:reader.result}));
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header"><div><div className="card-title">⚙️ 組織設定</div><div className="card-subtitle">PDF書類に反映される自社情報を設定します</div></div></div>
+
+        {/* ロゴ */}
+        <div style={{marginBottom:20}}>
+          <div className="label" style={{marginBottom:8}}>自社ロゴ</div>
+          {orgSettings.logoUrl&&<img src={orgSettings.logoUrl} alt="logo" style={{height:56,marginBottom:8,display:"block",border:"1px solid var(--border)",borderRadius:8,padding:4}}/>}
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleLogo}/>
+          <button className="btn btn-secondary btn-sm" onClick={()=>fileRef.current?.click()}>🖼️ ロゴをアップロード</button>
+          {orgSettings.logoUrl&&<button className="btn btn-danger btn-sm" style={{marginLeft:8}} onClick={()=>setOrgSettings((v:any)=>({...v,logoUrl:""}))}>削除</button>}
+        </div>
+
+        <hr className="section-divider"/>
+
+        {/* 自社情報 */}
+        <div className="grid-2" style={{marginBottom:16}}>
+          <div className="field"><label className="label">会社名</label>
+            <input className="input" value={orgSettings.companyName||""} placeholder="株式会社〇〇" onChange={(e:any)=>setOrgSettings((v:any)=>({...v,companyName:e.target.value}))}/></div>
+          <div className="field"><label className="label">担当者名（署名）</label>
+            <input className="input" value={orgSettings.signatureName||""} placeholder="田中 太郎" onChange={(e:any)=>setOrgSettings((v:any)=>({...v,signatureName:e.target.value}))}/></div>
+        </div>
+        <div className="grid-2" style={{marginBottom:16}}>
+          <div className="field"><label className="label">役職</label>
+            <input className="input" value={orgSettings.signatureTitle||""} placeholder="Export Manager" onChange={(e:any)=>setOrgSettings((v:any)=>({...v,signatureTitle:e.target.value}))}/></div>
+          <div className="field"><label className="label">電話番号</label>
+            <input className="input" value={orgSettings.phone||""} placeholder="03-0000-0000" onChange={(e:any)=>setOrgSettings((v:any)=>({...v,phone:e.target.value}))}/></div>
+        </div>
+        <div className="field" style={{marginBottom:16}}>
+          <label className="label">自社住所</label>
+          <textarea className="input" rows={3} value={orgSettings.address||""} placeholder={"〒000-0000\n東京都〇〇区〇〇1-1-1\nJapan"} onChange={(e:any)=>setOrgSettings((v:any)=>({...v,address:e.target.value}))}/>
+        </div>
+
+        <hr className="section-divider"/>
+
+        {/* 銀行明細 */}
+        <div className="field" style={{marginBottom:16}}>
+          <label className="label">支払先銀行明細（PDFに印刷されます）</label>
+          <textarea className="input" rows={5} value={orgSettings.bankDetails||""} placeholder={"Bank Name: 〇〇銀行\nBranch: 〇〇支店\nAccount Type: 普通\nAccount No: 1234567\nAccount Name: 株式会社〇〇\nSWIFT Code: XXXXXXXX"} onChange={(e:any)=>setOrgSettings((v:any)=>({...v,bankDetails:e.target.value}))}/>
+        </div>
+
+        <div style={{display:"flex",justifyContent:"flex-end"}}>
+          <button className="btn btn-primary" onClick={()=>alert("設定を保存しました！")}>💾 設定を保存</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+const INITIAL_INVOICE={invoiceNo:"",date:new Date().toISOString().split("T")[0],orderNo:"",paymentDue:"",shipper:"",consignee:"",notifyParty:"",currency:"JPY",incoterms:"",countryOfOrigin:"Japan",shippingMethod:"",portOfLoading:"JPKIX",shippingRemarks:"",remarks:"",status:"draft",isDraft:false,draftSavedAt:"",items:[]};
+const INITIAL_ORG={companyName:"",address:"",phone:"",signatureName:"",signatureTitle:"",bankDetails:"",logoUrl:""};
+
+export default function App() {
+  const [page,setPage]=useState("new");
+  const [step,setStep]=useState(1);
+  const [invoice,setInvoice]=useState<any>(INITIAL_INVOICE);
+  const [packingItems,setPackingItems]=useState<any[]>([]);
+  const [customers,setCustomers]=useState<any[]>([]);
+  const [products,setProducts]=useState<any[]>([]);
+  const [orgSettings,setOrgSettings]=useState<any>(INITIAL_ORG);
+
+  const validationResult=useMemo(()=>runValidation(invoice,packingItems),[invoice,packingItems]);
+  const reset=()=>{setInvoice(INITIAL_INVOICE);setPackingItems([]);setStep(1);setPage("new");};
+  const loadHistory=(h:any)=>{
+    setInvoice({...INITIAL_INVOICE,invoiceNo:h.id,date:h.date,countryOfOrigin:h.country,currency:h.currency,
+      items:[{id:Date.now(),productName:h.product,quantity:"",unitPrice:"",currency:h.currency,hsCode:h.hsCode}]});
+    setPackingItems([]);setStep(1);setPage("new");
+  };
+
+  const navItems=[
+    {id:"new",label:"新規作成",icon:"✏️"},
+    {id:"history",label:"過去案件",icon:"📚",badge:SAMPLE_HISTORY.filter(h=>h.status==="in_progress").length||null},
+    {id:"customers",label:"取引先登録",icon:"🏢"},
+    {id:"products",label:"製品マスタ",icon:"🗂️"},
+    {id:"settings",label:"組織設定",icon:"⚙️"},
+  ];
+  const topbarTitle:any={new:"新規書類作成",history:"過去案件検索",customers:"取引先登録",products:"製品マスタ",settings:"組織設定"};
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <aside className="sidebar">
+          <div className="sidebar-logo">
+            {orgSettings.logoUrl
+              ?<img src={orgSettings.logoUrl} alt="logo" style={{height:32,marginBottom:4}}/>
+              :<div className="logo-text">🚢 TradeDoc</div>
+            }
+            <div className="logo-sub">{orgSettings.companyName||"貿易書類管理システム"}</div>
+          </div>
+          <nav className="sidebar-nav">
+            <div className="nav-section-label">メニュー</div>
+            {navItems.map(n=>(
+              <button key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={()=>setPage(n.id)}>
+                <span className="nav-icon">{n.icon}</span>{n.label}
+                {n.badge?<span className="nav-badge">{n.badge}</span>:null}
+              </button>
+            ))}
+            <div className="nav-section-label" style={{marginTop:16}}>最近の案件</div>
+            {SAMPLE_HISTORY.slice(0,3).map(h=>(
+              <button key={h.id} className="nav-item" onClick={()=>loadHistory(h)}>
+                <span className="nav-icon">📄</span>
+                <span style={{fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.id}</span>
+              </button>
+            ))}
+            {validationResult.errors.length>0&&(
+              <button style={{margin:"16px 8px 0",padding:"8px 12px",background:"var(--red-light)",borderRadius:"var(--radius)",fontSize:12,color:"var(--red)",border:"none",cursor:"pointer",width:"calc(100% - 16px)",textAlign:"left"}}
+                onClick={()=>{setPage("new");setStep(3);}}>
+                ⚠️ {validationResult.errors.length}件のエラー → 確認画面へ
+              </button>
+            )}
+          </nav>
+        </aside>
+
+        <main className="main">
+          <div className="topbar">
+            <div className="topbar-title">{topbarTitle[page]||"TradeDoc"}</div>
+            <div className="topbar-actions">
+              {page==="new"&&<button className="btn btn-secondary btn-sm" onClick={reset}>🔄 リセット</button>}
+              {page==="new"&&<button className="btn btn-primary btn-sm" onClick={()=>setPage("history")}>📚 過去案件を参照</button>}
+            </div>
+          </div>
+          <div className="content">
+            {page==="new"&&(
+              <>
+                <StepBar currentStep={step} setStep={setStep}/>
+                {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} orgSettings={orgSettings} customers={customers} products={products}/>}
+                {step===2&&<PackingListForm invoice={invoice} packingItems={packingItems} setPackingItems={setPackingItems} onNext={()=>setStep(3)} onBack={()=>setStep(1)}/>}
+                {step===3&&<ReviewPage invoice={invoice} packingItems={packingItems} onNext={()=>setStep(4)} onBack={()=>setStep(2)} setStep={setStep}/>}
+                {step>=4&&<OutputPage invoice={invoice} packingItems={packingItems} onBack={()=>setStep(3)} orgSettings={orgSettings}/>}
+              </>
+            )}
+            {page==="history"&&<HistoryPage onLoad={loadHistory}/>}
+            {page==="customers"&&<CustomerMasterPage customers={customers} setCustomers={setCustomers}/>}
+            {page==="products"&&<ProductMasterPage products={products} setProducts={setProducts}/>}
+            {page==="settings"&&<OrgSettingsPage orgSettings={orgSettings} setOrgSettings={setOrgSettings}/>}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
