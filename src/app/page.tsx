@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useMemo, useRef } from "react";
 
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
@@ -23,12 +23,12 @@ const SAMPLE_HS_CODES = [
   {code:"2106.90",desc:"Food preparations NEC"},
 ];
 const STEPS = [
-  {id:1,label:"Invoice入劁E,icon:"📋"},
+  {id:1,label:"Invoice入力",icon:"📋"},
   {id:2,label:"Packing List",icon:"📦"},
-  {id:3,label:"冁E��確誁E,icon:"✁E},
-  {id:4,label:"PDF生�E",icon:"📄"},
-  {id:5,label:"メール送仁E,icon:"📧"},
-  {id:6,label:"出荷完亁E,icon:"🚢"},
+  {id:3,label:"内容確認",icon:"✅"},
+  {id:4,label:"PDF生成",icon:"📄"},
+  {id:5,label:"メール送付",icon:"📧"},
+  {id:6,label:"出荷完了",icon:"🚢"},
 ];
 const SAMPLE_HISTORY = [
   {id:"INV-2024-001",date:"2024-11-15",customer:"ABC Electronics Co., Ltd.",country:"United States",product:"LCD Monitor 24inch",qty:100,currency:"USD",total:18500,status:"completed",hsCode:"8528.72"},
@@ -52,35 +52,35 @@ function runValidation(invoice: any, packingItems: any[]) {
   const items = invoice.items || [];
 
   if (items.length === 0) {
-    errors.push({field:"hsCode",msg:"品目が未登録です。品目を追加してHSコードを入力してください、E,risk:"HIGH",step:1});
+    errors.push({field:"hsCode",msg:"品目が未登録です。品目を追加してHSコードを入力してください。",risk:"HIGH",step:1});
   } else if (!items.every((i:any) => i.hsCode && i.hsCode.trim() !== "")) {
-    errors.push({field:"hsCode",msg:"HSコードが未入力�E品目があります。通関に忁E��です、E,risk:"HIGH",step:1});
+    errors.push({field:"hsCode",msg:"HSコードが未入力の品目があります。通関に必須です。",risk:"HIGH",step:1});
   }
-  if (!invoice.incoterms) errors.push({field:"incoterms",msg:"Incotermsが未選択です、E,risk:"HIGH",step:1});
-  if (!invoice.countryOfOrigin) errors.push({field:"countryOfOrigin",msg:"原産国が未入力です、E,risk:"HIGH",step:1});
-  if (!invoice.currency) errors.push({field:"currency",msg:"通貨が未選択です、E,risk:"HIGH",step:1});
+  if (!invoice.incoterms) errors.push({field:"incoterms",msg:"Incotermsが未選択です。",risk:"HIGH",step:1});
+  if (!invoice.countryOfOrigin) errors.push({field:"countryOfOrigin",msg:"原産国が未入力です。",risk:"HIGH",step:1});
+  if (!invoice.currency) errors.push({field:"currency",msg:"通貨が未選択です。",risk:"HIGH",step:1});
 
   const invoiceQty = items.reduce((s:number,i:any)=>s+(Number(i.quantity)||0),0);
   const packingQty = packingItems.reduce((s:number,i:any)=>s+(Number(i.quantity)||0),0);
   if (invoiceQty>0 && packingQty>0 && invoiceQty!==packingQty) {
-    errors.push({field:"quantity",msg:`数量不一致: Invoice ${invoiceQty}倁E/ Packing ${packingQty}個`,risk:"HIGH",step:2});
+    errors.push({field:"quantity",msg:`数量不一致: Invoice ${invoiceQty}個 / Packing ${packingQty}個`,risk:"HIGH",step:2});
   }
   packingItems.forEach((item,idx)=>{
     if (!item.grossWeight||Number(item.grossWeight)===0) {
       errors.push({field:`grossWeight_${idx}`,msg:`カートン${item.cartonNo}の総重量が未入力です。`,risk:"HIGH",step:2});
     }
     if (item.grossWeight&&item.netWeight&&Number(item.grossWeight)<Number(item.netWeight)) {
-      errors.push({field:`weight_${idx}`,msg:`カートン${item.cartonNo}の総重量が正味重量より小さぁE��す。`,risk:"MEDIUM",step:2});
+      errors.push({field:`weight_${idx}`,msg:`カートン${item.cartonNo}の総重量が正味重量より小さいです。`,risk:"MEDIUM",step:2});
     }
     if (item.grossWeight&&Number(item.grossWeight)>5000) {
-      warnings.push({field:`weight_${idx}`,msg:`カートン${item.cartonNo}の重量ぁE000kgを趁E��てぁE��す。確認してください。`,risk:"LOW",step:2});
+      warnings.push({field:`weight_${idx}`,msg:`カートン${item.cartonNo}の重量が5000kgを超えています。確認してください。`,risk:"LOW",step:2});
     }
   });
-  if (!invoice.shipper) warnings.push({field:"shipper",msg:"Shipper惁E��が未入力です、E,risk:"LOW",step:1});
-  if (!invoice.consignee) warnings.push({field:"consignee",msg:"Consignee惁E��が未入力です、E,risk:"LOW",step:1});
+  if (!invoice.shipper) warnings.push({field:"shipper",msg:"Shipper情報が未入力です。",risk:"LOW",step:1});
+  if (!invoice.consignee) warnings.push({field:"consignee",msg:"Consignee情報が未入力です。",risk:"LOW",step:1});
   if (items.length>0) {
     const currencies = new Set(items.map((i:any)=>i.currency).filter(Boolean));
-    if (currencies.size>1) errors.push({field:"currency",msg:`褁E��の通貨が混在してぁE��ぁE ${[...currencies].join(", ")}`,risk:"MEDIUM",step:1});
+    if (currencies.size>1) errors.push({field:"currency",msg:`複数の通貨が混在しています: ${[...currencies].join(", ")}`,risk:"MEDIUM",step:1});
   }
   return {errors,warnings,riskLevel:errors.some((e:any)=>e.risk==="HIGH")?"HIGH":errors.length>0?"MEDIUM":warnings.length>0?"LOW":"CLEAR"};
 }
@@ -271,20 +271,20 @@ function AutocompleteInput({value,onChange,suggestions,placeholder,className="",
 
 function ValidationPanel({invoice,packingItems,onGoToStep}:any) {
   const {errors,warnings,riskLevel}=useMemo(()=>runValidation(invoice,packingItems),[invoice,packingItems]);
-  const icon=riskLevel==="HIGH"?"🚨":riskLevel==="MEDIUM"?"⚠�E�E:riskLevel==="LOW"?"💛":"✁E;
-  const titleText=riskLevel==="HIGH"?"通関リスク: 重大なエラーがありまぁE:riskLevel==="MEDIUM"?"確認が忁E��な頁E��がありまぁE:riskLevel==="LOW"?"軽微な警告がありまぁE:"すべての忁E��頁E��が�E力されてぁE��ぁE;
+  const icon=riskLevel==="HIGH"?"🚨":riskLevel==="MEDIUM"?"⚠️":riskLevel==="LOW"?"💛":"✅";
+  const titleText=riskLevel==="HIGH"?"通関リスク: 重大なエラーがあります":riskLevel==="MEDIUM"?"確認が必要な項目があります":riskLevel==="LOW"?"軽微な警告があります":"すべての必須項目が入力されています";
   return (
     <div className={`validation-panel ${riskLevel}`}>
       <div className="validation-title">
         <span>{icon}</span><span>{titleText}</span>
-        {riskLevel!=="CLEAR"&&<span className={`risk-badge ${riskLevel}`}>{errors.length}エラー / {warnings.length}警呁E/span>}
+        {riskLevel!=="CLEAR"&&<span className={`risk-badge ${riskLevel}`}>{errors.length}エラー / {warnings.length}警告</span>}
       </div>
       {errors.map((e:any,i:number)=>(
         <div key={i} className={`validation-item ${onGoToStep?"validation-item-clickable":""}`}
           onClick={()=>onGoToStep&&e.step&&onGoToStep(e.step)}>
           <span className={`risk-badge ${e.risk}`}>{e.risk}</span>
           <span className="risk-HIGH">🔴 {e.msg}</span>
-          {onGoToStep&&e.step&&<span style={{marginLeft:"auto",fontSize:11,color:"var(--blue)",flexShrink:0}}>STEP{e.step}へ ↁE/span>}
+          {onGoToStep&&e.step&&<span style={{marginLeft:"auto",fontSize:11,color:"var(--blue)",flexShrink:0}}>STEP{e.step}へ →</span>}
         </div>
       ))}
       {warnings.map((w:any,i:number)=>(
@@ -292,7 +292,7 @@ function ValidationPanel({invoice,packingItems,onGoToStep}:any) {
           onClick={()=>onGoToStep&&w.step&&onGoToStep(w.step)}>
           <span className={`risk-badge ${w.risk}`}>{w.risk}</span>
           <span className="risk-LOW">🟡 {w.msg}</span>
-          {onGoToStep&&w.step&&<span style={{marginLeft:"auto",fontSize:11,color:"var(--blue)",flexShrink:0}}>STEP{w.step}へ ↁE/span>}
+          {onGoToStep&&w.step&&<span style={{marginLeft:"auto",fontSize:11,color:"var(--blue)",flexShrink:0}}>STEP{w.step}へ →</span>}
         </div>
       ))}
     </div>
@@ -306,7 +306,7 @@ function StepBar({currentStep,setStep}:any) {
         <div key={s.id} className="step-item">
           <div className="step-content">
             <div className={`step-dot ${currentStep>s.id?"done":currentStep===s.id?"active":"pending"}`} onClick={()=>setStep(s.id)}>
-              {currentStep>s.id?"✁E:s.icon}
+              {currentStep>s.id?"✓":s.icon}
             </div>
             <div className="step-label">{s.label}</div>
           </div>
@@ -341,12 +341,12 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
 
   return (
     <div className="fade-in">
-      {invoice.isDraft&&<div className="draft-banner">💾 下書き保存済み  E最終保孁E {invoice.draftSavedAt||" E}</div>}
+      {invoice.isDraft&&<div className="draft-banner">💾 下書き保存済み — 最終保存: {invoice.draftSavedAt||"—"}</div>}
 
-      {/* 基本惁E�� */}
+      {/* 基本情報 */}
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">📋 基本惁E��</div></div>
+          <div><div className="card-title">📋 基本情報</div></div>
         </div>
         <div className="grid-3" style={{marginBottom:16}}>
           <div className="field">
@@ -355,12 +355,12 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
               onChange={(e:any)=>setInvoice((v:any)=>({...v,invoiceNo:e.target.value}))}/>
           </div>
           <div className="field">
-            <label className="label"><span className="required-dot">*</span>作�E日仁E/label>
+            <label className="label"><span className="required-dot">*</span>作成日付</label>
             <input type="date" className="input" value={invoice.date||""}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,date:e.target.value}))}/>
           </div>
           <div className="field">
-            <label className="label">注斁E��番号</label>
+            <label className="label">注文書番号</label>
             <input className="input" value={invoice.orderNo||""} placeholder="PO-2024-001"
               onChange={(e:any)=>setInvoice((v:any)=>({...v,orderNo:e.target.value}))}/>
           </div>
@@ -374,19 +374,19 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
             </select>
           </div>
           <div className="field">
-            <label className="label">支払期陁E/label>
+            <label className="label">支払期限</label>
             <input type="date" className="input" value={invoice.paymentDue||""}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,paymentDue:e.target.value}))}/>
           </div>
           <div className="field">
-            <label className="label">スチE�Eタス</label>
+            <label className="label">ステータス</label>
             <select className="input" value={invoice.status||"draft"}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,status:e.target.value}))}>
-              <option value="draft">下書ぁE/option>
+              <option value="draft">下書き</option>
               <option value="in_progress">作業中</option>
               <option value="reviewing">確認中</option>
               <option value="shipped">出荷済み</option>
-              <option value="completed">完亁E/option>
+              <option value="completed">完了</option>
             </select>
           </div>
         </div>
@@ -394,18 +394,18 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
         {/* Shipper / Consignee */}
         <div className="grid-2" style={{marginBottom:16}}>
           <div className="field">
-            <label className="label"><span className="required-dot">*</span>Shipper�E��E荷老E��E/label>
+            <label className="label"><span className="required-dot">*</span>Shipper（出荷者）</label>
             <textarea className="input" value={invoice.shipper||(orgSettings.companyName?`${orgSettings.companyName}\n${orgSettings.address||""}`:"") } rows={3}
               placeholder={"会社名\n住所\n国"}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,shipper:e.target.value}))}/>
           </div>
           <div className="field">
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-              <label className="label"><span className="required-dot">*</span>Consignee�E�荷受人�E�E/label>
+              <label className="label"><span className="required-dot">*</span>Consignee（荷受人）</label>
               {customers.length>0&&(
                 <select className="input" style={{width:"auto",fontSize:11,padding:"2px 6px"}}
                   onChange={(e:any)=>{const c=customers.find((x:any)=>String(x.id)===e.target.value);if(c)applyCustomer(c);}}>
-                  <option value="">取引�Eから選抁E/option>
+                  <option value="">取引先から選択</option>
                   {customers.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               )}
@@ -416,7 +416,7 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
         </div>
         <div className="field">
           <label className="label">Notify Party</label>
-          <textarea className="input" value={invoice.notifyParty||""} rows={2} placeholder="通知先！E/C発行時など�E�E
+          <textarea className="input" value={invoice.notifyParty||""} rows={2} placeholder="通知先（L/C発行時など）"
             onChange={(e:any)=>setInvoice((v:any)=>({...v,notifyParty:e.target.value}))}/>
         </div>
       </div>
@@ -429,7 +429,7 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
             <label className="label"><span className="required-dot">*</span>Incoterms</label>
             <select className="input" value={invoice.incoterms||""}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,incoterms:e.target.value}))}>
-              <option value="">選抁E/option>
+              <option value="">選択</option>
               {INCOTERMS.map((t:string)=><option key={t}>{t}</option>)}
             </select>
           </div>
@@ -437,7 +437,7 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
             <label className="label">Shipping Method</label>
             <select className="input" value={invoice.shippingMethod||""}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,shippingMethod:e.target.value}))}>
-              <option value="">選抁E/option>
+              <option value="">選択</option>
               {SHIPPING_METHODS.map((m:string)=><option key={m}>{m}</option>)}
             </select>
           </div>
@@ -457,12 +457,12 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
       {/* 品目明細 */}
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">📦 品目明細</div><div className="card-subtitle">HSコード�E忁E��入力してください�E�通関忁E��！E/div></div>
+          <div><div className="card-title">📦 品目明細</div><div className="card-subtitle">HSコードは必ず入力してください（通関必須）</div></div>
           <div style={{display:"flex",gap:8}}>
             {products.length>0&&(
               <select className="input" style={{width:"auto",fontSize:12,padding:"5px 10px"}}
                 onChange={(e:any)=>{const p=products.find((x:any)=>String(x.id)===e.target.value);if(p)applyProduct(p);e.target.value="";}}>
-                <option value="">製品�Eスタから追加</option>
+                <option value="">製品マスタから追加</option>
                 {products.map((p:any)=><option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             )}
@@ -477,11 +477,11 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
               <thead>
                 <tr>
                   <th style={{width:160}}>製品名 <span style={{color:"var(--red)"}}>*</span></th>
-                  <th style={{width:80}}>数釁E/th>
+                  <th style={{width:80}}>数量</th>
                   <th style={{width:100}}>単価</th>
                   <th style={{width:70}}>通貨</th>
-                  <th style={{width:130}}>HSコーチE<span style={{color:"var(--red)"}}>*</span></th>
-                  <th style={{width:100,textAlign:"right"}}>小訁E/th>
+                  <th style={{width:130}}>HSコード <span style={{color:"var(--red)"}}>*</span></th>
+                  <th style={{width:100,textAlign:"right"}}>小計</th>
                   <th style={{width:36}}></th>
                 </tr>
               </thead>
@@ -505,7 +505,7 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
                           onChange={(v:string)=>updateItem(item.id,"hsCode",v)}/>
                       </td>
                       <td style={{fontWeight:500,fontSize:13,textAlign:"right",paddingRight:8}}>{formatAmount(subtotal,itemCurrency)}</td>
-                      <td><button className="btn btn-danger btn-xs" onClick={()=>removeItem(item.id)}>✁E/button></td>
+                      <td><button className="btn btn-danger btn-xs" onClick={()=>removeItem(item.id)}>✕</button></td>
                     </tr>
                   );
                 })}
@@ -523,17 +523,17 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
         )}
       </div>
 
-      {/* 備老E*/}
+      {/* 備考 */}
       <div className="card">
-        <div className="card-header"><div className="card-title">📝 備老E�E出荷詳細</div></div>
+        <div className="card-header"><div className="card-title">📝 備考・出荷詳細</div></div>
         <div className="field" style={{marginBottom:12}}>
-          <label className="label">出荷備老E/label>
-          <textarea className="input" value={invoice.shippingRemarks||""} rows={2} placeholder="出荷に関する特記事頁E��梱匁E��示・輸送条件など�E�E
+          <label className="label">出荷備考</label>
+          <textarea className="input" value={invoice.shippingRemarks||""} rows={2} placeholder="出荷に関する特記事項（梱包指示・輸送条件など）"
             onChange={(e:any)=>setInvoice((v:any)=>({...v,shippingRemarks:e.target.value}))}/>
         </div>
         <div className="field">
-          <label className="label">通関備老E/label>
-          <textarea className="input" value={invoice.remarks||""} rows={2} placeholder="通関上�E注意事頁E�E特記事頁E
+          <label className="label">通関備考</label>
+          <textarea className="input" value={invoice.remarks||""} rows={2} placeholder="通関上の注意事項・特記事項"
             onChange={(e:any)=>setInvoice((v:any)=>({...v,remarks:e.target.value}))}/>
         </div>
       </div>
@@ -542,8 +542,8 @@ function InvoiceForm({invoice,setInvoice,onNext,orgSettings,customers,products}:
         <button className="btn btn-gray" onClick={()=>{
           setInvoice((v:any)=>({...v,isDraft:true,draftSavedAt:new Date().toLocaleTimeString("ja-JP")}));
           alert("下書きを保存しました");
-        }}>💾 下書き保孁E/button>
-        <button className="btn btn-primary" onClick={onNext}>Packing List入力へ ↁE/button>
+        }}>💾 下書き保存</button>
+        <button className="btn btn-primary" onClick={onNext}>Packing List入力へ →</button>
       </div>
     </div>
   );
@@ -581,19 +581,19 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
           <div className="validation-title"><span>🚨</span><span>数量不一致エラー</span></div>
           <div className="validation-item">
             <span className="risk-badge HIGH">HIGH</span>
-            <span className="risk-HIGH">Invoice合訁E {invoiceQty}倁E≠ Packing合訁E {totalQty}個（差刁E {Math.abs(invoiceQty-totalQty)}個！E/span>
+            <span className="risk-HIGH">Invoice合計: {invoiceQty}個 ≠ Packing合計: {totalQty}個（差分: {Math.abs(invoiceQty-totalQty)}個）</span>
           </div>
         </div>
       )}
       {invoiceQty>0&&totalQty>0&&qtyMatch&&(
         <div className="validation-panel CLEAR" style={{marginBottom:16}}>
-          <div className="validation-title"><span>✁E/span><span>数量一致: {totalQty}倁E/span></div>
+          <div className="validation-title"><span>✅</span><span>数量一致: {totalQty}個</span></div>
         </div>
       )}
 
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">📦 梱匁E�E細</div><div className="card-subtitle">混載カートンは「混載」�Eタンで褁E��品目を追加できまぁE/div></div>
+          <div><div className="card-title">📦 梱包明細</div><div className="card-subtitle">混載カートンは「混載」ボタンで複数品目を追加できます</div></div>
           <div style={{display:"flex",gap:8}}>
             <button className="btn btn-secondary btn-sm" onClick={()=>{
               if(!invoice.items?.length)return;
@@ -605,19 +605,19 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
         </div>
 
         {packingItems.length===0?(
-          <div className="empty-state"><div className="empty-icon">📦</div><div className="empty-text">「Invoice から自動反映」また�E「カートン追加」で開姁E/div></div>
+          <div className="empty-state"><div className="empty-icon">📦</div><div className="empty-text">「Invoice から自動反映」または「カートン追加」で開始</div></div>
         ):(
           <div style={{overflowX:"auto"}}>
             <table className="items-table">
               <thead>
                 <tr>
                   <th style={{width:55}}>Ctn No</th>
-                  <th style={{width:160}}>製品名 / 冁E��</th>
-                  <th style={{width:65}}>数釁E<span style={{color:"var(--red)"}}>*</span></th>
-                  <th style={{width:85}}>総重釁Ekg) <span style={{color:"var(--red)"}}>*</span></th>
+                  <th style={{width:160}}>製品名 / 内容</th>
+                  <th style={{width:65}}>数量 <span style={{color:"var(--red)"}}>*</span></th>
+                  <th style={{width:85}}>総重量(kg) <span style={{color:"var(--red)"}}>*</span></th>
                   <th style={{width:80}}>正味重量(kg)</th>
-                  <th style={{width:180}}>寸況Ecm) L ÁEW ÁEH</th>
-                  <th style={{width:60}}>混輁E/th>
+                  <th style={{width:180}}>寸法(cm) L × W × H</th>
+                  <th style={{width:60}}>混載</th>
                   <th style={{width:36}}></th>
                 </tr>
               </thead>
@@ -629,7 +629,7 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
                       <td>
                         {p.mixed?(
                           <div style={{fontSize:12,color:"var(--text-muted)",padding:"4px 6px"}}>
-                            混載カートン�E�E(p.mixedItems||[]).length}品目�E�E
+                            混載カートン（{(p.mixedItems||[]).length}品目）
                           </div>
                         ):(
                           <input className="input" value={p.productName||""} placeholder="製品名" onChange={(e:any)=>update(p.id,"productName",e.target.value)}/>
@@ -649,9 +649,9 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
                       <td>
                         <div className="dim-group">
                           <input className="input dim-input" type="number" value={p.dimL||""} placeholder="L" onChange={(e:any)=>update(p.id,"dimL",e.target.value)}/>
-                          <span className="dim-sep">ÁE/span>
+                          <span className="dim-sep">×</span>
                           <input className="input dim-input" type="number" value={p.dimW||""} placeholder="W" onChange={(e:any)=>update(p.id,"dimW",e.target.value)}/>
-                          <span className="dim-sep">ÁE/span>
+                          <span className="dim-sep">×</span>
                           <input className="input dim-input" type="number" value={p.dimH||""} placeholder="H" onChange={(e:any)=>update(p.id,"dimH",e.target.value)}/>
                         </div>
                       </td>
@@ -662,9 +662,9 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
                             if(!p.mixed&&(!p.mixedItems||p.mixedItems.length===0)){
                               addMixedItem(p.id);
                             }
-                          }}>{p.mixed?"混載中":"混輁E}</button>
+                          }}>{p.mixed?"混載中":"混載"}</button>
                       </td>
-                      <td><button className="btn btn-danger btn-xs" onClick={()=>remove(p.id)}>✁E/button></td>
+                      <td><button className="btn btn-danger btn-xs" onClick={()=>remove(p.id)}>✕</button></td>
                     </tr>
                     {p.mixed&&(
                       <tr key={`${p.id}-mixed`}>
@@ -673,11 +673,11 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
                           <div className="mixed-carton-items">
                             {(p.mixedItems||[]).map((mi:any)=>(
                               <div key={mi.id} className="mixed-carton-item">
-                                <span style={{fontSize:11,color:"var(--text-muted)",minWidth:16}}>━E/span>
+                                <span style={{fontSize:11,color:"var(--text-muted)",minWidth:16}}>┗</span>
                                 <input className="input" style={{flex:2}} value={mi.productName||""} placeholder="製品名" onChange={(e:any)=>updateMixedItem(p.id,mi.id,"productName",e.target.value)}/>
-                                <input className="input" style={{width:70}} type="number" value={mi.quantity||""} placeholder="数釁E onChange={(e:any)=>updateMixedItem(p.id,mi.id,"quantity",e.target.value)}/>
-                                <span style={{fontSize:11,color:"var(--text-muted)"}}>倁E/span>
-                                <button className="btn btn-danger btn-xs" onClick={()=>removeMixedItem(p.id,mi.id)}>✁E/button>
+                                <input className="input" style={{width:70}} type="number" value={mi.quantity||""} placeholder="数量" onChange={(e:any)=>updateMixedItem(p.id,mi.id,"quantity",e.target.value)}/>
+                                <span style={{fontSize:11,color:"var(--text-muted)"}}>個</span>
+                                <button className="btn btn-danger btn-xs" onClick={()=>removeMixedItem(p.id,mi.id)}>✕</button>
                               </div>
                             ))}
                             <button className="btn btn-secondary btn-xs" style={{marginLeft:20,marginTop:2}} onClick={()=>addMixedItem(p.id)}>+ 品目追加</button>
@@ -696,16 +696,16 @@ function PackingListForm({invoice,packingItems,setPackingItems,onNext,onBack}:an
         {packingItems.length>0&&(
           <div style={{display:"flex",gap:24,marginTop:12,padding:"12px 16px",background:"#F7F7F5",borderRadius:"var(--radius-lg)"}}>
             <div><div className="total-label">総カートン数</div><div className="total-value">{packingItems.length} ctns</div></div>
-            <div><div className="total-label">合計数釁E/div><div className="total-value" style={{color:!qtyMatch&&invoiceQty>0?"var(--red)":undefined}}>{totalQty} pcs</div></div>
-            <div><div className="total-label">総重釁E/div><div className="total-value">{totalGross.toFixed(2)} kg</div></div>
+            <div><div className="total-label">合計数量</div><div className="total-value" style={{color:!qtyMatch&&invoiceQty>0?"var(--red)":undefined}}>{totalQty} pcs</div></div>
+            <div><div className="total-label">総重量</div><div className="total-value">{totalGross.toFixed(2)} kg</div></div>
             <div><div className="total-label">正味重量</div><div className="total-value">{totalNet.toFixed(2)} kg</div></div>
           </div>
         )}
       </div>
 
       <div style={{display:"flex",justifyContent:"space-between"}}>
-        <button className="btn btn-secondary" onClick={onBack}>ↁEInvoice に戻めE/button>
-        <button className="btn btn-primary" onClick={onNext}>冁E��確認へ ↁE/button>
+        <button className="btn btn-secondary" onClick={onBack}>← Invoice に戻る</button>
+        <button className="btn btn-primary" onClick={onNext}>内容確認へ →</button>
       </div>
     </div>
   );
@@ -722,11 +722,11 @@ function ReviewPage({invoice,packingItems,onNext,onBack,setStep}:any) {
     {label:"Invoice No 入力済み",ok:!!invoice.invoiceNo},
     {label:"Shipper 入力済み",ok:!!invoice.shipper},
     {label:"Consignee 入力済み",ok:!!invoice.consignee},
-    {label:"品目ぁE件以上あめE,ok:(invoice.items?.length||0)>0},
-    {label:"全品目にHSコード�E力済み",ok:(invoice.items||[]).length>0&&(invoice.items||[]).every((i:any)=>i.hsCode&&i.hsCode.trim()!=="")},
+    {label:"品目が1件以上ある",ok:(invoice.items?.length||0)>0},
+    {label:"全品目にHSコード入力済み",ok:(invoice.items||[]).length>0&&(invoice.items||[]).every((i:any)=>i.hsCode&&i.hsCode.trim()!=="")},
     {label:"Incoterms 選択済み",ok:!!invoice.incoterms},
     {label:"原産国 入力済み",ok:!!invoice.countryOfOrigin},
-    {label:"Packing List 作�E済み",ok:packingItems.length>0},
+    {label:"Packing List 作成済み",ok:packingItems.length>0},
     {label:"Invoice/Packing 数量一致",ok:(()=>{const iq=(invoice.items||[]).reduce((s:number,i:any)=>s+Number(i.quantity||0),0);const pq=packingItems.reduce((s:number,p:any)=>s+Number(p.quantity||0),0);return iq===pq&&iq>0})()},
     {label:"重量入力済み",ok:packingItems.every((p:any)=>p.grossWeight&&Number(p.grossWeight)>0)},
   ];
@@ -736,10 +736,10 @@ function ReviewPage({invoice,packingItems,onNext,onBack,setStep}:any) {
       <ValidationPanel invoice={invoice} packingItems={packingItems} onGoToStep={setStep}/>
       <div className="grid-2" style={{marginBottom:16}}>
         <div className="card">
-          <div className="card-title" style={{marginBottom:14}}>📋 チェチE��リスチE({score}/{checks.length})</div>
+          <div className="card-title" style={{marginBottom:14}}>📋 チェックリスト ({score}/{checks.length})</div>
           {checks.map((c:any,i:number)=>(
             <div key={i} className="checklist-item">
-              <div className={`check-icon ${c.ok?"check-ok":"check-fail"}`}>{c.ok?"✁E:"✁E}</div>
+              <div className={`check-icon ${c.ok?"check-ok":"check-fail"}`}>{c.ok?"✓":"✕"}</div>
               <span style={{fontSize:13,color:c.ok?"var(--text)":"var(--red)"}}>{c.label}</span>
             </div>
           ))}
@@ -749,17 +749,17 @@ function ReviewPage({invoice,packingItems,onNext,onBack,setStep}:any) {
           <table style={{width:"100%",fontSize:13}}>
             <tbody>
               {[
-                ["Invoice No",invoice.invoiceNo||" E],
-                ["注斁E��番号",invoice.orderNo||" E],
-                ["作�E日仁E,invoice.date||" E],
-                ["支払期陁E,invoice.paymentDue||" E],
-                ["Incoterms",invoice.incoterms||" E],
-                ["原産国",invoice.countryOfOrigin||" E],
-                ["輸送方況E,invoice.shippingMethod||" E],
+                ["Invoice No",invoice.invoiceNo||"—"],
+                ["注文書番号",invoice.orderNo||"—"],
+                ["作成日付",invoice.date||"—"],
+                ["支払期限",invoice.paymentDue||"—"],
+                ["Incoterms",invoice.incoterms||"—"],
+                ["原産国",invoice.countryOfOrigin||"—"],
+                ["輸送方法",invoice.shippingMethod||"—"],
                 ["品目数",`${invoice.items?.length||0}件`],
-                ["合計��顁E,`${currency} ${formatAmount(total,currency)}`],
+                ["合計金額",`${currency} ${formatAmount(total,currency)}`],
                 ["総カートン数",`${packingItems.length} ctns`],
-                ["総重釁E,`${packingItems.reduce((s:number,p:any)=>s+Number(p.grossWeight||0),0).toFixed(2)} kg`],
+                ["総重量",`${packingItems.reduce((s:number,p:any)=>s+Number(p.grossWeight||0),0).toFixed(2)} kg`],
               ].map(([k,v]:any)=>(
                 <tr key={k}>
                   <td style={{color:"var(--text-muted)",padding:"5px 0",borderBottom:"1px solid var(--border)"}}>{k}</td>
@@ -771,9 +771,9 @@ function ReviewPage({invoice,packingItems,onNext,onBack,setStep}:any) {
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}}>
-        <button className="btn btn-secondary" onClick={onBack}>ↁEPacking List に戻めE/button>
+        <button className="btn btn-secondary" onClick={onBack}>← Packing List に戻る</button>
         <button className="btn btn-primary" onClick={onNext} disabled={riskLevel==="HIGH"} style={{opacity:riskLevel==="HIGH"?.5:1}}>
-          {riskLevel==="HIGH"?"⚠�E�Eエラー解消後に進んでください":"PDF生�Eへ ↁE}
+          {riskLevel==="HIGH"?"⚠️ エラー解消後に進んでください":"PDF生成へ →"}
         </button>
       </div>
     </div>
@@ -810,7 +810,7 @@ function OutputPage({invoice,packingItems,onBack,orgSettings}:any) {
         <div className="card-header">
           <div className="card-title">{activeDoc==="invoice"?"Invoice プレビュー":"Packing List プレビュー"}</div>
           <div style={{display:"flex",gap:8}}>
-            <button className="btn btn-secondary btn-sm" onClick={handlePrint}>🖨�E�EPDF印刷</button>
+            <button className="btn btn-secondary btn-sm" onClick={handlePrint}>🖨️ PDF印刷</button>
           </div>
         </div>
         <div id="print-area" className="pdf-preview">
@@ -824,16 +824,16 @@ function OutputPage({invoice,packingItems,onBack,orgSettings}:any) {
                 <h1 style={{fontSize:22,fontWeight:700,letterSpacing:2,borderBottom:"2px solid #000",paddingBottom:8}}>COMMERCIAL INVOICE</h1>
               </div>
               <div className="meta-grid">
-                <div className="meta-item"><div className="meta-key">Invoice No.</div><strong>{invoice.invoiceNo||" E}</strong></div>
-                <div className="meta-item"><div className="meta-key">Date</div>{invoice.date||" E}</div>
-                <div className="meta-item"><div className="meta-key">Order No.</div>{invoice.orderNo||" E}</div>
-                <div className="meta-item"><div className="meta-key">Payment Due</div>{invoice.paymentDue||" E}</div>
-                <div className="meta-item"><div className="meta-key">Incoterms</div>{invoice.incoterms||" E}</div>
-                <div className="meta-item"><div className="meta-key">Country of Origin</div>{invoice.countryOfOrigin||" E}</div>
+                <div className="meta-item"><div className="meta-key">Invoice No.</div><strong>{invoice.invoiceNo||"—"}</strong></div>
+                <div className="meta-item"><div className="meta-key">Date</div>{invoice.date||"—"}</div>
+                <div className="meta-item"><div className="meta-key">Order No.</div>{invoice.orderNo||"—"}</div>
+                <div className="meta-item"><div className="meta-key">Payment Due</div>{invoice.paymentDue||"—"}</div>
+                <div className="meta-item"><div className="meta-key">Incoterms</div>{invoice.incoterms||"—"}</div>
+                <div className="meta-item"><div className="meta-key">Country of Origin</div>{invoice.countryOfOrigin||"—"}</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:12}}>
-                <div><div className="meta-key" style={{marginBottom:4}}>SHIPPER</div><div style={{whiteSpace:"pre-wrap",fontSize:11}}>{invoice.shipper||" E}</div></div>
-                <div><div className="meta-key" style={{marginBottom:4}}>CONSIGNEE</div><div style={{whiteSpace:"pre-wrap",fontSize:11}}>{invoice.consignee||" E}</div></div>
+                <div><div className="meta-key" style={{marginBottom:4}}>SHIPPER</div><div style={{whiteSpace:"pre-wrap",fontSize:11}}>{invoice.shipper||"—"}</div></div>
+                <div><div className="meta-key" style={{marginBottom:4}}>CONSIGNEE</div><div style={{whiteSpace:"pre-wrap",fontSize:11}}>{invoice.consignee||"—"}</div></div>
               </div>
               <table>
                 <thead><tr><th>Description of Goods</th><th>HS Code</th><th style={{textAlign:"right"}}>Qty</th><th style={{textAlign:"right"}}>Unit Price</th><th style={{textAlign:"right"}}>Amount</th></tr></thead>
@@ -858,9 +858,9 @@ function OutputPage({invoice,packingItems,onBack,orgSettings}:any) {
                 <h1 style={{fontSize:22,fontWeight:700,letterSpacing:2,borderBottom:"2px solid #000",paddingBottom:8}}>PACKING LIST</h1>
               </div>
               <div className="meta-grid">
-                <div className="meta-item"><div className="meta-key">Invoice No.</div><strong>{invoice.invoiceNo||" E}</strong></div>
-                <div className="meta-item"><div className="meta-key">Date</div>{invoice.date||" E}</div>
-                <div className="meta-item"><div className="meta-key">Order No.</div>{invoice.orderNo||" E}</div>
+                <div className="meta-item"><div className="meta-key">Invoice No.</div><strong>{invoice.invoiceNo||"—"}</strong></div>
+                <div className="meta-item"><div className="meta-key">Date</div>{invoice.date||"—"}</div>
+                <div className="meta-item"><div className="meta-key">Order No.</div>{invoice.orderNo||"—"}</div>
                 <div className="meta-item"><div className="meta-key">Total Cartons</div>{packingItems.length} CTNS</div>
                 <div className="meta-item"><div className="meta-key">Total Gross Weight</div>{totalGross.toFixed(2)} kg</div>
                 <div className="meta-item"><div className="meta-key">Total Net Weight</div>{totalNet.toFixed(2)} kg</div>
@@ -869,12 +869,12 @@ function OutputPage({invoice,packingItems,onBack,orgSettings}:any) {
                 <thead><tr><th>Carton No</th><th>Description</th><th style={{textAlign:"right"}}>Qty</th><th style={{textAlign:"right"}}>G.W.(kg)</th><th style={{textAlign:"right"}}>N.W.(kg)</th><th>Dimensions(cm)</th></tr></thead>
                 <tbody>
                   {packingItems.map((p:any,i:number)=>{
-                    const dim=[p.dimL,p.dimW,p.dimH].filter(Boolean).join("ÁE)||p.dimensions||" E;
+                    const dim=[p.dimL,p.dimW,p.dimH].filter(Boolean).join("×")||p.dimensions||"—";
                     if(p.mixed&&p.mixedItems?.length>0){
                       return p.mixedItems.map((mi:any,j:number)=>(
                         <tr key={`${i}-${j}`}>
                           <td>{j===0?p.cartonNo:""}</td>
-                          <td style={{paddingLeft:j===0?6:20}}>{j>0?"━E"}{mi.productName}</td>
+                          <td style={{paddingLeft:j===0?6:20}}>{j>0?"┗ "}{mi.productName}</td>
                           <td style={{textAlign:"right"}}>{mi.quantity}</td>
                           <td style={{textAlign:"right"}}>{j===0?Number(p.grossWeight||0).toFixed(2):""}</td>
                           <td style={{textAlign:"right"}}>{j===0?Number(p.netWeight||0).toFixed(2):""}</td>
@@ -905,13 +905,13 @@ function OutputPage({invoice,packingItems,onBack,orgSettings}:any) {
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}}>
-        <button className="btn btn-secondary" onClick={onBack}>ↁE冁E��確認に戻めE/button>
+        <button className="btn btn-secondary" onClick={onBack}>← 内容確認に戻る</button>
         <button className="btn btn-primary" onClick={()=>{
           const email=invoice._consigneeEmail||"";
           const subject=`Invoice ${invoice.invoiceNo||""}`;
-          const body=`お世話になっております、EnInvoice ${invoice.invoiceNo||""}を送付いたします。`;
+          const body=`お世話になっております。\nInvoice ${invoice.invoiceNo||""}を送付いたします。`;
           window.location.href=`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        }}>📧 メール送付へ ↁE/button>
+        }}>📧 メール送付へ →</button>
       </div>
     </div>
   );
@@ -929,11 +929,11 @@ function HistoryPage({onLoad}:any) {
     const matchS=filterStatus==="all"||h.status===filterStatus;
     return matchQ&&matchS;
   });
-  const statusLabel:any={completed:"出荷完亁E,shipped:"輸送中",in_progress:"作業中",draft:"下書ぁE};
+  const statusLabel:any={completed:"出荷完了",shipped:"輸送中",in_progress:"作業中",draft:"下書き"};
   return (
     <div className="fade-in">
       <div className="grid-4" style={{marginBottom:20}}>
-        {[{label:"総案件数",value:SAMPLE_HISTORY.length,sub:"全期間"},{label:"今月出荷",value:2,sub:"件"},{label:"作業中",value:1,sub:"件"},{label:"下書ぁE,value:1,sub:"件"}]
+        {[{label:"総案件数",value:SAMPLE_HISTORY.length,sub:"全期間"},{label:"今月出荷",value:2,sub:"件"},{label:"作業中",value:1,sub:"件"},{label:"下書き",value:1,sub:"件"}]
           .map((s,i)=>(
           <div key={i} className="stat-card">
             <div className="stat-label">{s.label}</div>
@@ -954,15 +954,15 @@ function HistoryPage({onLoad}:any) {
           </div>
         </div>
         <div style={{marginBottom:16}}>
-          <input className="input" placeholder="🔍 顧客名�EInvoice No・製品名・国で検索..." value={search} onChange={(e:any)=>setSearch(e.target.value)}/>
+          <input className="input" placeholder="🔍 顧客名・Invoice No・製品名・国で検索..." value={search} onChange={(e:any)=>setSearch(e.target.value)}/>
         </div>
         {filtered.map(h=>(
           <div key={h.id} className="history-item" onClick={()=>onLoad(h)}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
               <strong style={{fontSize:14}}>{h.id}</strong>
-              <span className={`status-badge status-${h.status}`}>◁E{statusLabel[h.status]}</span>
+              <span className={`status-badge status-${h.status}`}>● {statusLabel[h.status]}</span>
             </div>
-            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:6}}>{h.customer}  E{h.product}</div>
+            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:6}}>{h.customer} — {h.product}</div>
             <div className="history-meta">
               <span className="tag tag-blue">{h.country}</span>
               <span className="tag tag-gray">{h.date}</span>
@@ -993,19 +993,19 @@ function CustomerMasterPage({customers,setCustomers}:any) {
     <div className="fade-in">
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">🏢 取引�E登録</div><div className="card-subtitle">登録した取引�EはInvoice作�E時に自動�E力できまぁE/div></div>
-          <button className="btn btn-primary btn-sm" onClick={()=>setShowForm(v=>!v)}>+ 取引�E追加</button>
+          <div><div className="card-title">🏢 取引先登録</div><div className="card-subtitle">登録した取引先はInvoice作成時に自動入力できます</div></div>
+          <button className="btn btn-primary btn-sm" onClick={()=>setShowForm(v=>!v)}>+ 取引先追加</button>
         </div>
         {showForm&&(
           <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:16}}>
             <div className="grid-2" style={{marginBottom:12}}>
-              <div className="field"><label className="label"><span className="required-dot">*</span>会社吁E/label>
+              <div className="field"><label className="label"><span className="required-dot">*</span>会社名</label>
                 <input className="input" value={form.name} placeholder="ABC Co., Ltd." onChange={(e:any)=>setForm(v=>({...v,name:e.target.value}))}/></div>
-              <div className="field"><label className="label">拁E��老E��</label>
-                <input className="input" value={form.contact} placeholder="田中 太郁E onChange={(e:any)=>setForm(v=>({...v,contact:e.target.value}))}/></div>
+              <div className="field"><label className="label">担当者名</label>
+                <input className="input" value={form.contact} placeholder="田中 太郎" onChange={(e:any)=>setForm(v=>({...v,contact:e.target.value}))}/></div>
             </div>
             <div className="grid-2" style={{marginBottom:12}}>
-              <div className="field"><label className="label">メールアドレス�E�書類送付�E�E�E/label>
+              <div className="field"><label className="label">メールアドレス（書類送付先）</label>
                 <input className="input" type="email" value={form.email} placeholder="contact@example.com" onChange={(e:any)=>setForm(v=>({...v,email:e.target.value}))}/></div>
               <div className="field"><label className="label">国</label>
                 <AutocompleteInput value={form.country} suggestions={COUNTRIES} placeholder="Japan" onChange={(val:string)=>setForm(v=>({...v,country:val}))}/></div>
@@ -1016,24 +1016,24 @@ function CustomerMasterPage({customers,setCustomers}:any) {
             </div>
             <div className="field" style={{marginBottom:12}}>
               <label className="label">Notify Party</label>
-              <textarea className="input" rows={2} value={form.notifyParty} placeholder="通知先！E/C発行時など�E�E onChange={(e:any)=>setForm(v=>({...v,notifyParty:e.target.value}))}/>
+              <textarea className="input" rows={2} value={form.notifyParty} placeholder="通知先（L/C発行時など）" onChange={(e:any)=>setForm(v=>({...v,notifyParty:e.target.value}))}/>
             </div>
             <div className="grid-2" style={{marginBottom:12}}>
-              <div className="field"><label className="label">チE��ォルト通貨</label>
+              <div className="field"><label className="label">デフォルト通貨</label>
                 <select className="input" value={form.currency} onChange={(e:any)=>setForm(v=>({...v,currency:e.target.value}))}>
                   {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></div>
-              <div className="field"><label className="label">チE��ォルチEncoterms</label>
+              <div className="field"><label className="label">デフォルトIncoterms</label>
                 <select className="input" value={form.incoterms} onChange={(e:any)=>setForm(v=>({...v,incoterms:e.target.value}))}>
-                  <option value="">選抁E/option>{INCOTERMS.map((t:string)=><option key={t}>{t}</option>)}</select></div>
+                  <option value="">選択</option>{INCOTERMS.map((t:string)=><option key={t}>{t}</option>)}</select></div>
             </div>
             <div style={{display:"flex",gap:8}}>
-              <button className="btn btn-primary btn-sm" onClick={save}>保孁E/button>
+              <button className="btn btn-primary btn-sm" onClick={save}>保存</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>setShowForm(false)}>キャンセル</button>
             </div>
           </div>
         )}
         {customers.length===0?(
-          <div className="empty-state"><div className="empty-icon">🏢</div><div className="empty-text">取引�Eを登録してください</div></div>
+          <div className="empty-state"><div className="empty-icon">🏢</div><div className="empty-text">取引先を登録してください</div></div>
         ):(
           customers.map((c:any)=>(
             <div key={c.id} className="history-item">
@@ -1046,7 +1046,7 @@ function CustomerMasterPage({customers,setCustomers}:any) {
                 <span className="tag tag-gray">{c.currency}</span>
                 {c.incoterms&&<span className="tag tag-green">{c.incoterms}</span>}
                 {c.contact&&<span className="tag tag-amber">{c.contact}</span>}
-                {c.email&&<span className="tag tag-purple">✁E{c.email}</span>}
+                {c.email&&<span className="tag tag-purple">✉ {c.email}</span>}
               </div>
               {c.address&&<div style={{fontSize:12,color:"var(--text-muted)",marginTop:4}}>{c.address}</div>}
             </div>
@@ -1064,7 +1064,7 @@ function ProductMasterPage({products,setProducts}:any) {
   const [showForm,setShowForm]=useState(false);
   const [form,setForm]=useState({name:"",hsCode:"",unit:"pcs",unitPrice:"",currency:"JPY",weight:"",dimensions:""});
   const save=()=>{
-    if(!form.name.trim())return alert("製品名を�E力してください");
+    if(!form.name.trim())return alert("製品名を入力してください");
     setProducts((v:any[])=>[...v,{id:Date.now(),...form}]);
     setForm({name:"",hsCode:"",unit:"pcs",unitPrice:"",currency:"JPY",weight:"",dimensions:""});
     setShowForm(false);
@@ -1073,7 +1073,7 @@ function ProductMasterPage({products,setProducts}:any) {
     <div className="fade-in">
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">🗂�E�E製品�Eスタ</div><div className="card-subtitle">登録した製品�EInvoice作�E時に自動補完できまぁE/div></div>
+          <div><div className="card-title">🗂️ 製品マスタ</div><div className="card-subtitle">登録した製品はInvoice作成時に自動補完できます</div></div>
           <button className="btn btn-primary btn-sm" onClick={()=>setShowForm(v=>!v)}>+ 製品追加</button>
         </div>
         {showForm&&(
@@ -1081,28 +1081,28 @@ function ProductMasterPage({products,setProducts}:any) {
             <div className="grid-2" style={{marginBottom:12}}>
               <div className="field"><label className="label"><span className="required-dot">*</span>製品名</label>
                 <input className="input" value={form.name} placeholder="Product Name" onChange={(e:any)=>setForm(v=>({...v,name:e.target.value}))}/></div>
-              <div className="field"><label className="label">HSコーチE/label>
+              <div className="field"><label className="label">HSコード</label>
                 <AutocompleteInput value={form.hsCode} suggestions={SAMPLE_HS_CODES} placeholder="0000.00" onChange={(val:string)=>setForm(v=>({...v,hsCode:val}))}/></div>
             </div>
             <div className="grid-4" style={{marginBottom:12}}>
-              <div className="field"><label className="label">単佁E/label>
+              <div className="field"><label className="label">単位</label>
                 <input className="input" value={form.unit} placeholder="pcs" onChange={(e:any)=>setForm(v=>({...v,unit:e.target.value}))}/></div>
               <div className="field"><label className="label">標準単価</label>
                 <input className="input" type="number" value={form.unitPrice} placeholder="0" onChange={(e:any)=>setForm(v=>({...v,unitPrice:e.target.value}))}/></div>
               <div className="field"><label className="label">通貨</label>
                 <select className="input" value={form.currency} onChange={(e:any)=>setForm(v=>({...v,currency:e.target.value}))}>
                   {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></div>
-              <div className="field"><label className="label">重量(kg/倁E</label>
+              <div className="field"><label className="label">重量(kg/個)</label>
                 <input className="input" type="number" value={form.weight} placeholder="0.00" onChange={(e:any)=>setForm(v=>({...v,weight:e.target.value}))}/></div>
             </div>
             <div style={{display:"flex",gap:8}}>
-              <button className="btn btn-primary btn-sm" onClick={save}>保孁E/button>
+              <button className="btn btn-primary btn-sm" onClick={save}>保存</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>setShowForm(false)}>キャンセル</button>
             </div>
           </div>
         )}
         {products.length===0?(
-          <div className="empty-state"><div className="empty-icon">🗂�E�E/div><div className="empty-text">製品を登録してください</div></div>
+          <div className="empty-state"><div className="empty-icon">🗂️</div><div className="empty-text">製品を登録してください</div></div>
         ):(
           products.map((p:any)=>(
             <div key={p.id} className="history-item">
@@ -1114,7 +1114,7 @@ function ProductMasterPage({products,setProducts}:any) {
                 {p.hsCode&&<span className="tag tag-purple" style={{fontFamily:"monospace"}}>HS: {p.hsCode}</span>}
                 <span className="tag tag-gray">{p.unit}</span>
                 {p.unitPrice&&<span className="tag tag-green">{p.currency} {Number(p.unitPrice).toLocaleString()}</span>}
-                {p.weight&&<span className="tag tag-amber">{p.weight}kg/倁E/span>}
+                {p.weight&&<span className="tag tag-amber">{p.weight}kg/個</span>}
               </div>
             </div>
           ))
@@ -1139,25 +1139,25 @@ function OrgSettingsPage({orgSettings,setOrgSettings}:any) {
   return (
     <div className="fade-in">
       <div className="card">
-        <div className="card-header"><div><div className="card-title">⚙︁E絁E��設宁E/div><div className="card-subtitle">PDF書類に反映される�E社惁E��を設定しまぁE/div></div></div>
+        <div className="card-header"><div><div className="card-title">⚙️ 組織設定</div><div className="card-subtitle">PDF書類に反映される自社情報を設定します</div></div></div>
 
         {/* ロゴ */}
         <div style={{marginBottom:20}}>
           <div className="label" style={{marginBottom:8}}>自社ロゴ</div>
           {orgSettings.logoUrl&&<img src={orgSettings.logoUrl} alt="logo" style={{height:56,marginBottom:8,display:"block",border:"1px solid var(--border)",borderRadius:8,padding:4}}/>}
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleLogo}/>
-          <button className="btn btn-secondary btn-sm" onClick={()=>fileRef.current?.click()}>🖼�E�EロゴをアチE�EローチE/button>
+          <button className="btn btn-secondary btn-sm" onClick={()=>fileRef.current?.click()}>🖼️ ロゴをアップロード</button>
           {orgSettings.logoUrl&&<button className="btn btn-danger btn-sm" style={{marginLeft:8}} onClick={()=>setOrgSettings((v:any)=>({...v,logoUrl:""}))}>削除</button>}
         </div>
 
         <hr className="section-divider"/>
 
-        {/* 自社惁E�� */}
+        {/* 自社情報 */}
         <div className="grid-2" style={{marginBottom:16}}>
-          <div className="field"><label className="label">会社吁E/label>
-            <input className="input" value={orgSettings.companyName||""} placeholder="株式会社、E��E onChange={(e:any)=>setOrgSettings((v:any)=>({...v,companyName:e.target.value}))}/></div>
-          <div className="field"><label className="label">拁E��老E���E�署名！E/label>
-            <input className="input" value={orgSettings.signatureName||""} placeholder="田中 太郁E onChange={(e:any)=>setOrgSettings((v:any)=>({...v,signatureName:e.target.value}))}/></div>
+          <div className="field"><label className="label">会社名</label>
+            <input className="input" value={orgSettings.companyName||""} placeholder="株式会社〇〇" onChange={(e:any)=>setOrgSettings((v:any)=>({...v,companyName:e.target.value}))}/></div>
+          <div className="field"><label className="label">担当者名（署名）</label>
+            <input className="input" value={orgSettings.signatureName||""} placeholder="田中 太郎" onChange={(e:any)=>setOrgSettings((v:any)=>({...v,signatureName:e.target.value}))}/></div>
         </div>
         <div className="grid-2" style={{marginBottom:16}}>
           <div className="field"><label className="label">役職</label>
@@ -1167,19 +1167,19 @@ function OrgSettingsPage({orgSettings,setOrgSettings}:any) {
         </div>
         <div className="field" style={{marginBottom:16}}>
           <label className="label">自社住所</label>
-          <textarea className="input" rows={3} value={orgSettings.address||""} placeholder={"、E00-0000\n東京都、E��E��、E��E-1-1\nJapan"} onChange={(e:any)=>setOrgSettings((v:any)=>({...v,address:e.target.value}))}/>
+          <textarea className="input" rows={3} value={orgSettings.address||""} placeholder={"〒000-0000\n東京都〇〇区〇〇1-1-1\nJapan"} onChange={(e:any)=>setOrgSettings((v:any)=>({...v,address:e.target.value}))}/>
         </div>
 
         <hr className="section-divider"/>
 
-        {/* 銀行�E細 */}
+        {/* 銀行明細 */}
         <div className="field" style={{marginBottom:16}}>
-          <label className="label">支払�E銀行�E細�E�EDFに印刷されます！E/label>
-          <textarea className="input" rows={5} value={orgSettings.bankDetails||""} placeholder={"Bank Name: 、E��E��行\nBranch: 、E��E��店\nAccount Type: 普通\nAccount No: 1234567\nAccount Name: 株式会社、E��\nSWIFT Code: XXXXXXXX"} onChange={(e:any)=>setOrgSettings((v:any)=>({...v,bankDetails:e.target.value}))}/>
+          <label className="label">支払先銀行明細（PDFに印刷されます）</label>
+          <textarea className="input" rows={5} value={orgSettings.bankDetails||""} placeholder={"Bank Name: 〇〇銀行\nBranch: 〇〇支店\nAccount Type: 普通\nAccount No: 1234567\nAccount Name: 株式会社〇〇\nSWIFT Code: XXXXXXXX"} onChange={(e:any)=>setOrgSettings((v:any)=>({...v,bankDetails:e.target.value}))}/>
         </div>
 
         <div style={{display:"flex",justifyContent:"flex-end"}}>
-          <button className="btn btn-primary" onClick={()=>alert("設定を保存しました�E�E)}>💾 設定を保孁E/button>
+          <button className="btn btn-primary" onClick={()=>alert("設定を保存しました！")}>💾 設定を保存</button>
         </div>
       </div>
     </div>
@@ -1210,13 +1210,13 @@ export default function App() {
   };
 
   const navItems=[
-    {id:"new",label:"新規作�E",icon:"✏︁E},
+    {id:"new",label:"新規作成",icon:"✏️"},
     {id:"history",label:"過去案件",icon:"📚",badge:SAMPLE_HISTORY.filter(h=>h.status==="in_progress").length||null},
-    {id:"customers",label:"取引�E登録",icon:"🏢"},
-    {id:"products",label:"製品�Eスタ",icon:"🗂�E�E},
-    {id:"settings",label:"絁E��設宁E,icon:"⚙︁E},
+    {id:"customers",label:"取引先登録",icon:"🏢"},
+    {id:"products",label:"製品マスタ",icon:"🗂️"},
+    {id:"settings",label:"組織設定",icon:"⚙️"},
   ];
-  const topbarTitle:any={new:"新規書類作�E",history:"過去案件検索",customers:"取引�E登録",products:"製品�Eスタ",settings:"絁E��設宁E};
+  const topbarTitle:any={new:"新規書類作成",history:"過去案件検索",customers:"取引先登録",products:"製品マスタ",settings:"組織設定"};
 
   return (
     <>
@@ -1228,7 +1228,7 @@ export default function App() {
               ?<img src={orgSettings.logoUrl} alt="logo" style={{height:32,marginBottom:4}}/>
               :<div className="logo-text">🚢 TradeDoc</div>
             }
-            <div className="logo-sub">{orgSettings.companyName||"貿易書類管琁E��スチE��"}</div>
+            <div className="logo-sub">{orgSettings.companyName||"貿易書類管理システム"}</div>
           </div>
           <nav className="sidebar-nav">
             <div className="nav-section-label">メニュー</div>
@@ -1238,7 +1238,7 @@ export default function App() {
                 {n.badge?<span className="nav-badge">{n.badge}</span>:null}
               </button>
             ))}
-            <div className="nav-section-label" style={{marginTop:16}}>最近�E案件</div>
+            <div className="nav-section-label" style={{marginTop:16}}>最近の案件</div>
             {SAMPLE_HISTORY.slice(0,3).map(h=>(
               <button key={h.id} className="nav-item" onClick={()=>loadHistory(h)}>
                 <span className="nav-icon">📄</span>
@@ -1248,7 +1248,7 @@ export default function App() {
             {validationResult.errors.length>0&&(
               <button style={{margin:"16px 8px 0",padding:"8px 12px",background:"var(--red-light)",borderRadius:"var(--radius)",fontSize:12,color:"var(--red)",border:"none",cursor:"pointer",width:"calc(100% - 16px)",textAlign:"left"}}
                 onClick={()=>{setPage("new");setStep(3);}}>
-                ⚠�E�E{validationResult.errors.length}件のエラー ↁE確認画面へ
+                ⚠️ {validationResult.errors.length}件のエラー → 確認画面へ
               </button>
             )}
           </nav>
@@ -1258,7 +1258,7 @@ export default function App() {
           <div className="topbar">
             <div className="topbar-title">{topbarTitle[page]||"TradeDoc"}</div>
             <div className="topbar-actions">
-              {page==="new"&&<button className="btn btn-secondary btn-sm" onClick={reset}>🔄 リセチE��</button>}
+              {page==="new"&&<button className="btn btn-secondary btn-sm" onClick={reset}>🔄 リセット</button>}
               {page==="new"&&<button className="btn btn-primary btn-sm" onClick={()=>setPage("history")}>📚 過去案件を参照</button>}
             </div>
           </div>
