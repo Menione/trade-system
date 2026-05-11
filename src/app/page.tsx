@@ -1,9 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect, useCallback } from "react";
 
-// ============================================================
-// SUPABASE CLIENT
-// ============================================================
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
@@ -19,26 +16,15 @@ async function supabaseRequest(path: string, options: any = {}) {
       ...options.headers,
     },
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
-  }
+  if (!res.ok) { const err = await res.text(); throw new Error(err); }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
 
-// ============================================================
-// CONSTANTS
-// ============================================================
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
 const INCOTERMS = ["EXW","FCA","CPT","CIP","DAP","DPU","DDP","FAS","FOB","CFR","CIF"];
 const SHIPPING_METHODS = ["Sea Freight","Air Freight","Express (DHL)","Express (FedEx)","Express (UPS)","Land Transport","Rail"];
-const COUNTRIES = [
-  "Japan","United States","China","Germany","France","United Kingdom","South Korea",
-  "Taiwan","Singapore","Hong Kong","Australia","Canada","Thailand","Vietnam","India",
-  "Indonesia","Malaysia","Philippines","Bangladesh","Brazil","Mexico","Netherlands",
-  "Belgium","Italy","Spain","Sweden","Switzerland","Poland","Turkey","Saudi Arabia"
-];
+const COUNTRIES = ["Japan","United States","China","Germany","France","United Kingdom","South Korea","Taiwan","Singapore","Hong Kong","Australia","Canada","Thailand","Vietnam","India","Indonesia","Malaysia","Philippines","Bangladesh","Brazil","Mexico","Netherlands","Belgium","Italy","Spain","Sweden","Switzerland","Poland","Turkey","Saudi Arabia"];
 const SAMPLE_HS_CODES = [
   {code:"8471.30",desc:"Portable ADP machines (laptops/tablets)"},
   {code:"8517.12",desc:"Telephones for cellular networks (smartphones)"},
@@ -87,9 +73,6 @@ function runValidation(invoice: any, packingItems: any[]) {
   return {errors, warnings, riskLevel: errors.some((e: any) => e.risk==="HIGH")?"HIGH":errors.length>0?"MEDIUM":warnings.length>0?"LOW":"CLEAR"};
 }
 
-// ============================================================
-// CSS
-// ============================================================
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -159,8 +142,6 @@ textarea{resize:vertical;min-height:70px}
 .btn-secondary:hover{background:#F0EEE9}
 .btn-danger{background:var(--red-light);color:var(--red);border-color:var(--red-mid)}
 .btn-green{background:var(--green);color:#fff}
-.btn-green:hover{background:#15803D}
-.btn-amber{background:var(--amber);color:#fff}
 .btn-sm{padding:5px 11px;font-size:12px}
 .btn-xs{padding:3px 8px;font-size:11px}
 .validation-panel{border-radius:var(--radius-xl);padding:16px 20px;margin-bottom:16px}
@@ -192,7 +173,6 @@ textarea{resize:vertical;min-height:70px}
 .tag-amber{background:var(--amber-light);color:var(--amber)}
 .tag-gray{background:#F0EEE9;color:var(--text-muted)}
 .tag-purple{background:var(--purple-light);color:var(--purple)}
-.tag-red{background:var(--red-light);color:var(--red)}
 .status-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
 .status-completed{background:var(--green-mid);color:#14532D}
 .status-shipped{background:var(--blue-mid);color:#1E3A8A}
@@ -220,19 +200,12 @@ textarea{resize:vertical;min-height:70px}
 .empty-state{text-align:center;padding:48px 24px;color:var(--text-muted)}
 .empty-icon{font-size:40px;margin-bottom:12px}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--blue-mid);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite}
+.section-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.ship-to-box{background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--radius-lg);padding:14px;margin-top:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .fade-in{animation:fadeIn .2s ease}
-.toast{position:fixed;bottom:24px;right:24px;background:#1A1A1A;color:#fff;padding:12px 20px;border-radius:var(--radius-lg);font-size:13px;z-index:9999;box-shadow:var(--shadow-md)}
 `;
-
-// ============================================================
-// COMPONENTS
-// ============================================================
-function Toast({msg, onClose}: any) {
-  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
-  return <div className="toast">{msg}</div>;
-}
 
 function AutocompleteInput({value, onChange, suggestions, placeholder, className=""}: any) {
   const [open, setOpen] = useState(false);
@@ -293,9 +266,6 @@ function StepBar({currentStep, setStep}: any) {
   );
 }
 
-// ============================================================
-// INVOICE FORM
-// ============================================================
 function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
   const addItem = () => setInvoice((v: any) => ({...v, items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:""}]}));
   const updateItem = (id: number, field: string, val: any) => setInvoice((v: any) => ({...v,items:v.items.map((it: any) => it.id===id?{...it,[field]:val}:it)}));
@@ -307,9 +277,7 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
     setInvoice((v: any) => ({
       ...v,
       consignee: [c.name, c.address, c.country].filter(Boolean).join("\n"),
-      shipTo: c.consignee_name
-        ? [c.consignee_name, c.consignee_address].filter(Boolean).join("\n")
-        : "",
+      shipTo: c.consignee_name ? [c.consignee_name, c.consignee_address].filter(Boolean).join("\n") : "",
       currency: c.currency || v.currency,
       incoterms: c.incoterms || v.incoterms,
       selectedCustomerId: c.id,
@@ -320,9 +288,7 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
     <div className="fade-in">
       {/* 書類タイプ */}
       <div className="card">
-        <div className="card-header">
-          <div><div className="card-title">📋 書類タイプ</div></div>
-        </div>
+        <div className="card-header"><div className="card-title">📋 書類タイプ</div></div>
         <div style={{display:"flex",gap:8}}>
           {[{v:"commercial",label:"Commercial Invoice"},{v:"proforma",label:"Proforma Invoice"}].map(t => (
             <button key={t.v} className={`btn ${invoice.invoiceType===t.v?"btn-primary":"btn-secondary"}`}
@@ -341,7 +307,7 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
       {/* 基本情報 */}
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">📋 基本情報</div><div className="card-subtitle">Invoice No・出荷者・得意先を入力</div></div>
+          <div><div className="card-title">📋 基本情報</div></div>
         </div>
         <div className="grid-3" style={{marginBottom:16}}>
           <div className="field">
@@ -382,29 +348,30 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
         </div>
 
         {/* 得意先選択 */}
-        <div style={{marginBottom:12,padding:"12px 16px",background:"var(--blue-light)",borderRadius:"var(--radius-lg)"}}>
-          <div style={{fontSize:12,fontWeight:600,color:"var(--blue)",marginBottom:8}}>得意先から引用</div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {customers.length === 0 ? (
-              <span style={{fontSize:12,color:"var(--text-muted)"}}>得意先が登録されていません。得意先マスタから登録してください。</span>
-            ) : customers.map((c: any) => (
-              <button key={c.id} className="btn btn-secondary btn-sm" onClick={() => applyCustomer(c)}>
-                {c.name}
-              </button>
-            ))}
+        {customers.length > 0 && (
+          <div style={{marginBottom:12,padding:"12px 16px",background:"var(--blue-light)",borderRadius:"var(--radius-lg)"}}>
+            <div style={{fontSize:12,fontWeight:600,color:"var(--blue)",marginBottom:8}}>得意先から自動入力</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {customers.map((c: any) => (
+                <button key={c.id} className="btn btn-secondary btn-sm" onClick={() => applyCustomer(c)}>
+                  {c.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="grid-2" style={{marginBottom:16}}>
           <div className="field">
-            <label className="label"><span className="req">*</span>得意先（Consignee）</label>
+            <label className="label"><span className="req">*</span>Consignee（荷受人・書類上の宛先）</label>
             <textarea className="input" value={invoice.consignee||""} rows={3} placeholder={"会社名\n住所\n国"}
               onChange={(e: any) => setInvoice((v: any) => ({...v,consignee:e.target.value}))} />
           </div>
           <div className="field">
-            <label className="label">荷受先（得意先と異なる場合）</label>
-            <textarea className="input" value={invoice.shipTo||""} rows={3} placeholder={"空欄の場合は得意先と同じ\n会社名\n住所\n国"}
+            <label className="label">Ship To（納品先・実際の届け先）</label>
+            <textarea className="input" value={invoice.shipTo||""} rows={3} placeholder={"Consigneeと異なる場合のみ入力\n会社名\n住所\n国"}
               onChange={(e: any) => setInvoice((v: any) => ({...v,shipTo:e.target.value}))} />
+            <div style={{fontSize:11,color:"var(--text-muted)"}}>空欄の場合はConsigneeと同じ扱いになります</div>
           </div>
         </div>
         <div className="field">
@@ -441,7 +408,7 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
           </div>
           <div className="field">
             <label className="label">Port of Loading</label>
-            <input className="input" value={invoice.portOfLoading||""} placeholder="JPTYO"
+            <input className="input" value={invoice.portOfLoading||""} placeholder="JPKIX"
               onChange={(e: any) => setInvoice((v: any) => ({...v,portOfLoading:e.target.value}))} />
           </div>
         </div>
@@ -461,7 +428,7 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
               <thead>
                 <tr>
                   <th style={{width:180}}>製品名 <span style={{color:"var(--red)"}}>*</span></th>
-                  <th style={{width:80}}>数量 <span style={{color:"var(--red)"}}>*</span></th>
+                  <th style={{width:80}}>数量</th>
                   <th style={{width:100}}>単価</th>
                   <th style={{width:75}}>通貨</th>
                   <th style={{width:130}}>HSコード <span style={{color:"var(--red)"}}>*</span></th>
@@ -488,9 +455,7 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
                           className={!item.hsCode?"error":""} placeholder="0000.00"
                           onChange={(v: string) => updateItem(item.id,"hsCode",v)} />
                       </td>
-                      <td style={{fontWeight:500,fontSize:13,textAlign:"right",paddingRight:8}}>
-                        {formatAmount(subtotal, itemCurrency)}
-                      </td>
+                      <td style={{fontWeight:500,fontSize:13,textAlign:"right",paddingRight:8}}>{formatAmount(subtotal, itemCurrency)}</td>
                       <td><button className="btn btn-danger btn-xs" onClick={() => removeItem(item.id)}>✕</button></td>
                     </tr>
                   );
@@ -524,12 +489,8 @@ function InvoiceForm({invoice, setInvoice, onNext, customers}: any) {
   );
 }
 
-// ============================================================
-// PACKING LIST FORM
-// ============================================================
 function PackingListForm({invoice, packingItems, setPackingItems, onNext, onBack}: any) {
   const invoiceProductNames = (invoice.items||[]).map((i: any) => i.productName).filter(Boolean);
-
   const addCarton = () => {
     const nextNo = (packingItems.length>0 ? Math.max(...packingItems.map((p: any) => Number(p.cartonNo)||0)) : 0) + 1;
     setPackingItems((v: any[]) => [...v, {id:Date.now(),cartonNo:nextNo,grossWeight:"",netWeight:"",dimensions:"",lines:[{id:Date.now()+1,productName:invoiceProductNames[0]||"",quantity:""}]}]);
@@ -643,28 +604,23 @@ function PackingListForm({invoice, packingItems, setPackingItems, onNext, onBack
   );
 }
 
-// ============================================================
-// REVIEW PAGE
-// ============================================================
 function ReviewPage({invoice, packingItems, onNext, onBack}: any) {
   const {errors, riskLevel} = useMemo(() => runValidation(invoice, packingItems), [invoice, packingItems]);
   const total = (invoice.items||[]).reduce((s: number, it: any) => s+(Number(it.quantity||0)*Number(it.unitPrice||0)), 0);
   const currency = invoice.currency || "JPY";
   const totalQtyAll = packingItems.reduce((s: number, c: any) => s+(c.lines||[]).reduce((ss: number, l: any) => ss+Number(l.quantity||0), 0), 0);
-
   const checks = [
     {label:"Invoice No 入力済み",ok:!!invoice.invoiceNo},
     {label:"Shipper 入力済み",ok:!!invoice.shipper},
-    {label:"得意先（Consignee）入力済み",ok:!!invoice.consignee},
+    {label:"Consignee 入力済み",ok:!!invoice.consignee},
     {label:"品目が1件以上ある",ok:(invoice.items?.length||0)>0},
     {label:"全品目にHSコード入力済み",ok:(invoice.items||[]).length>0&&(invoice.items||[]).every((i: any) => i.hsCode&&i.hsCode.trim()!=="")},
     {label:"Incoterms 選択済み",ok:!!invoice.incoterms},
     {label:"原産国 入力済み",ok:!!invoice.countryOfOrigin},
     {label:"Packing List 作成済み",ok:packingItems.length>0},
-    {label:"重量入力済み",ok:packingItems.every((c: any) => c.grossWeight&&Number(c.grossWeight)>0)},
+    {label:"重量入力済み",ok:packingItems.length===0||packingItems.every((c: any) => c.grossWeight&&Number(c.grossWeight)>0)},
   ];
   const score = checks.filter((c: any) => c.ok).length;
-
   return (
     <div className="fade-in">
       <ValidationPanel invoice={invoice} packingItems={packingItems} />
@@ -711,40 +667,24 @@ function ReviewPage({invoice, packingItems, onNext, onBack}: any) {
   );
 }
 
-// ============================================================
-// OUTPUT PAGE
-// ============================================================
 function OutputPage({invoice, packingItems, onBack}: any) {
   const [activeDoc, setActiveDoc] = useState("invoice");
   const total = (invoice.items||[]).reduce((s: number,it: any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const currency = invoice.currency || "JPY";
   const isProforma = invoice.invoiceType === "proforma";
-
   const packingRows: any[] = [];
   packingItems.forEach((carton: any) => {
     (carton.lines||[]).forEach((line: any, li: number) => {
-      packingRows.push({
-        cartonNo: li===0?carton.cartonNo:"",
-        productName: line.productName,
-        quantity: line.quantity,
-        grossWeight: li===0?Number(carton.grossWeight||0).toFixed(2):"",
-        netWeight: li===0?Number(carton.netWeight||0).toFixed(2):"",
-        dimensions: li===0?(carton.dimensions||"—"):"",
-        isFirst: li===0,
-      });
+      packingRows.push({cartonNo:li===0?carton.cartonNo:"",productName:line.productName,quantity:line.quantity,grossWeight:li===0?Number(carton.grossWeight||0).toFixed(2):"",netWeight:li===0?Number(carton.netWeight||0).toFixed(2):"",dimensions:li===0?(carton.dimensions||"—"):"",isFirst:li===0});
     });
   });
-
   const handlePrint = () => {
     const content = document.getElementById("print-area");
     const w = window.open("","","width=900,height=1200");
     if (!w||!content) return;
-    w.document.write(`<html><head><title>${activeDoc==="invoice"?(isProforma?"Proforma Invoice":"Commercial Invoice"):"Packing List"}</title>
-      <style>*{font-family:sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px}th{background:#f5f5f5}</style>
-      </head><body>${content.innerHTML}</body></html>`);
+    w.document.write(`<html><head><title>${isProforma?"Proforma Invoice":"Commercial Invoice"}</title><style>*{font-family:sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px}th{background:#f5f5f5}</style></head><body>${content.innerHTML}</body></html>`);
     w.document.close(); w.print();
   };
-
   return (
     <div className="fade-in">
       <div className="tabs">
@@ -816,13 +756,11 @@ function OutputPage({invoice, packingItems, onBack}: any) {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr>
-                    <th>TOTAL</th><th></th>
-                    <th style={{textAlign:"right"}}>{packingRows.reduce((s: number,r: any)=>s+(Number(r.quantity)||0),0)}</th>
-                    <th style={{textAlign:"right"}}>{packingItems.reduce((s: number,c: any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</th>
-                    <th style={{textAlign:"right"}}>{packingItems.reduce((s: number,c: any)=>s+Number(c.netWeight||0),0).toFixed(2)}</th>
-                    <th></th>
-                  </tr>
+                  <tr><th>TOTAL</th><th></th>
+                  <th style={{textAlign:"right"}}>{packingRows.reduce((s: number,r: any)=>s+(Number(r.quantity)||0),0)}</th>
+                  <th style={{textAlign:"right"}}>{packingItems.reduce((s: number,c: any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</th>
+                  <th style={{textAlign:"right"}}>{packingItems.reduce((s: number,c: any)=>s+Number(c.netWeight||0),0).toFixed(2)}</th>
+                  <th></th></tr>
                 </tfoot>
               </table>
             </>
@@ -837,9 +775,6 @@ function OutputPage({invoice, packingItems, onBack}: any) {
   );
 }
 
-// ============================================================
-// HISTORY PAGE (Supabase連携)
-// ============================================================
 function HistoryPage({onLoad}: any) {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -867,10 +802,7 @@ function HistoryPage({onLoad}: any) {
 
   const filtered = invoices.filter(h => {
     const q = search.toLowerCase();
-    const matchQ = !q||
-      (h.invoice_no||"").toLowerCase().includes(q)||
-      (h.consignee||"").toLowerCase().includes(q)||
-      (h.country_of_origin||"").toLowerCase().includes(q);
+    const matchQ = !q||(h.invoice_no||"").toLowerCase().includes(q)||(h.consignee||"").toLowerCase().includes(q)||(h.country_of_origin||"").toLowerCase().includes(q);
     const matchS = filterStatus==="all"||h.status===filterStatus;
     return matchQ&&matchS;
   });
@@ -910,7 +842,6 @@ function HistoryPage({onLoad}: any) {
               {h.date&&<span className="tag tag-gray">{h.date}</span>}
               {h.currency&&<span className="tag tag-green">{h.currency}</span>}
               {h.invoice_type==="proforma"&&<span className="tag tag-amber">Proforma</span>}
-              <span style={{fontSize:11,color:"var(--text-light)"}}>{new Date(h.created_at).toLocaleDateString("ja-JP")}</span>
             </div>
           </div>
         ))}
@@ -919,9 +850,6 @@ function HistoryPage({onLoad}: any) {
   );
 }
 
-// ============================================================
-// CUSTOMER MASTER PAGE (Supabase連携)
-// ============================================================
 function CustomerMasterPage({onCustomersChange}: any) {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -958,12 +886,14 @@ function CustomerMasterPage({onCustomersChange}: any) {
     <div className="fade-in">
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">🏢 得意先マスタ</div><div className="card-subtitle">得意先と荷受先を登録。Invoice作成時に自動入力できます。</div></div>
+          <div><div className="card-title">🏢 得意先マスタ</div><div className="card-subtitle">Consignee（荷受人）とShip To（納品先）を登録できます</div></div>
           <button className="btn btn-primary btn-sm" onClick={() => setShowForm(v => !v)}>+ 得意先追加</button>
         </div>
         {showForm && (
           <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:16}}>
-            <div style={{fontSize:13,fontWeight:600,color:"var(--text)",marginBottom:12}}>得意先情報（Consignee）</div>
+
+            {/* Consignee情報 */}
+            <div className="section-title">📋 Consignee（荷受人・書類上の宛先）</div>
             <div className="grid-2" style={{marginBottom:12}}>
               <div className="field"><label className="label"><span className="req">*</span>会社名</label>
                 <input className="input" value={form.name} placeholder="ABC Co., Ltd." onChange={(e:any)=>setForm(v=>({...v,name:e.target.value}))}/></div>
@@ -974,17 +904,7 @@ function CustomerMasterPage({onCustomersChange}: any) {
               <label className="label">住所</label>
               <textarea className="input" rows={2} value={form.address} placeholder={"1-1-1 Example, Tokyo, Japan"} onChange={(e:any)=>setForm(v=>({...v,address:e.target.value}))}/>
             </div>
-            <div style={{fontSize:13,fontWeight:600,color:"var(--text)",marginBottom:4,marginTop:16}}>🚚 Ship To（納品先・荷受先）</div>
-<div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12}}>取引先と実際の届け先が異なる場合に入力してください。Invoice の「SHIP TO」欄に反映されます。</div>
-            <div className="field" style={{marginBottom:12}}>
-              <label className="label">荷受先会社名</label>
-              <input className="input" value={form.consignee_name} placeholder="Warehouse Co., Ltd." onChange={(e:any)=>setForm(v=>({...v,consignee_name:e.target.value}))}/>
-            </div>
-            <div className="field" style={{marginBottom:12}}>
-              <label className="label">荷受先住所</label>
-              <textarea className="input" rows={2} value={form.consignee_address} placeholder={"住所\n国"} onChange={(e:any)=>setForm(v=>({...v,consignee_address:e.target.value}))}/>
-            </div>
-            <div className="grid-4" style={{marginBottom:12}}>
+            <div className="grid-4" style={{marginBottom:16}}>
               <div className="field"><label className="label">国</label>
                 <AutocompleteInput value={form.country} suggestions={COUNTRIES} placeholder="Japan" onChange={(val:string)=>setForm(v=>({...v,country:val}))}/></div>
               <div className="field"><label className="label">デフォルト通貨</label>
@@ -996,12 +916,28 @@ function CustomerMasterPage({onCustomersChange}: any) {
               <div className="field"><label className="label">メール</label>
                 <input className="input" value={form.email} placeholder="abc@example.com" onChange={(e:any)=>setForm(v=>({...v,email:e.target.value}))}/></div>
             </div>
-            <div style={{display:"flex",gap:8}}>
+
+            {/* Ship To情報 */}
+            <div className="ship-to-box">
+              <div className="section-title" style={{color:"var(--blue)"}}>🚚 Ship To（納品先・実際の届け先）</div>
+              <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12}}>Consigneeと実際の届け先が異なる場合のみ入力してください。Invoice の「SHIP TO」欄に自動反映されます。</div>
+              <div className="field" style={{marginBottom:12}}>
+                <label className="label">納品先会社名</label>
+                <input className="input" value={form.consignee_name} placeholder="Warehouse Co., Ltd." onChange={(e:any)=>setForm(v=>({...v,consignee_name:e.target.value}))}/>
+              </div>
+              <div className="field">
+                <label className="label">納品先住所</label>
+                <textarea className="input" rows={2} value={form.consignee_address} placeholder={"住所\n国"} onChange={(e:any)=>setForm(v=>({...v,consignee_address:e.target.value}))}/>
+              </div>
+            </div>
+
+            <div style={{display:"flex",gap:8,marginTop:16}}>
               <button className="btn btn-primary btn-sm" onClick={save}>保存</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>setShowForm(false)}>キャンセル</button>
             </div>
           </div>
         )}
+
         {loading ? (
           <div style={{textAlign:"center",padding:32}}><div className="spinner"></div></div>
         ) : customers.length===0 ? (
@@ -1022,7 +958,7 @@ function CustomerMasterPage({onCustomersChange}: any) {
             {c.address&&<div style={{fontSize:12,color:"var(--text-muted)",marginTop:4}}>{c.address}</div>}
             {c.consignee_name&&(
               <div style={{marginTop:8,padding:"6px 10px",background:"var(--blue-light)",borderRadius:"var(--radius)",fontSize:12}}>
-                <span style={{color:"var(--blue)",fontWeight:600}}>荷受先: </span>{c.consignee_name}
+                <span style={{color:"var(--blue)",fontWeight:600}}>🚚 Ship To: </span>{c.consignee_name}
                 {c.consignee_address&&<span style={{color:"var(--text-muted)"}}> / {c.consignee_address}</span>}
               </div>
             )}
@@ -1033,9 +969,6 @@ function CustomerMasterPage({onCustomersChange}: any) {
   );
 }
 
-// ============================================================
-// PRODUCT MASTER PAGE (Supabase連携)
-// ============================================================
 function ProductMasterPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1079,4 +1012,116 @@ function ProductMasterPage() {
             <div className="grid-2" style={{marginBottom:12}}>
               <div className="field"><label className="label"><span className="req">*</span>製品名</label>
                 <input className="input" value={form.name} placeholder="Product Name" onChange={(e:any)=>setForm(v=>({...v,name:e.target.value}))}/></div>
-              <div className="field"><label clas
+              <div className="field"><label className="label">HSコード</label>
+                <AutocompleteInput value={form.hs_code} suggestions={SAMPLE_HS_CODES} placeholder="0000.00" onChange={(val:string)=>setForm(v=>({...v,hs_code:val}))}/></div>
+            </div>
+            <div className="grid-4" style={{marginBottom:12}}>
+              <div className="field"><label className="label">単位</label>
+                <input className="input" value={form.unit} placeholder="pcs" onChange={(e:any)=>setForm(v=>({...v,unit:e.target.value}))}/></div>
+              <div className="field"><label className="label">標準単価</label>
+                <input className="input" type="number" value={form.unit_price} placeholder="0" onChange={(e:any)=>setForm(v=>({...v,unit_price:e.target.value}))}/></div>
+              <div className="field"><label className="label">通貨</label>
+                <select className="input" value={form.currency} onChange={(e:any)=>setForm(v=>({...v,currency:e.target.value}))}>
+                  {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></div>
+              <div className="field"><label className="label">重量(kg/個)</label>
+                <input className="input" type="number" value={form.weight} placeholder="0.00" onChange={(e:any)=>setForm(v=>({...v,weight:e.target.value}))}/></div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button className="btn btn-primary btn-sm" onClick={save}>保存</button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>setShowForm(false)}>キャンセル</button>
+            </div>
+          </div>
+        )}
+        {loading ? (
+          <div style={{textAlign:"center",padding:32}}><div className="spinner"></div></div>
+        ) : products.length===0 ? (
+          <div className="empty-state"><div className="empty-icon">🗂️</div><div style={{fontSize:14}}>製品を登録してください</div></div>
+        ) : products.map((p:any) => (
+          <div key={p.id} className="history-item">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <strong style={{fontSize:14}}>{p.name}</strong>
+              <button className="btn btn-danger btn-xs" onClick={()=>deleteProduct(p.id)}>削除</button>
+            </div>
+            <div className="history-meta" style={{marginTop:6}}>
+              {p.hs_code&&<span className="tag tag-purple" style={{fontFamily:"monospace"}}>HS: {p.hs_code}</span>}
+              <span className="tag tag-gray">{p.unit}</span>
+              {p.unit_price&&<span className="tag tag-green">{p.currency} {Number(p.unit_price).toLocaleString()}</span>}
+              {p.weight&&<span className="tag tag-amber">{p.weight}kg/個</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const INITIAL_INVOICE = {invoiceNo:"",invoiceType:"commercial",date:new Date().toISOString().split("T")[0],poNumber:"",paymentDue:"",shipper:"",consignee:"",shipTo:"",notifyParty:"",currency:"JPY",incoterms:"",countryOfOrigin:"Japan",shippingMethod:"",portOfLoading:"JPKIX",remarks:"",status:"draft",items:[]};
+
+export default function App() {
+  const [page, setPage] = useState("new");
+  const [step, setStep] = useState(1);
+  const [invoice, setInvoice] = useState<any>(INITIAL_INVOICE);
+  const [packingItems, setPackingItems] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+
+  const reset = () => { setInvoice(INITIAL_INVOICE); setPackingItems([]); setStep(1); setPage("new"); };
+
+  const loadHistory = (h: any) => {
+    setInvoice({...INITIAL_INVOICE,invoiceNo:h.invoice_no||"",date:h.date||"",countryOfOrigin:h.country_of_origin||"Japan",currency:h.currency||"JPY",incoterms:h.incoterms||"",consignee:h.consignee||"",shipper:h.shipper||"",items:h.items||[]});
+    setPackingItems(h.packing_items||[]);
+    setStep(1); setPage("new");
+  };
+
+  const navItems = [
+    {id:"new",label:"新規作成",icon:"✏️"},
+    {id:"history",label:"保存済み案件",icon:"📚"},
+    {id:"customers",label:"得意先マスタ",icon:"🏢"},
+    {id:"products",label:"製品マスタ",icon:"🗂️"},
+  ];
+
+  const topbarTitle: any = {new:"新規書類作成",history:"保存済み案件",customers:"得意先マスタ",products:"製品マスタ"};
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <aside className="sidebar">
+          <div className="sidebar-logo">
+            <div className="logo-text">🚢 TradeDoc</div>
+            <div className="logo-sub">貿易書類管理システム</div>
+          </div>
+          <nav className="sidebar-nav">
+            <div className="nav-label">メニュー</div>
+            {navItems.map(n => (
+              <button key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={() => setPage(n.id)}>
+                <span className="nav-icon">{n.icon}</span>{n.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
+        <main className="main">
+          <div className="topbar">
+            <div className="topbar-title">{topbarTitle[page]||"TradeDoc"}</div>
+            <div className="topbar-actions">
+              {page==="new"&&<button className="btn btn-secondary btn-sm" onClick={reset}>🔄 リセット</button>}
+            </div>
+          </div>
+          <div className="content">
+            {page==="new"&&(
+              <>
+                <StepBar currentStep={step} setStep={setStep}/>
+                {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers}/>}
+                {step===2&&<PackingListForm invoice={invoice} packingItems={packingItems} setPackingItems={setPackingItems} onNext={()=>setStep(3)} onBack={()=>setStep(1)}/>}
+                {step===3&&<ReviewPage invoice={invoice} packingItems={packingItems} onNext={()=>setStep(4)} onBack={()=>setStep(2)}/>}
+                {step>=4&&<OutputPage invoice={invoice} packingItems={packingItems} onBack={()=>setStep(3)}/>}
+              </>
+            )}
+            {page==="history"&&<HistoryPage onLoad={loadHistory}/>}
+            {page==="customers"&&<CustomerMasterPage onCustomersChange={setCustomers}/>}
+            {page==="products"&&<ProductMasterPage/>}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
