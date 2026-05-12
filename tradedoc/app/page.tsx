@@ -995,7 +995,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     if(!el)return;
     const w=window.open("","_blank","width=1000,height=1200");
     if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
@@ -1005,13 +1005,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
       const rows=items.map((it:any,i:number)=>`
-        <tr style="background:${i%2===0?"#fff":"#fafafa"}">
-          <td>${it.productName||""}</td>
-          <td style="font-family:monospace">${it.hsCode||""}</td>
-          <td style="text-align:right">${it.quantity||0}</td>
-          <td style="text-align:right">${it.unitPrice||0}</td>
-          <td style="text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-          ${showExp?`<td>${it.expiryDate||""}</td>`:""}
+        <tr style="background:${i%2===0?"#ffffff":"#f5f5f5"}">
+          <td style="border:1px solid #ddd;padding:4px 6px">${it.productName||""}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;font-family:monospace">${it.hsCode||""}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
+          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
         </tr>`).join("");
       const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
       const bankSection=showBank&&org?.bankName?`
@@ -1139,7 +1139,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const w=window.open("","_blank","width=1100,height=1400");
     if(!w)return;
     const proformaSection=isProforma?buildInvoiceSection("PROFORMA INVOICE",invoiceItems,invoiceRemarks,true):"";
-    const invoiceSection=buildInvoiceSection("COMMERCIAL INVOICE (INVOICE)",invoiceItems,invoiceRemarks,true);
+    const invoiceSection=buildInvoiceSection("INVOICE",invoiceItems,invoiceRemarks,true);
     const commercialSection=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
     const packingSection=buildPackingSection();
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
@@ -1253,7 +1253,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
         <div className="tabs no-print" style={{marginBottom:0}}>
           {isProforma&&<button className={`tab ${activeDoc==="proforma"?"active":""}`} onClick={()=>setActiveDoc("proforma")}>📋 Proforma Invoice</button>}
-          <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
+          <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
         </div>
         <button className="btn btn-green btn-sm no-print" onClick={handlePrintAll} title="Proforma/Invoice/Commercial/Packing Listを全て一括印刷">
