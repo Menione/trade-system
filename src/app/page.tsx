@@ -2227,10 +2227,6 @@ export default function App(){
     loadInvoice(h);
   };
 
-  const editInvoice=(h:any)=>{
-    loadInvoice(h);
-  };
-
   const copyInvoice=(h:any)=>{
     const newInv={...INIT_INVOICE,
       invoiceNo:"",invoiceType:h.invoice_type||"proforma",
