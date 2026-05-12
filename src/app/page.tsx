@@ -11,7 +11,7 @@ async function sb(path: string, options: any = {}) {
       "Content-Type": "application/json",
       "apikey": SUPABASE_ANON_KEY,
       "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      "Prefer": options.method === "POST" ? "return=representation" : "",
+      "Prefer": (options.method === "POST" || options.method === "PATCH") ? "return=representation" : "",
       ...options.headers,
     },
   });
@@ -885,7 +885,7 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
 function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
-  const [activeDoc,setActiveDoc]=useState(isProforma?"proforma":"commercial");
+  const [activeDoc,setActiveDoc]=useState("proforma");
   const [invoiceItems,setInvoiceItems]=useState<any[]>(invoice.invoice_items||invoice.items||[]);
   const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
   const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
@@ -995,7 +995,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     if(!el)return;
     const w=window.open("","_blank","width=1000,height=1200");
     if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
@@ -1005,13 +1005,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
       const rows=items.map((it:any,i:number)=>`
-        <tr style="background:${i%2===0?"#fff":"#fafafa"}">
-          <td>${it.productName||""}</td>
-          <td style="font-family:monospace">${it.hsCode||""}</td>
-          <td style="text-align:right">${it.quantity||0}</td>
-          <td style="text-align:right">${it.unitPrice||0}</td>
-          <td style="text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-          ${showExp?`<td>${it.expiryDate||""}</td>`:""}
+        <tr style="background:${i%2===0?"#ffffff":"#f5f5f5"}">
+          <td style="border:1px solid #ddd;padding:4px 6px">${it.productName||""}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;font-family:monospace">${it.hsCode||""}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
+          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
         </tr>`).join("");
       const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
       const bankSection=showBank&&org?.bankName?`
@@ -1139,7 +1139,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const w=window.open("","_blank","width=1100,height=1400");
     if(!w)return;
     const proformaSection=isProforma?buildInvoiceSection("PROFORMA INVOICE",invoiceItems,invoiceRemarks,true):"";
-    const invoiceSection=buildInvoiceSection("COMMERCIAL INVOICE (INVOICE)",invoiceItems,invoiceRemarks,true);
+    const invoiceSection=buildInvoiceSection("INVOICE",invoiceItems,invoiceRemarks,true);
     const commercialSection=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
     const packingSection=buildPackingSection();
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
@@ -1252,7 +1252,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     <div className="fade-in">
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
         <div className="tabs no-print" style={{marginBottom:0}}>
-          {isProforma&&<button className={`tab ${activeDoc==="proforma"?"active":""}`} onClick={()=>setActiveDoc("proforma")}>📋 Proforma Invoice</button>}
+          <button className={`tab ${activeDoc==="proforma"?"active":""}`} onClick={()=>setActiveDoc("proforma")}>📋 Proforma Invoice</button>
+          <button className={`tab ${activeDoc==="invoice"?"active":""}`} onClick={()=>setActiveDoc("invoice")}>📄 Invoice</button>
           <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
         </div>
@@ -1313,6 +1314,27 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <>
                 {activeDoc==="proforma"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                    <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>PROFORMA INVOICE</div>
+                    <InvoiceHeader/>
+                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
+                {org?.bankName&&(
+                  <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
+                    <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                      {org.bankName&&<div><span style={{color:"#666"}}>Bank: </span>{org.bankName}</div>}
+                      {org.bankBranch&&<div><span style={{color:"#666"}}>Branch: </span>{org.bankBranch}</div>}
+                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>Bank Address: </span>{org.bankAddress}</div>}
+                      {org.accountNo&&<div><span style={{color:"#666"}}>Account No: </span>{org.accountNo}</div>}
+                      {org.swiftCode&&<div><span style={{color:"#666"}}>SWIFT: </span>{org.swiftCode}</div>}
+                    </div>
+                  </div>
+                )}
+                    <SignatureSection/>
+                  </div>
+                )}
+                {activeDoc==="invoice"&&(
+                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                    <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>INVOICE</div>
                     <InvoiceHeader/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
@@ -1332,6 +1354,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 )}
                 {activeDoc==="commercial"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                    <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>COMMERCIAL INVOICE</div>
                     <InvoiceHeader/>
                     {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur)}
                 {org?.bankName&&(
