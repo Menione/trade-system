@@ -995,9 +995,163 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     if(!el)return;
     const w=window.open("","_blank","width=1000,height=1200");
     if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${isProforma?"Proforma":"Commercial"} Invoice</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
+  };
+
+  // 全書類（Proforma/Invoice/Commercial/Packing List）を一括で印刷
+  const handlePrintAll=()=>{
+    const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
+      const showExp=items.some((it:any)=>it.expiryDate);
+      const rows=items.map((it:any,i:number)=>`
+        <tr style="background:${i%2===0?"#fff":"#fafafa"}">
+          <td>${it.productName||""}</td>
+          <td style="font-family:monospace">${it.hsCode||""}</td>
+          <td style="text-align:right">${it.quantity||0}</td>
+          <td style="text-align:right">${it.unitPrice||0}</td>
+          <td style="text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
+          ${showExp?`<td>${it.expiryDate||""}</td>`:""}
+        </tr>`).join("");
+      const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
+      const bankSection=showBank&&org?.bankName?`
+        <div style="margin-top:16px;font-size:9px;border:1px solid #ddd;padding:8px;border-radius:4px">
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px">Banking Information</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            ${org.bankName?`<div><span style="color:#666">Bank: </span>${org.bankName}</div>`:""}
+            ${org.bankBranch?`<div><span style="color:#666">Branch: </span>${org.bankBranch}</div>`:""}
+            ${org.bankAddress?`<div style="grid-column:1/-1"><span style="color:#666">Address: </span>${org.bankAddress}</div>`:""}
+            ${org.accountNo?`<div><span style="color:#666">Account: </span>${org.accountNo}</div>`:""}
+            ${org.swiftCode?`<div><span style="color:#666">SWIFT: </span>${org.swiftCode}</div>`:""}
+          </div>
+        </div>`:"";
+      const sigSection=`
+        <div style="margin-top:40px;display:flex;justify-content:flex-end">
+          <div style="text-align:center;min-width:200px">
+            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+            <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
+            <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
+          </div>
+        </div>`;
+      return `
+        <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000;page-break-after:always">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+            <div><div style="font-size:32px;font-weight:800;letter-spacing:2px">${title}</div>
+            ${invoice.invoiceNo?`<div style="font-size:11px;color:#444">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
+            </div>
+            <div style="text-align:right;font-size:10px">
+              ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:60px;max-width:200px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto"/>`:""}
+              ${org?.companyName?`<div style="font-weight:700;font-size:12px">${org.companyName}</div>`:""}
+              ${org?.address?`<div style="white-space:pre-wrap">${org.address}</div>`:""}
+              ${org?.tel?`<div>Tel: ${org.tel}</div>`:""}
+            </div>
+          </div>
+          <div style="height:2px;background:#000;margin-bottom:16px"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Invoice No.</div><strong>${invoice.invoiceNo||"—"}</strong></div>
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Date</div>${invoice.date||"—"}</div>
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Incoterms</div>${invoice.incoterms||"—"}</div>
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Country of Origin</div>${invoice.countryOfOrigin||"—"}</div>
+            ${invoice.poNumber?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">P.O. Number</div>${invoice.poNumber}</div>`:""}
+            ${invoice.shippingMethod?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Shipping Method</div>${invoice.shippingMethod}</div>`:""}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+            <div><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-bottom:3px">SHIPPER</div><div style="white-space:pre-wrap;font-size:10px">${invoice.shipper||"—"}</div></div>
+            <div><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-bottom:3px">CONSIGNEE</div><div style="white-space:pre-wrap;font-size:10px">${invoice.consignee||"—"}</div>
+            ${invoice.shipTo?`<div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-top:8px;margin-bottom:3px">SHIP TO</div><div style="white-space:pre-wrap;font-size:10px">${invoice.shipTo}</div>`:""}
+            </div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px">
+            <thead><tr style="background:#222;color:#fff">
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left">Description</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left">HS Code</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
+              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">Expiry</th>`:""}
+            </tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot><tr><td colspan="${showExp?6:5}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">TOTAL: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
+          </table>
+          ${remarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">Remarks</div><div style="font-size:10px;white-space:pre-wrap">${remarks}</div></div>`:""}
+          ${bankSection}
+          ${sigSection}
+        </div>`;
+    };
+
+    const buildPackingSection=()=>{
+      const rows=packingRows.map((row:any,i:number)=>`
+        <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
+          <td style="text-align:center">${row.cartonNo}</td>
+          <td>${row.productName}</td>
+          <td style="text-align:right">${row.quantity}</td>
+          <td style="text-align:right">${row.grossWeight}</td>
+          <td style="text-align:right">${row.netWeight}</td>
+          <td>${row.dimensions}</td>
+          ${packingRows.some((r:any)=>r.expiryDate)?`<td>${row.expiryDate||""}</td>`:""}
+        </tr>`).join("");
+      const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
+      const totNW=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2);
+      return `
+        <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+            <div><div style="font-size:32px;font-weight:800;letter-spacing:2px">PACKING LIST</div>
+            ${invoice.invoiceNo?`<div style="font-size:11px;color:#444">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
+            </div>
+            <div style="text-align:right;font-size:10px">
+              ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:60px;max-width:200px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto"/>`:""}
+              ${org?.companyName?`<div style="font-weight:700;font-size:12px">${org.companyName}</div>`:""}
+              ${org?.address?`<div style="white-space:pre-wrap">${org.address}</div>`:""}
+            </div>
+          </div>
+          <div style="height:2px;background:#000;margin-bottom:16px"></div>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px">
+            <thead><tr style="background:#222;color:#fff">
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">Carton No</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px">Description</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
+              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">Expiry</th>`:""}
+            </tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot><tr style="font-weight:700;border-top:2px solid #000">
+              <td style="border:1px solid #ccc;padding:4px 6px">TOTAL</td>
+              <td style="border:1px solid #ccc;padding:4px 6px"></td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0)}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totNW}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px"></td>
+              ${packingRows.some((r:any)=>r.expiryDate)?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
+            </tr></tfoot>
+          </table>
+          <div style="margin-top:40px;display:flex;justify-content:flex-end">
+            <div style="text-align:center;min-width:200px">
+              ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+              <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
+              <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
+            </div>
+          </div>
+        </div>`;
+    };
+
+    const w=window.open("","_blank","width=1100,height=1400");
+    if(!w)return;
+    const proformaSection=isProforma?buildInvoiceSection("PROFORMA INVOICE",invoiceItems,invoiceRemarks,true):"";
+    const invoiceSection=buildInvoiceSection("COMMERCIAL INVOICE (INVOICE)",invoiceItems,invoiceRemarks,true);
+    const commercialSection=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
+    const packingSection=buildPackingSection();
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
+    <style>${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
+    <body><div class="doc-wrapper">
+      ${proformaSection}
+      ${invoiceSection}
+      ${commercialSection}
+      ${packingSection}
+    </div></body></html>`);
+    w.document.close();
+    setTimeout(()=>{w.print();},600);
   };
 
   const InvoiceHeader=()=>(
@@ -1009,7 +1163,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
         </div>
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
-          {org?.name&&<div style={{fontWeight:700,fontSize:12}}>{org.name}</div>}
+          {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
           {org?.signerName&&<div>{org.signerName}</div>}
           {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
           {org?.tel&&<div>Tel: {org.tel}</div>}
@@ -1053,7 +1207,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
         </div>
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
-          {org?.name&&<div style={{fontWeight:700,fontSize:12}}>{org.name}</div>}
+          {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
           {org?.signerName&&<div>{org.signerName}</div>}
           {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
           {org?.tel&&<div>Tel: {org.tel}</div>}
@@ -1096,10 +1250,15 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
 
   return(
     <div className="fade-in">
-      <div className="tabs no-print">
-        {isProforma&&<button className={`tab ${activeDoc==="proforma"?"active":""}`} onClick={()=>setActiveDoc("proforma")}>📋 Proforma Invoice</button>}
-        <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
-        <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <div className="tabs no-print" style={{marginBottom:0}}>
+          {isProforma&&<button className={`tab ${activeDoc==="proforma"?"active":""}`} onClick={()=>setActiveDoc("proforma")}>📋 Proforma Invoice</button>}
+          <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
+          <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
+        </div>
+        <button className="btn btn-green btn-sm no-print" onClick={handlePrintAll} title="Proforma/Invoice/Commercial/Packing Listを全て一括印刷">
+          🖨️ 全書類一括印刷
+        </button>
       </div>
       <div className="card">
         <div className="card-header no-print">
@@ -1579,14 +1738,59 @@ function ProductPage(){
 // ============================================================
 function OrgPage({org,setOrg}:any){
   const [saved,setSaved]=useState(false);
-  const save=()=>{localStorage.setItem("tradeOrg",JSON.stringify(org));setSaved(true);setTimeout(()=>setSaved(false),2000);};
+  const [saving,setSaving]=useState(false);
+  const save=async()=>{
+    setSaving(true);
+    // localStorageにも保存（fallback）
+    localStorage.setItem("tradeOrg",JSON.stringify(org));
+    // Supabaseに保存（upsert: id=1 固定行）
+    try{
+      // まず既存レコードを確認
+      const existing=await sb("organization?limit=1").catch(()=>null);
+      if(existing&&existing.length>0){
+        await sb(`organization?id=eq.${existing[0].id}`,{
+          method:"PATCH",
+          headers:{"Prefer":"return=representation"},
+          body:JSON.stringify({
+            company_name:org.companyName||"",address:org.address||"",
+            tel:org.tel||"",email:org.email||"",website:org.website||"",
+            bank_name:org.bankName||"",bank_branch:org.bankBranch||"",
+            bank_address:org.bankAddress||"",account_type:org.accountType||"普通",
+            account_no:org.accountNo||"",account_name:org.accountName||"",
+            swift_code:org.swiftCode||"",
+            signer_name:org.signerName||"",signer_title:org.signerTitle||"",
+            logo_base64:org.logoBase64||"",signature_base64:org.signatureBase64||"",
+            ship_locations:org.shipLocations||[],
+            updated_at:new Date().toISOString(),
+          })
+        });
+      }else{
+        await sb("organization",{
+          method:"POST",
+          headers:{"Prefer":"return=representation"},
+          body:JSON.stringify({
+            company_name:org.companyName||"",address:org.address||"",
+            tel:org.tel||"",email:org.email||"",website:org.website||"",
+            bank_name:org.bankName||"",bank_branch:org.bankBranch||"",
+            bank_address:org.bankAddress||"",account_type:org.accountType||"普通",
+            account_no:org.accountNo||"",account_name:org.accountName||"",
+            swift_code:org.swiftCode||"",
+            signer_name:org.signerName||"",signer_title:org.signerTitle||"",
+            logo_base64:org.logoBase64||"",signature_base64:org.signatureBase64||"",
+            ship_locations:org.shipLocations||[],
+          })
+        });
+      }
+    }catch(e){console.warn("Supabase org save failed, using localStorage only",e);}
+    setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2000);
+  };
   const f=(key:string,val:any)=>setOrg((v:any)=>({...v,[key]:val}));
 
   return(
     <div className="fade-in">
-      {saved&&<div className="saved-banner">✅ 設定を保存しました（ブラウザに保存）</div>}
+      {saved&&<div className="saved-banner">✅ 設定を保存しました（Supabase + ブラウザ）</div>}
       <div className="card">
-        <div className="card-header"><div className="card-title">⚙️ 組織設定</div><button className="btn btn-primary btn-sm" onClick={save}>💾 保存</button></div>
+        <div className="card-header"><div className="card-title">⚙️ 組織設定</div><button className="btn btn-primary btn-sm" disabled={saving} onClick={save}>{saving?<span className="spinner"/>:"💾"} 保存</button></div>
 
         <div className="org-section-title">ロゴ設定</div>
         <ImgUpload label="会社ロゴ（PDF左上に表示）" value={org.logoBase64||""} onChange={(v:string)=>f("logoBase64",v)} hint="推奨: 横長PNG 300x80px"/>
@@ -1655,7 +1859,7 @@ function OrgPage({org,setOrg}:any){
         <button className="btn btn-secondary btn-sm" style={{marginBottom:16}} onClick={()=>f("shipLocations",[...(org.shipLocations||[]),{name:"",address:"",tel:""}])}>＋ 出荷場所を追加</button>
 
         <div style={{marginTop:8}}>
-          <button className="btn btn-primary" onClick={save}>💾 設定を保存</button>
+          <button className="btn btn-primary" disabled={saving} onClick={save}>{saving?<span className="spinner"/>:"💾"} 設定を保存（Supabase）</button>
         </div>
       </div>
     </div>
@@ -2120,8 +2324,33 @@ export default function App(){
   const t=T[lang];
 
   useEffect(()=>{
-    const saved=localStorage.getItem("tradeOrg");
-    if(saved)try{setOrg(JSON.parse(saved));}catch(e){}
+    // 組織設定をSupabaseから読み込み（localStorageをfallbackに）
+    const loadOrg=async()=>{
+      try{
+        const d=await sb("organization?limit=1");
+        if(d&&d.length>0){
+          const r=d[0];
+          const o={
+            companyName:r.company_name||"",address:r.address||"",
+            tel:r.tel||"",email:r.email||"",website:r.website||"",
+            bankName:r.bank_name||"",bankBranch:r.bank_branch||"",
+            bankAddress:r.bank_address||"",accountType:r.account_type||"普通",
+            accountNo:r.account_no||"",accountName:r.account_name||"",
+            swiftCode:r.swift_code||"",
+            signerName:r.signer_name||"",signerTitle:r.signer_title||"",
+            logoBase64:r.logo_base64||"",signatureBase64:r.signature_base64||"",
+            shipLocations:r.ship_locations||[],
+          };
+          setOrg(o);
+          localStorage.setItem("tradeOrg",JSON.stringify(o));
+          return;
+        }
+      }catch(e){}
+      // Supabase失敗時はlocalStorageから
+      const saved=localStorage.getItem("tradeOrg");
+      if(saved)try{setOrg(JSON.parse(saved));}catch(e){}
+    };
+    loadOrg();
     sb("customers?order=created_at.desc").then(d=>setCustomers(d||[])).catch(()=>{});
     sb("products?order=created_at.desc").then(d=>setProducts(d||[])).catch(()=>{});
   },[]);
@@ -2130,11 +2359,14 @@ export default function App(){
 
   const {errors}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
 
-  const reset=()=>{
-    const defaultShipper=org?.companyName?[org.companyName,org.address,org.tel?"Tel: "+org.tel:""].filter(Boolean).join("\n"):"";
-    setInvoice({...INIT_INVOICE,date:new Date().toISOString().split("T")[0],shipper:defaultShipper});
+  const reset=useCallback(()=>{
+    setOrg((currentOrg:any)=>{
+      const defaultShipper=currentOrg?.companyName?[currentOrg.companyName,currentOrg.address,currentOrg.tel?"Tel: "+currentOrg.tel:""].filter(Boolean).join("\n"):"";
+      setInvoice({...INIT_INVOICE,date:new Date().toISOString().split("T")[0],shipper:defaultShipper});
+      return currentOrg;
+    });
     setPacking([]);setStep(1);setPage("new");
-  };
+  },[]);
 
   const saveInvoice=async(status="draft")=>{
     setSaving(true);
