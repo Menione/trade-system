@@ -309,26 +309,6 @@ function ImgUpload({label,value,onChange,hint}:any){
   );
 }
 
-function ProformaStepBar({step,setStep,lang}:any){
-  const labels=lang==="en"?["Proforma入力","確認","承認依頼"]:["Proforma入力","内容確認","承認依頼"];
-  const icons=["📋","✅","📨"];
-  return(
-    <div className="step-bar">
-      {[1,2,3].map((s,i)=>(
-        <div key={s} className="step-item">
-          <div className="step-content">
-            <div className={`step-dot ${step>s?"done":step===s?"active":"pending"}`} onClick={()=>setStep(s)}>
-              {step>s?"✓":icons[i]}
-            </div>
-            <div className="step-label">{labels[i]}</div>
-          </div>
-          {i<2&&<div className={`step-line ${step>s?"done":""}`}/>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function StepBar({step,setStep,lang}:any){
   const labels=lang==="en"?["Invoice","Packing","Review","PDF","Email","Done"]:["Invoice入力","Packing List","内容確認","PDF生成","メール送付","出荷完了"];
   const icons=["📋","📦","✅","📄","📧","🚢"];
@@ -412,11 +392,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
   return(
     <div className="fade-in">
       {/* 書類タイプ */}
-      {invoice.proformaId&&(
-        <div style={{marginBottom:12,padding:"10px 14px",background:"var(--blue-light)",border:"1px solid var(--blue-mid)",borderRadius:"var(--radius-lg)",fontSize:12,color:"var(--blue)"}}>
-          🔄 Proforma Invoiceから変換済み。内容を確認・編集後、保存してください。
-        </div>
-      )}
       <div className="card">
         <div className="card-header"><div className="card-title">{t.invoiceType}</div>
           <select className="input" style={{width:120}} value={lang} onChange={(e:any)=>setInvoice((v:any)=>({...v,language:e.target.value}))}>
@@ -714,8 +689,16 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
       <div className="card">
         <div className="card-header">
           <div><div className="card-title">{t.packingList}</div><div className="card-subtitle">1カートンに複数製品を混載できます。端数は🟡で表示。</div></div>
-          <div style={{display:"flex",gap:6}}>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             <button className="btn btn-secondary btn-sm" onClick={autoFill}>{t.autoFill}</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>{
+              const l=prompt("全カートンに適用するサイズを入力\n例: 50x30x20 (L×W×H)");
+              if(!l)return;
+              const parts=l.trim().split(/[xX×✕]/);
+              if(parts.length>=3){
+                setPacking((prev:any[])=>prev.map((c:any)=>({...c,dimL:parts[0].trim(),dimW:parts[1].trim(),dimH:parts[2].trim()})));
+              }
+            }}>📦 サイズ一括設定</button>
             <button className="btn btn-primary btn-sm" onClick={addCarton}>{t.addCarton}</button>
           </div>
         </div>
@@ -800,24 +783,21 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
 // ============================================================
 // REVIEW PAGE
 // ============================================================
-function ReviewPage({invoice,packing,onNext,onBack,setStep,lang,proformaOnly}:any){
+function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
   const t=T[lang||"ja"];
   const {errors,riskLevel}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
-  const baseChecks=[
+  const checks=[
     {label:"Invoice No 入力済み",ok:!!invoice.invoiceNo},
     {label:"Shipper 入力済み",ok:!!invoice.shipper},
     {label:"Consignee 入力済み",ok:!!invoice.consignee},
     {label:"品目 1件以上",ok:(invoice.items?.length||0)>0},
     {label:"Incoterms 選択済み",ok:!!invoice.incoterms},
     {label:"原産国 入力済み",ok:!!invoice.countryOfOrigin},
-  ];
-  const commercialChecks=[
     {label:"Packing List 作成済み",ok:packing.length>0},
     {label:"重量入力済み",ok:packing.every((c:any)=>c.grossWeight&&Number(c.grossWeight)>0)},
   ];
-  const checks=proformaOnly?baseChecks:[...baseChecks,...commercialChecks];
   return(
     <div className="fade-in">
       <ValidationPanel invoice={invoice} packing={packing} setStep={setStep}/>
@@ -864,12 +844,30 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang,proformaOnly}:an
 // ============================================================
 // PDF OUTPUT
 // ============================================================
-function OutputPage({invoice,packing,onBack,org,lang}:any){
+function OutputPage({invoice,packing,onBack,org,lang,onSave}:any){
   const t=T[lang||"ja"];
-  const [activeDoc,setActiveDoc]=useState("invoice");
+  const isProforma=invoice.invoiceType==="proforma";
+  const [activeDoc,setActiveDoc]=useState(isProforma?"proforma":"commercial");
+  const [invoiceItems,setInvoiceItems]=useState<any[]>(invoice.invoice_items||invoice.items||[]);
+  const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
+  const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
+  const [commercialRemarks,setCommercialRemarks]=useState(invoice.commercial_remarks||invoice.remarks||"");
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
-  const isProforma=invoice.invoiceType==="proforma";
+
+  const updItem=(list:any[],setList:any,id:any,key:string,val:any)=>
+    setList((prev:any[])=>prev.map((it:any)=>it.id===id?{...it,[key]:val}:it));
+  const delItem=(list:any[],setList:any,id:any)=>
+    setList((prev:any[])=>prev.filter((it:any)=>it.id!==id));
+  const addItem=(setList:any)=>
+    setList((prev:any[])=>[...prev,{id:Date.now(),productName:"",hsCode:"",quantity:0,unitPrice:0}]);
+
+  const updInvItem=(id:any,k:string,v:any)=>updItem(invoiceItems,setInvoiceItems,id,k,v);
+  const delInvItem=(id:any)=>delItem(invoiceItems,setInvoiceItems,id);
+  const addInvItem=()=>addItem(setInvoiceItems);
+  const updComItem=(id:any,k:string,v:any)=>updItem(commercialItems,setCommercialItems,id,k,v);
+  const delComItem=(id:any)=>delItem(commercialItems,setCommercialItems,id);
+  const addComItem=()=>addItem(setCommercialItems);
 
   // カートンを行に展開
   // 同じ製品・同じ数量の連続カートンをグループ化してCarton No範囲表示
@@ -1061,7 +1059,8 @@ function OutputPage({invoice,packing,onBack,org,lang}:any){
   return(
     <div className="fade-in">
       <div className="tabs no-print">
-        <button className={`tab ${activeDoc==="invoice"?"active":""}`} onClick={()=>setActiveDoc("invoice")}>📋 {isProforma?"Proforma Invoice":"Commercial Invoice"}</button>
+        {isProforma&&<button className={`tab ${activeDoc==="proforma"?"active":""}`} onClick={()=>setActiveDoc("proforma")}>📋 Proforma Invoice</button>}
+        <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
         <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
       </div>
       <div className="card">
@@ -1070,54 +1069,91 @@ function OutputPage({invoice,packing,onBack,org,lang}:any){
           <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ {t.print}</button>
         </div>
         <div id="print-area" style={{background:"#e8e8e8",padding:"24px 0"}}>
-          {activeDoc==="invoice"?(
-            <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
-              <InvoiceHeader/>
-              <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
-                <thead><tr style={{background:"#222",color:"#fff"}}>
-                  <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description of Goods</th>
-                  <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>HS Code</th>
-                  <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right"}}>Qty</th>
-                  <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right"}}>Unit Price</th>
-                  <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right"}}>Amount</th>
-                  {(invoice.items||[]).some((it:any)=>it.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Expiry Date</th>}
-                </tr></thead>
-                <tbody>
-                  {(invoice.items||[]).map((it:any,i:number)=>(
-                    <tr key={i}>
-                      <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{it.productName}</td>
-                      <td style={{border:"1px solid #ccc",padding:"4px 6px",fontFamily:"monospace"}}>{it.hsCode||"—"}</td>
-                      <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{it.quantity}</td>
-                      <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{cur} {fmt(Number(it.unitPrice||0),cur)}</td>
-                      <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-                      {(invoice.items||[]).some((it2:any)=>it2.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{it.expiryDate||"—"}</td>}
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr><td colSpan={(invoice.items||[]).some((it:any)=>it.expiryDate)?6:5} style={{textAlign:"right",fontWeight:700,padding:8,borderTop:"2px solid #000"}}>
-                    TOTAL: {cur} {fmt(total,cur)}
-                  </td></tr>
-                </tfoot>
-              </table>
-              {invoice.remarks&&<div style={{marginTop:14,fontSize:10}}><strong>Remarks:</strong> {invoice.remarks}</div>}
-              {org&&(org.bankName)&&(
-                <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
-                  <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase",color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                    {org.bankName&&<div><span style={{color:"#666"}}>Bank: </span>{org.bankName}</div>}
-                    {org.bankBranch&&<div><span style={{color:"#666"}}>Branch: </span>{org.bankBranch}</div>}
-                    {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>Bank Address: </span>{org.bankAddress}</div>}
-                    {org.accountNo&&<div><span style={{color:"#666"}}>Account No: </span>{org.accountNo}</div>}
-                    {org.accountName&&<div><span style={{color:"#666"}}>Account Name: </span>{org.accountName}</div>}
-                    {org.swiftCode&&<div><span style={{color:"#666"}}>SWIFT: </span>{org.swiftCode}</div>}
+          {(()=>{
+            const showExp=(invoiceItems||[]).some((it:any)=>it.expiryDate)||(commercialItems||[]).some((it:any)=>it.expiryDate);
+            const editTable=(items:any[],updFn:any,delFn:any,addFn:any,showExp:boolean,remarks:string,setRemarks:any,docCur:string)=>(
+                <>
+                  <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
+                    <thead><tr style={{background:"#222",color:"#fff"}}>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description of Goods</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>HS Code</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>Qty</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
+                      {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>Expiry</th>}
+                      <th style={{border:"1px solid #444",padding:"4px",width:28}} className="no-print"></th>
+                    </tr></thead>
+                    <tbody>
+                      {items.map((it:any,i:number)=>(
+                        <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updFn(it.id,"productName",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",fontFamily:"monospace"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:50,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
+                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="date" style={{border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
+                          <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr><td colSpan={showExp?7:6} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
+                        TOTAL: {docCur} {fmt(items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
+                      </td></tr>
+                    </tfoot>
+                  </table>
+                  <div className="no-print" style={{marginTop:6}}>
+                    <button onClick={addFn} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
                   </div>
-                </div>
-              )}
-              <SignatureSection/>
-            </div>
-          ):(
-            <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
+                  {remarks!==undefined&&<div style={{marginTop:10}}>
+                    <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase"}}>Remarks</div>
+                    <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical",minHeight:36}} value={remarks} onChange={(e:any)=>setRemarks(e.target.value)}/>
+                    <div className="print-only" style={{fontSize:10,whiteSpace:"pre-wrap"}}>{remarks}</div>
+                  </div>}
+                </>
+              );
+            return(
+              <>
+                {activeDoc==="proforma"&&(
+                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                    <InvoiceHeader/>
+                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
+                {org?.bankName&&(
+                  <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
+                    <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                      {org.bankName&&<div><span style={{color:"#666"}}>Bank: </span>{org.bankName}</div>}
+                      {org.bankBranch&&<div><span style={{color:"#666"}}>Branch: </span>{org.bankBranch}</div>}
+                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>Bank Address: </span>{org.bankAddress}</div>}
+                      {org.accountNo&&<div><span style={{color:"#666"}}>Account No: </span>{org.accountNo}</div>}
+                      {org.swiftCode&&<div><span style={{color:"#666"}}>SWIFT: </span>{org.swiftCode}</div>}
+                    </div>
+                  </div>
+                )}
+                    <SignatureSection/>
+                  </div>
+                )}
+                {activeDoc==="commercial"&&(
+                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                    <InvoiceHeader/>
+                    {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur)}
+                {org?.bankName&&(
+                  <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
+                    <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                      {org.bankName&&<div><span style={{color:"#666"}}>Bank: </span>{org.bankName}</div>}
+                      {org.bankBranch&&<div><span style={{color:"#666"}}>Branch: </span>{org.bankBranch}</div>}
+                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>Bank Address: </span>{org.bankAddress}</div>}
+                      {org.accountNo&&<div><span style={{color:"#666"}}>Account No: </span>{org.accountNo}</div>}
+                      {org.swiftCode&&<div><span style={{color:"#666"}}>SWIFT: </span>{org.swiftCode}</div>}
+                    </div>
+                  </div>
+                )}
+                    <SignatureSection/>
+                  </div>
+                )}
+                {activeDoc==="packing"&&(
+                              <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
               {packingPages.map((pageRows,pi)=>(
                 <div key={pi} className={pi<packingPages.length-1?"pdf-page":""}>
                   <PackingHeader/>
@@ -1163,7 +1199,10 @@ function OutputPage({invoice,packing,onBack,org,lang}:any){
                 </div>
               ))}
             </div>
-          )}
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
@@ -1177,7 +1216,7 @@ function OutputPage({invoice,packing,onBack,org,lang}:any){
 // ============================================================
 // HISTORY PAGE
 // ============================================================
-function HistoryPage({onLoad,onCopy,onConvert}:any){
+function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
   const [items,setItems]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState("");
@@ -1231,11 +1270,14 @@ function HistoryPage({onLoad,onCopy,onConvert}:any){
                 <span className={`status-badge status-${h.approval_status||h.status||"draft"}`}>● {statusLabel[h.approval_status||h.status||"draft"]}</span>
                 {h.invoice_type==="proforma"&&<span className="tag tag-amber">Proforma</span>}
               </div>
-              <div style={{display:"flex",gap:5}}>
-                <button className="btn btn-secondary btn-xs" onClick={()=>onCopy(h)}>📋 コピー</button>
-                {h.invoice_type==="proforma"&&(h.approval_status==="approved"||true)&&(
-                  <button className="btn btn-green btn-xs" onClick={(e)=>{e.stopPropagation();onConvert(h);}}>🔄 Commercial変換</button>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {h.invoice_type==="proforma"&&(
+                  <button className="btn btn-primary btn-xs" onClick={(e)=>{e.stopPropagation();onConvert(h);}}>🔄 Commercialに変換</button>
                 )}
+                {h.invoice_type!=="proforma"&&(
+                  <button className="btn btn-secondary btn-xs" onClick={(e)=>{e.stopPropagation();onEdit(h);}}>✏️ 編集</button>
+                )}
+                <button className="btn btn-secondary btn-xs" onClick={()=>onCopy(h)}>📋 コピー</button>
                 <button className="btn btn-danger btn-xs" onClick={(e)=>del(h.id,e)}>削除</button>
               </div>
             </div>
@@ -1868,34 +1910,56 @@ export default function App(){
   };
 
   const convertToCommercial=(h:any)=>{
-    // ProformaからCommercialに変換して新規作成画面へ
-    const newInvNo = (h.invoice_no||"").replace(/^P-?/i,"").replace(/^PRO-?/i,"") || "";
-    setInvoice({...INIT_INVOICE,
-      dbId: undefined, // 新規として保存
-      proformaId: h.id, // 元のProforma IDを記録
-      invoiceNo: newInvNo ? "CI-"+newInvNo : "",
+    // Proforma → Commercial変換：内容をコピーしてinvoice_typeをcommercialに
+    const newInv={...INIT_INVOICE,
+      invoiceNo:h.invoice_no||"",
       invoiceType:"commercial",
       date:new Date().toISOString().split("T")[0],
       poNumber:h.po_number||"",
       paymentDue:h.payment_due||"",
-      shipper:h.shipper||"",
-      consignee:h.consignee||"",
-      shipTo:h.ship_to||"",
-      notifyParty:h.notify_party||"",
-      currency:h.currency||"JPY",
-      incoterms:h.incoterms||"",
-      countryOfOrigin:h.country_of_origin||"",
-      shippingMethod:h.shipping_method||"",
-      portOfLoading:h.port_of_loading||"",
-      remarks:h.remarks||"",
-      language:h.language||"ja",
-      approvalStatus:"draft",status:"draft",
+      shipper:h.shipper||"",consignee:h.consignee||"",shipTo:h.ship_to||"",
+      notifyParty:h.notify_party||"",currency:h.currency||"JPY",incoterms:h.incoterms||"",
+      countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
+      portOfLoading:h.port_of_loading||"",remarks:h.remarks||"",
+      language:h.language||"ja",approvalStatus:"draft",status:"draft",
       items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
-    });
-    // Packing Listも引き継ぐ
+      proformaRef:h.invoice_no||"", // Proformaの参照番号を保持
+    };
+    setInvoice(newInv);
     setPacking((h.packing_items||[]).map((c:any)=>({...c,id:Date.now()+Math.random()})));
     setStep(1);setPage("new");
     showToast("🔄 Commercial Invoiceに変換しました。Invoice Noを確認してください。");
+  };
+
+  const editInvoice=(h:any)=>{
+    loadInvoice(h);
+    // Commercial Invoiceの場合はPacking List編集(step2)から開始
+    if(h.invoice_type==="commercial"){
+      setStep(1);
+    }
+  };
+
+  const convertToCommercial=(h:any)=>{
+    const newInv={...INIT_INVOICE,
+      invoiceNo:h.invoice_no||"",
+      invoiceType:"commercial",
+      date:new Date().toISOString().split("T")[0],
+      poNumber:h.po_number||"",paymentDue:h.payment_due||"",
+      shipper:h.shipper||"",consignee:h.consignee||"",shipTo:h.ship_to||"",
+      notifyParty:h.notify_party||"",currency:h.currency||"JPY",incoterms:h.incoterms||"",
+      countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
+      portOfLoading:h.port_of_loading||"",remarks:h.remarks||"",
+      language:h.language||"ja",approvalStatus:"draft",status:"draft",
+      items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
+    };
+    setInvoice(newInv);
+    setPacking((h.packing_items||[]).map((c:any)=>({...c,id:Date.now()+Math.random()})));
+    setStep(1);setPage("new");
+    showToast("🔄 Commercial Invoiceに変換しました。Invoice Noを確認してください。");
+  };
+
+  const editInvoice=(h:any)=>{
+    loadInvoice(h);
   };
 
   const copyInvoice=(h:any)=>{
@@ -1966,9 +2030,9 @@ export default function App(){
               {page==="new"&&<>
                 <button className="btn btn-secondary btn-sm" onClick={reset}>🔄 リセット</button>
                 <button className="btn btn-amber btn-sm" disabled={saving} onClick={()=>saveInvoice("draft")}>
-                  {saving?<span className="spinner"/>:"💾"} {t.draft}
+                  {saving?<span className="spinner"/>:"💾"} {invoice.invoiceType==="proforma"?"Proforma保存":"Commercial保存"}
                 </button>
-                {invoice.invoiceType==="proforma"&&invoice.approvalStatus==="draft"&&(
+                {invoice.invoiceType!=="proforma"&&invoice.approvalStatus==="draft"&&step>=3&&(
                   <button className="btn btn-purple btn-sm" onClick={requestApproval}>📨 {t.requestApproval}</button>
                 )}
                 <button className="btn btn-green btn-sm" onClick={()=>setPage("history")}>📚 保存済み案件</button>
@@ -1979,43 +2043,24 @@ export default function App(){
           <div className="content">
             {page==="new"&&(
               <>
-                {invoice.invoiceType==="proforma"&&!invoice.proformaId
-                  ?<ProformaStepBar step={step} setStep={setStep} lang={lang}/>
-                  :<StepBar step={step} setStep={setStep} lang={lang}/>
-                }
-                {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang}/>}
-                {invoice.invoiceType==="proforma"&&!invoice.proformaId?(
-                  <>
-                    {step===2&&<ReviewPage invoice={invoice} packing={[]} onNext={()=>{saveInvoice("draft");setStep(3);}} onBack={()=>setStep(1)} setStep={setStep} lang={lang} proformaOnly={true}/>}
-                    {step===3&&(
-                      <div className="card fade-in">
-                        <div className="card-header"><div className="card-title">📨 承認依頼</div></div>
-                        <div style={{marginBottom:14,fontSize:13,color:"var(--text-muted)"}}>
-                          Proforma Invoiceを保存し、上長に承認依頼を送ります。承認後、保存済み案件一覧から「🔄 Commercial変換」ボタンでCommercial Invoice＋Packing Listを作成できます。
-                        </div>
-                        <div style={{display:"flex",gap:8}}>
-                          <button className="btn btn-purple" onClick={requestApproval}>📨 承認依頼を送る</button>
-                          <button className="btn btn-secondary" onClick={()=>saveInvoice("draft")}>💾 下書き保存のみ</button>
-                        </div>
-                        {invoice.approvalStatus==="pending_approval"&&(
-                          <div style={{marginTop:12,padding:"10px 14px",background:"var(--amber-light)",border:"1px solid var(--amber-mid)",borderRadius:"var(--radius-lg)",fontSize:12,color:"var(--amber)"}}>
-                            📨 承認依頼済みです。承認管理ページで確認してください。
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
+                {invoice.invoiceType==="proforma"?(
+                  <div style={{background:"var(--amber-light,#FEF3C7)",border:"1px solid var(--amber,#F59E0B)",borderRadius:"var(--radius)",padding:"8px 16px",marginBottom:12,fontSize:12,color:"#92400E"}}>
+                    📋 <strong>Proforma Invoice</strong> 作成モード ― 保存後、一覧から「Commercialに変換」できます
+                  </div>
                 ):(
-                  <>
-                    {step===2&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>setStep(3)} onBack={()=>setStep(1)} lang={lang} products={products}/>}
-                    {step===3&&<ReviewPage invoice={invoice} packing={packing} onNext={()=>{saveInvoice("in_progress");setStep(4);}} onBack={()=>setStep(2)} setStep={setStep} lang={lang}/>}
-                    {step===4&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(3)} org={org} lang={lang}/>}
-                    {step>=5&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang}/>}
-                  </>
+                  <div style={{background:"var(--green-light,#D1FAE5)",border:"1px solid #6EE7B7",borderRadius:"var(--radius)",padding:"8px 16px",marginBottom:12,fontSize:12,color:"#065F46"}}>
+                    📄 <strong>Commercial Invoice</strong> 作成モード
+                  </div>
                 )}
+                <StepBar step={step} setStep={setStep} lang={lang}/>
+                {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang}/>}
+                {step===2&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>setStep(3)} onBack={()=>setStep(1)} lang={lang} products={products}/>}
+                {step===3&&<ReviewPage invoice={invoice} packing={packing} onNext={()=>{saveInvoice("in_progress");setStep(4);}} onBack={()=>setStep(2)} setStep={setStep} lang={lang}/>}
+                {step===4&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(3)} org={org} lang={lang} onSave={saveInvoice}/>}
+                {step>=5&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang}/>}
               </>
             )}
-            {page==="history"&&<HistoryPage onLoad={loadInvoice} onCopy={copyInvoice} onConvert={convertToCommercial}/>}
+            {page==="history"&&<HistoryPage onLoad={loadInvoice} onCopy={copyInvoice} onConvert={convertToCommercial} onEdit={editInvoice}/>}
             {page==="customers"&&<CustomerPage onCustomersChange={setCustomers}/>}
             {page==="products"&&<ProductPage/>}
             {page==="approval"&&<ApprovalPage showToast={showToast}/>}
