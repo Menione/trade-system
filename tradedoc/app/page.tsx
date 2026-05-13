@@ -1,4 +1,16 @@
 "use client";
+
+async function signIn(email:string,password:string){
+  const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY},
+    body:JSON.stringify({email,password})
+  });
+  const d=await res.json();
+  if(!res.ok)throw new Error(d.error_description||"ログイン失敗");
+  return d;
+}
+
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -19,6 +31,83 @@ async function sb(path: string, options: any = {}) {
   const t = await res.text();
   return t ? JSON.parse(t) : null;
 }
+
+async function signOut(token:string){
+  await fetch(`${SUPABASE_URL}/auth/v1/logout`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":`Bearer ${token}`}
+  });
+}
+
+async function getUser(token:string){
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`,{
+    headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":`Bearer ${token}`}
+  });
+  if(!res.ok) return null;
+  return res.json();
+}
+
+// ── LoginPage ─────────────────────────────────────────────
+function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(false);
+
+  const handleLogin=async(e:any)=>{
+    e.preventDefault();
+    setError("");setLoading(true);
+    try{
+      const d=await signIn(email,password);
+      localStorage.setItem("trade_token",d.access_token);
+      onLogin(d.access_token,d.user);
+    }catch(err:any){
+      setError(err.message||"ログインに失敗しました");
+    }finally{setLoading(false);}
+  };
+
+  return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)"}}>
+      <div style={{background:"#fff",borderRadius:16,padding:"48px 40px",width:400,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{fontSize:40,marginBottom:8}}>🌏</div>
+          <div style={{fontSize:22,fontWeight:800,color:"#1a1a2e",letterSpacing:1}}>TradeDoc</div>
+          <div style={{fontSize:13,color:"#666",marginTop:4}}>貿易書類管理システム</div>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",fontSize:12,fontWeight:600,color:"#444",marginBottom:6}}>メールアドレス</label>
+          <input
+            type="email" value={email} onChange={e=>setEmail(e.target.value)}
+            placeholder="email@example.com"
+            style={{width:"100%",padding:"10px 12px",border:"1px solid #ddd",borderRadius:8,fontSize:14,outline:"none",boxSizing:"border-box" as any}}
+          />
+        </div>
+        <div style={{marginBottom:24}}>
+          <label style={{display:"block",fontSize:12,fontWeight:600,color:"#444",marginBottom:6}}>パスワード</label>
+          <input
+            type="password" value={password} onChange={e=>setPassword(e.target.value)}
+            placeholder="••••••••"
+            onKeyDown={e=>e.key==="Enter"&&handleLogin(e)}
+            style={{width:"100%",padding:"10px 12px",border:"1px solid #ddd",borderRadius:8,fontSize:14,outline:"none",boxSizing:"border-box" as any}}
+          />
+        </div>
+        {error&&<div style={{background:"#FEF2F2",color:"#DC2626",padding:"10px 12px",borderRadius:8,fontSize:13,marginBottom:16}}>❌ {error}</div>}
+        <button
+          onClick={handleLogin} disabled={loading||!email||!password}
+          style={{width:"100%",padding:"12px",background:loading?"#94a3b8":"#1a1a2e",color:"#fff",border:"none",borderRadius:8,fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",transition:"background 0.2s"}}
+        >
+          {loading?"ログイン中...":"ログイン"}
+        </button>
+        <div style={{marginTop:24,padding:"16px",background:"#F8FAFC",borderRadius:8,fontSize:12,color:"#666"}}>
+          <div style={{fontWeight:600,marginBottom:4}}>📋 ログインできない場合</div>
+          <div>Supabase管理画面の「Authentication」→「Users」でユーザーを作成してください。</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
 const INCOTERMS = ["EXW","FCA","CPT","CIP","DAP","DPU","DDP","FAS","FOB","CFR","CIF"];
@@ -2341,11 +2430,29 @@ export default function App(){
   const [org,setOrg]=useState<any>(INIT_ORG);
   const [toast,setToast]=useState("");
   const [saving,setSaving]=useState(false);
+  const [authToken,setAuthToken]=useState<string|null>(null);
+  const [authUser,setAuthUser]=useState<any>(null);
+  const [authLoading,setAuthLoading]=useState(true);
 
   const lang=invoice.language||"ja";
   const t=T[lang];
 
   useEffect(()=>{
+    // 起動時にトークンを確認
+    const checkAuth=async()=>{
+      const token=localStorage.getItem("trade_token");
+      if(token){
+        const user=await getUser(token);
+        if(user){setAuthToken(token);setAuthUser(user);}
+        else{localStorage.removeItem("trade_token");}
+      }
+      setAuthLoading(false);
+    };
+    checkAuth();
+  },[]);
+
+  useEffect(()=>{
+    if(!authToken) return;
     // 組織設定をSupabaseから読み込み（localStorageをfallbackに）
     const loadOrg=async()=>{
       try{
@@ -2375,7 +2482,7 @@ export default function App(){
     loadOrg();
     sb("customers?order=created_at.desc").then(d=>setCustomers(d||[])).catch(()=>{});
     sb("products?order=created_at.desc").then(d=>setProducts(d||[])).catch(()=>{});
-  },[]);
+  },[authToken]);
 
   const showToast=(msg:string)=>setToast(msg);
 
@@ -2511,6 +2618,16 @@ export default function App(){
 
   const titles:any={new:t.newDoc,history:t.history,customers:t.customers,products:t.products,approval:t.approval,countryDocs:t.countryDocs,org:t.org};
 
+  // ローディング中
+  if(authLoading) return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#1a1a2e"}}>
+      <div style={{color:"#fff",fontSize:18}}>🌏 読み込み中...</div>
+    </div>
+  );
+
+  // 未ログイン
+  if(!authToken)return <div>ログインしてください</div>;
+
   return(
     <>
       <style>{css}</style>
@@ -2533,6 +2650,13 @@ export default function App(){
               </button>
             ))}
           </nav>
+          <div style={{padding:"8px",borderTop:"1px solid rgba(255,255,255,0.1)",marginTop:"auto"}}>
+            {authUser&&<div style={{fontSize:11,color:"rgba(255,255,255,0.5)",padding:"4px 10px",marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{authUser.email}</div>}
+            <button
+              onClick={async()=>{if(authToken)await signOut(authToken);localStorage.removeItem("trade_token");setAuthToken(null);setAuthUser(null);}}
+              style={{width:"100%",padding:"8px 10px",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.8)",border:"none",borderRadius:6,fontSize:12,cursor:"pointer",textAlign:"left" as any}}
+            >🚪 ログアウト</button>
+          </div>
           {page==="new"&&errors.length>0&&(
             <div className="error-panel">
               <div className="error-panel-title">⚠️ {errors.length}件のエラー</div>
