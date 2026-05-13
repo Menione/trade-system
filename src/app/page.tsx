@@ -485,13 +485,29 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
   const cur=invoice.currency||"JPY";
 
   const applyCustomer=(c:any)=>{
-    setInvoice((v:any)=>({...v,
-      consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
-      shipTo:c.consignee_name?[c.consignee_name,c.consignee_address].filter(Boolean).join("\n"):v.shipTo,
-      currency:c.currency||v.currency,
-      incoterms:c.incoterms||v.incoterms,
-      remarks:c.remarks?((v.remarks?v.remarks+"\n":"")+c.remarks):v.remarks,
-    }));
+    setInvoice((v:any)=>{
+      // 価格リストがあれば品目を自動設定
+      const newItems=c.price_list&&c.price_list.length>0
+        ?c.price_list.map((p:any)=>({
+            id:Date.now()+Math.random(),
+            productName:p.productName||"",
+            hsCode:p.hsCode||"",
+            unitPrice:p.unitPrice||"",
+            quantity:"",
+            currency:c.currency||v.currency||"JPY",
+            countryOfOrigin:v.countryOfOrigin||"",
+            expiryDate:"",
+          }))
+        :v.items;
+      return{...v,
+        consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
+        shipTo:c.consignee_name?[c.consignee_name,c.consignee_address].filter(Boolean).join("\n"):v.shipTo,
+        currency:c.currency||v.currency,
+        incoterms:c.incoterms||v.incoterms,
+        remarks:c.remarks?((v.remarks?v.remarks+"\n":"")+c.remarks):v.remarks,
+        items:newItems,
+      };
+    });
   };
 
   const applyShipTo=(c:any)=>{
@@ -1614,7 +1630,7 @@ function CustomerPage({onCustomersChange}:any){
   const [loading,setLoading]=useState(true);
   const [showForm,setShowForm]=useState(false);
   const [editId,setEditId]=useState<string|null>(null);
-  const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:""};
+  const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:"",price_list:[]};
   const [form,setForm]=useState<any>(empty);
 
   const fetch=useCallback(async()=>{
@@ -1637,7 +1653,7 @@ function CustomerPage({onCustomersChange}:any){
   };
 
   const startEdit=(c:any)=>{
-    setForm({name:c.name||"",address:c.address||"",consignee_name:c.consignee_name||"",consignee_address:c.consignee_address||"",country:c.country||"Japan",currency:c.currency||"JPY",incoterms:c.incoterms||"",contact:c.contact||"",email:c.email||"",remarks:c.remarks||""});
+    setForm({name:c.name||"",address:c.address||"",consignee_name:c.consignee_name||"",consignee_address:c.consignee_address||"",country:c.country||"Japan",currency:c.currency||"JPY",incoterms:c.incoterms||"",contact:c.contact||"",email:c.email||"",remarks:c.remarks||"",price_list:c.price_list||[]});
     setEditId(c.id);setShowForm(true);
   };
 
@@ -1691,6 +1707,19 @@ function CustomerPage({onCustomersChange}:any){
               <label className="label">備考（Invoiceに反映）</label>
               <textarea className="input" rows={2} value={form.remarks} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,remarks:e.target.value}))}/>
             </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:600,color:"var(--blue)",marginBottom:8}}>💰 製品別価格リスト</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>この得意先専用の価格を登録。Invoice作成時に自動入力されます。</div>
+              {(form.price_list||[]).map((p:any,i:number)=>(
+                <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr 80px 30px",gap:6,marginBottom:6,alignItems:"center"}}>
+                  <input className="input" placeholder="製品名" value={p.productName||""} onChange={(e:any)=>{const pl=[...(form.price_list||[])];pl[i]={...pl[i],productName:e.target.value};setForm((v:any)=>({...v,price_list:pl}));}}/>
+                  <input className="input" placeholder="HSコード" value={p.hsCode||""} onChange={(e:any)=>{const pl=[...(form.price_list||[])];pl[i]={...pl[i],hsCode:e.target.value};setForm((v:any)=>({...v,price_list:pl}));}}/>
+                  <input className="input" type="number" placeholder="単価" value={p.unitPrice||""} onChange={(e:any)=>{const pl=[...(form.price_list||[])];pl[i]={...pl[i],unitPrice:e.target.value};setForm((v:any)=>({...v,price_list:pl}));}}/>
+                  <button className="btn btn-danger btn-xs" onClick={()=>{const pl=(form.price_list||[]).filter((_:any,j:number)=>j!==i);setForm((v:any)=>({...v,price_list:pl}));}}>✕</button>
+                </div>
+              ))}
+              <button className="btn btn-secondary btn-xs" onClick={()=>setForm((v:any)=>({...v,price_list:[...(v.price_list||[]),{productName:"",hsCode:"",unitPrice:""}]}))}>+ 製品を追加</button>
+            </div>
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
@@ -1716,6 +1745,14 @@ function CustomerPage({onCustomersChange}:any){
               {c.email&&<span className="tag tag-purple">{c.email}</span>}
             </div>
             {c.address&&<div style={{fontSize:11,color:"var(--text-muted)",marginTop:3}}>{c.address}</div>}
+            {c.price_list&&c.price_list.length>0&&(
+              <div style={{marginTop:6,padding:"5px 9px",background:"#F0FDF4",borderRadius:"var(--radius)",fontSize:11}}>
+                <span style={{fontWeight:600,color:"#166534"}}>💰 価格リスト: </span>
+                {c.price_list.map((p:any,i:number)=>(
+                  <span key={i} style={{marginRight:8}}>{p.productName} ¥{Number(p.unitPrice).toLocaleString()}</span>
+                ))}
+              </div>
+            )}
             {c.consignee_name&&(
               <div style={{marginTop:6,padding:"5px 9px",background:"var(--blue-light)",borderRadius:"var(--radius)",fontSize:11}}>
                 <span style={{color:"var(--blue)",fontWeight:600}}>Ship To: </span>{c.consignee_name}
@@ -1810,6 +1847,19 @@ function ProductPage(){
                 <input className="input" type="number" value={form.net_weight_per_unit} placeholder="0.00" onChange={(e:any)=>setForm((v:any)=>({...v,net_weight_per_unit:e.target.value}))}/></div>
               <div className="field"><label className="label">1カートン梱包数</label>
                 <input className="input" type="number" value={form.cartons_per_box} placeholder="例: 60" onChange={(e:any)=>setForm((v:any)=>({...v,cartons_per_box:e.target.value}))}/></div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:600,color:"var(--blue)",marginBottom:8}}>💰 製品別価格リスト</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>この得意先専用の価格を登録。Invoice作成時に自動入力されます。</div>
+              {(form.price_list||[]).map((p:any,i:number)=>(
+                <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr 80px 30px",gap:6,marginBottom:6,alignItems:"center"}}>
+                  <input className="input" placeholder="製品名" value={p.productName||""} onChange={(e:any)=>{const pl=[...(form.price_list||[])];pl[i]={...pl[i],productName:e.target.value};setForm((v:any)=>({...v,price_list:pl}));}}/>
+                  <input className="input" placeholder="HSコード" value={p.hsCode||""} onChange={(e:any)=>{const pl=[...(form.price_list||[])];pl[i]={...pl[i],hsCode:e.target.value};setForm((v:any)=>({...v,price_list:pl}));}}/>
+                  <input className="input" type="number" placeholder="単価" value={p.unitPrice||""} onChange={(e:any)=>{const pl=[...(form.price_list||[])];pl[i]={...pl[i],unitPrice:e.target.value};setForm((v:any)=>({...v,price_list:pl}));}}/>
+                  <button className="btn btn-danger btn-xs" onClick={()=>{const pl=(form.price_list||[]).filter((_:any,j:number)=>j!==i);setForm((v:any)=>({...v,price_list:pl}));}}>✕</button>
+                </div>
+              ))}
+              <button className="btn btn-secondary btn-xs" onClick={()=>setForm((v:any)=>({...v,price_list:[...(v.price_list||[]),{productName:"",hsCode:"",unitPrice:""}]}))}>+ 製品を追加</button>
             </div>
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
