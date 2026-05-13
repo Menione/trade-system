@@ -2626,7 +2626,7 @@ export default function App(){
   );
 
   // 未ログイン
-  if(!authToken)return <div>ログインしてください</div>;
+  if(!authToken)return <LoginPage onLogin={(token,user)=>{setAuthToken(token);setAuthUser(user);}}/>;
 
   return(
     <>
