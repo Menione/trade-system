@@ -577,8 +577,22 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
             <input className="input" value={invoice.poNumber||""} placeholder="PO-2024-001"
               onChange={(e:any)=>setInvoice((v:any)=>({...v,poNumber:e.target.value}))}/></div>
           <div className="field"><label className="label">Payment Due</label>
-            <input type="date" className="input" value={invoice.paymentDue||""}
-              onChange={(e:any)=>setInvoice((v:any)=>({...v,paymentDue:e.target.value}))}/></div>
+            <select className="input" value={invoice.paymentDue||""}
+              onChange={(e:any)=>setInvoice((v:any)=>({...v,paymentDue:e.target.value}))}>
+              <option value="">選択してください</option>
+              <option value="T/T in advance">T/T in advance（前払い）</option>
+              <option value="Net 15 days">Net 15日</option>
+              <option value="Net 30 days">Net 30日</option>
+              <option value="Net 45 days">Net 45日</option>
+              <option value="Net 60 days">Net 60日</option>
+              <option value="Net 90 days">Net 90日</option>
+              <option value="L/C at sight">L/C at sight（一覧払い）</option>
+              <option value="L/C 30 days">L/C 30日</option>
+              <option value="L/C 60 days">L/C 60日</option>
+              <option value="D/P">D/P</option>
+              <option value="D/A 30 days">D/A 30日</option>
+              <option value="D/A 60 days">D/A 60日</option>
+            </select></div>
         </div>
         <div className="field" style={{marginBottom:13}}>
           <label className="label"><span className="req">*</span>{t.shipper}</label>
@@ -707,7 +721,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
                       <td><select className="input" value={item.currency||cur} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
                         {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
                       <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
-                      <td><input className="input" type="date" value={item.expiryDate||""} onChange={(e:any)=>upd(item.id,"expiryDate",e.target.value)}/></td>
+                      <td><input className="input" type="month" value={item.expiryDate||""} onChange={(e:any)=>upd(item.id,"expiryDate",e.target.value)}/></td>
                       <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
                       <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
                     </tr>
@@ -810,6 +824,13 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
     setPacking(newCartons);
   };
 
+  const [bulkL,setBulkL]=useState("");
+  const [bulkW,setBulkW]=useState("");
+  const [bulkH,setBulkH]=useState("");
+  const applyBulkSize=()=>{
+    if(!bulkL||!bulkW||!bulkH)return;
+    setPacking((prev:any[])=>prev.map((c:any)=>({...c,dimL:bulkL,dimW:bulkW,dimH:bulkH})));
+  };
   const totalGross=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0);
   const totalNet=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0);
   const totalQty=packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
@@ -834,14 +855,13 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
           <div><div className="card-title">{t.packingList}</div><div className="card-subtitle">1カートンに複数製品を混載できます。端数は🟡で表示。</div></div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             <button className="btn btn-secondary btn-sm" onClick={autoFill}>{t.autoFill}</button>
-            <button className="btn btn-secondary btn-sm" onClick={()=>{
-              const l=prompt("全カートンに適用するサイズを入力\n例: 50x30x20 (L×W×H)");
-              if(!l)return;
-              const parts=l.trim().split(/[xX×✕]/);
-              if(parts.length>=3){
-                setPacking((prev:any[])=>prev.map((c:any)=>({...c,dimL:parts[0].trim(),dimW:parts[1].trim(),dimH:parts[2].trim()})));
-              }
-            }}>📦 サイズ一括設定</button>
+            <div style={{display:"flex",alignItems:"center",gap:4,background:"#F0EEE9",borderRadius:"var(--radius)",padding:"4px 8px"}}>
+              <span style={{fontSize:11,fontWeight:600,color:"var(--text-muted)",whiteSpace:"nowrap"}}>📦 一括サイズ(cm)</span>
+              <input className="input" type="number" placeholder="L" value={bulkL} style={{width:52,padding:"3px 5px",fontSize:12}} onChange={(e:any)=>setBulkL(e.target.value)}/>
+              <input className="input" type="number" placeholder="W" value={bulkW} style={{width:52,padding:"3px 5px",fontSize:12}} onChange={(e:any)=>setBulkW(e.target.value)}/>
+              <input className="input" type="number" placeholder="H" value={bulkH} style={{width:52,padding:"3px 5px",fontSize:12}} onChange={(e:any)=>setBulkH(e.target.value)}/>
+              <button className="btn btn-secondary btn-sm" onClick={applyBulkSize} disabled={!bulkL||!bulkW||!bulkH} style={{whiteSpace:"nowrap"}}>全適用</button>
+            </div>
             <button className="btn btn-primary btn-sm" onClick={addCarton}>{t.addCarton}</button>
           </div>
         </div>
@@ -991,6 +1011,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
   const [activeDoc,setActiveDoc]=useState("proforma");
+  const [printLang,setPrintLang]=useState(lang||"ja");
   const [invoiceItems,setInvoiceItems]=useState<any[]>(invoice.invoice_items||invoice.items||[]);
   const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
   const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
@@ -1175,12 +1196,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
-              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">Expiry</th>`:""}
+              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr><td colspan="${showExp?6:5}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">TOTAL: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
+            <tfoot><tr><td colspan="${showExp?6:5}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">${printLang==="ja"?"合計":"TOTAL"}: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
           </table>
-          ${remarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">Remarks</div><div style="font-size:10px;white-space:pre-wrap">${remarks}</div></div>`:""}
+          ${remarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">${printLang==="ja"?"備考":"Remarks"}</div><div style="font-size:10px;white-space:pre-wrap">${remarks}</div></div>`:""}
           ${bankSection}
           ${sigSection}
         </div>`;
@@ -1220,7 +1241,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
-              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">Expiry</th>`:""}
+              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
@@ -1266,7 +1287,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div style={{flex:1}}>
           <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>{title}</div>
-          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>請求書番号 <strong>{invoice.invoiceNo}</strong></div>}
+          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>{printLang==="ja"?"請求書番号":"No."} <strong>{invoice.invoiceNo}</strong></div>}
         </div>
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
@@ -1279,7 +1300,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{height:2,background:"#000",marginBottom:16}}></div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
         <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Invoice No.</div><strong>{invoice.invoiceNo||"—"}</strong></div>
-        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Date</div>{invoice.date||"—"}</div>
+        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{printLang==="ja"?"作成日":"Date"}</div>{invoice.date||"—"}</div>
         <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Incoterms</div>{invoice.incoterms||"—"}</div>
         <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Country of Origin</div>{invoice.countryOfOrigin||"—"}</div>
         {invoice.poNumber&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>P.O. Number</div>{invoice.poNumber}</div>}
@@ -1310,7 +1331,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div style={{flex:1}}>
           <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>PACKING LIST</div>
-          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>請求書番号 <strong>{invoice.invoiceNo}</strong></div>}
+          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>{printLang==="ja"?"梱包明細番号":"No."} <strong>{invoice.invoiceNo}</strong></div>}
         </div>
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
@@ -1323,17 +1344,17 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{height:2,background:"#000",marginBottom:16}}></div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px",marginBottom:16}}>
         <div>
-          <MetaRow label="請求日：" value={invoice.date}/>
-          {invoice.paymentTerms&&<MetaRow label="支払い条件：" value={invoice.paymentTerms}/>}
-          {invoice.paymentDue&&<MetaRow label="支払い期限：" value={invoice.paymentDue}/>}
-          {invoice.poNumber&&<MetaRow label="発注番号：" value={invoice.poNumber}/>}
+          <MetaRow label={printLang==="ja"?"作成日：":"Date:"} value={invoice.date}/>
+          {invoice.paymentTerms&&<MetaRow label={printLang==="ja"?"支払い条件：":"Payment Terms:"} value={invoice.paymentTerms}/>}
+          {invoice.paymentDue&&<MetaRow label={printLang==="ja"?"支払い期限：":"Payment Due:"} value={invoice.paymentDue}/>}
+          {invoice.poNumber&&<MetaRow label={printLang==="ja"?"発注番号：":"P.O. No:"} value={invoice.poNumber}/>}
           {invoice.shippingMethod&&<MetaRow label="Shipping Method：" value={invoice.shippingMethod}/>}
           {invoice.incoterms&&<MetaRow label="Incoterms：" value={invoice.incoterms}/>}
           <MetaRow label="Total Cartons：" value={`${packing.length} CTNS`}/>
           <MetaRow label="Total G.W.：" value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
         </div>
         <div>
-          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>請求先</div>
+          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"請求先":"CONSIGNEE"}</div>
           {invoice.consignee&&<div style={{fontWeight:700,fontSize:11,marginBottom:2}}>{invoice.consignee.split("\n")[0]}</div>}
           <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
           {invoice.shipTo&&<>
@@ -1364,9 +1385,15 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
         </div>
-        <button className="btn btn-green btn-sm no-print" onClick={handlePrintAll} title="Proforma/Invoice/Commercial/Packing Listを全て一括印刷">
-          🖨️ 全書類一括印刷
-        </button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{display:"flex",background:"#F0EEE9",borderRadius:"var(--radius)",padding:3,gap:2}}>
+            <button className={`btn btn-sm ${printLang==="ja"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("ja")}>🇯🇵 日本語</button>
+            <button className={`btn btn-sm ${printLang==="en"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("en")}>🇺🇸 English</button>
+          </div>
+          <button className="btn btn-green btn-sm no-print" onClick={handlePrintAll} title="Proforma/Invoice/Commercial/Packing Listを全て一括印刷">
+            🖨️ 全書類一括印刷
+          </button>
+        </div>
       </div>
       <div className="card">
         <div className="card-header no-print">
