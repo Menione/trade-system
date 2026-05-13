@@ -968,10 +968,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
 
   const printStyle=`
     @page{margin:15mm}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
     body{font-family:sans-serif;font-size:10px;color:#000}
     table{width:100%;border-collapse:collapse}
     th,td{border:1px solid #ccc;padding:4px 6px}
-    th{background:#222;color:#fff;font-size:10px;font-weight:600;padding:6px 8px}
+    th{background:#222 !important;color:#fff !important;font-size:10px;font-weight:600;padding:6px 8px}
+    tr:nth-child(even) td{background:#f5f5f5 !important}
     .pdf-header{margin-bottom:12px}
     .pdf-title{font-size:26px;font-weight:800;letter-spacing:3px;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:16px}
     .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
@@ -1062,8 +1064,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             </div>
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
-            <thead><tr style="background:#222;color:#fff">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left">Description</th>
+            <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">Description</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left">HS Code</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
@@ -1106,7 +1108,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           </div>
           <div style="height:2px;background:#000;margin-bottom:16px"></div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
-            <thead><tr style="background:#222;color:#fff">
+            <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">Carton No</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px">Description</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
@@ -1143,7 +1145,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const commercialSection=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
     const packingSection=buildPackingSection();
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
-    <style>${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
+    <style>*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
     <body><div class="doc-wrapper">
       ${proformaSection}
       ${invoiceSection}
@@ -1154,11 +1156,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     setTimeout(()=>{w.print();},600);
   };
 
-  const InvoiceHeader=()=>(
+  const InvoiceHeader=({title}:{title:string})=>(
     <>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div style={{flex:1}}>
-          <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>{isProforma?"PROFORMA INVOICE":"COMMERCIAL INVOICE"}</div>
+          <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>{title}</div>
           {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>請求書番号 <strong>{invoice.invoiceNo}</strong></div>}
         </div>
         <div style={{textAlign:"right",fontSize:10}}>
@@ -1314,8 +1316,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <>
                 {activeDoc==="proforma"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
-                    <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>PROFORMA INVOICE</div>
-                    <InvoiceHeader/>
+                    <InvoiceHeader title="PROFORMA INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
@@ -1334,8 +1335,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 )}
                 {activeDoc==="invoice"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
-                    <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>INVOICE</div>
-                    <InvoiceHeader/>
+                    <InvoiceHeader title="INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
@@ -1354,8 +1354,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 )}
                 {activeDoc==="commercial"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
-                    <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>COMMERCIAL INVOICE</div>
-                    <InvoiceHeader/>
+                    <InvoiceHeader title="COMMERCIAL INVOICE"/>
                     {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
