@@ -1707,6 +1707,60 @@ function CustomerPage({onCustomersChange,products}:any){
               <label className="label">備考（Invoiceに反映）</label>
               <textarea className="input" rows={2} value={form.remarks} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,remarks:e.target.value}))}/>
             </div>
+
+            {/* 💰 製品別価格リスト */}
+            <div style={{borderTop:"1px solid var(--border)",paddingTop:12,marginBottom:10}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#166534",marginBottom:8}}>💰 製品別価格リスト（この得意先専用の価格）</div>
+              {(form.price_list||[]).map((p:any,i:number)=>(
+                <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+                  {/* 製品マスタから選択 */}
+                  <select
+                    className="input"
+                    style={{flex:2}}
+                    value={p.productName||""}
+                    onChange={(e:any)=>{
+                      const selected=products.find((pr:any)=>pr.name===e.target.value);
+                      setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{
+                        ...pl,
+                        productName:e.target.value,
+                        hsCode:selected?.hs_code||pl.hsCode||"",
+                        unitPrice:pl.unitPrice||selected?.unit_price||"",
+                      }:pl)}));
+                    }}
+                  >
+                    <option value="">― 製品を選択 ―</option>
+                    {(products||[]).map((pr:any)=><option key={pr.id} value={pr.name}>{pr.name}</option>)}
+                  </select>
+                  {/* HSコード（自動入力・手修正可） */}
+                  <input
+                    className="input"
+                    style={{flex:1}}
+                    placeholder="HSコード"
+                    value={p.hsCode||""}
+                    onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,hsCode:e.target.value}:pl)}))}
+                  />
+                  {/* この得意先の単価 */}
+                  <input
+                    className="input"
+                    style={{flex:1}}
+                    placeholder="単価"
+                    type="number"
+                    value={p.unitPrice||""}
+                    onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,unitPrice:e.target.value}:pl)}))}
+                  />
+                  <button className="btn btn-danger btn-xs" onClick={()=>setForm((v:any)=>({...v,price_list:v.price_list.filter((_:any,j:number)=>j!==i)}))}>✕</button>
+                </div>
+              ))}
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{marginTop:4}}
+                onClick={()=>setForm((v:any)=>({...v,price_list:[...(v.price_list||[]),{productName:"",hsCode:"",unitPrice:""}]}))}
+              >+ 製品を追加</button>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:6}}>
+                ※ 製品を選ぶとHSコードが自動入力されます。単価だけこの得意先専用に設定してください。
+              </div>
+            </div>
+
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
