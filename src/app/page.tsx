@@ -476,13 +476,25 @@ function ValidationPanel({invoice,packing,setStep}:any){
 // ============================================================
 // INVOICE FORM
 // ============================================================
-function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any){
+function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,countryDocs}:any){
   const t=T[lang||"ja"];
   const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",expiryDate:""}]}));
   const upd=(id:number,f:string,val:any)=>setInvoice((v:any)=>({...v,items:v.items.map((it:any)=>it.id===id?{...it,[f]:val}:it)}));
   const del=(id:number)=>setInvoice((v:any)=>({...v,items:v.items.filter((it:any)=>it.id!==id)}));
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
+  const consigneeCountry=useMemo(()=>{
+    if(!invoice.consignee) return "";
+    const matched=customers.find((c:any)=>invoice.consignee.startsWith(c.name||"__"));
+    if(matched) return matched.country||"";
+    const lines=(invoice.consignee||"").split("\n").map((l:string)=>l.trim()).filter(Boolean);
+    const last=lines[lines.length-1]||"";
+    return COUNTRIES.includes(last)?last:"";
+  },[invoice.consignee,customers]);
+  const countryAlert=useMemo(()=>{
+    if(!consigneeCountry||!countryDocs?.length) return null;
+    return countryDocs.find((d:any)=>d.country===consigneeCountry)||null;
+  },[consigneeCountry,countryDocs]);
 
   const applyCustomer=(c:any)=>{
     setInvoice((v:any)=>{
@@ -526,6 +538,20 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
 
   return(
     <div className="fade-in">
+      {countryAlert&&(
+        <div style={{background:"#FEF3C7",border:"1px solid #F59E0B",borderRadius:"var(--radius-lg)",padding:"12px 16px",marginBottom:14,display:"flex",gap:12,alignItems:"flex-start"}}>
+          <div style={{fontSize:20,flexShrink:0}}>🌏</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#92400E",marginBottom:4}}>{consigneeCountry} 向け輸出 — 必要書類を確認してください</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:countryAlert.notes?6:0}}>
+              {(countryAlert.documents||[]).map((doc:string,i:number)=>(
+                <span key={i} style={{background:"#FDE68A",color:"#78350F",fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4}}>📄 {doc}</span>
+              ))}
+            </div>
+            {countryAlert.notes&&<div style={{fontSize:11,color:"#92400E",marginTop:4}}>ℹ️ {countryAlert.notes}</div>}
+          </div>
+        </div>
+      )}
       {/* 書類タイプ */}
       <div className="card">
         <div className="card-header"><div className="card-title">{t.invoiceType}</div>
@@ -1007,11 +1033,23 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
 // ============================================================
 // PDF OUTPUT
 // ============================================================
-function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
+function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,customers}:any){
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
   const [activeDoc,setActiveDoc]=useState("proforma");
   const [printLang,setPrintLang]=useState(lang||"ja");
+  const consigneeCountry=useMemo(()=>{
+    if(!invoice.consignee) return "";
+    const matched=(customers||[]).find((c:any)=>invoice.consignee.startsWith(c.name||"__"));
+    if(matched) return matched.country||"";
+    const lines=(invoice.consignee||"").split("\n").map((l:string)=>l.trim()).filter(Boolean);
+    const last=lines[lines.length-1]||"";
+    return COUNTRIES.includes(last)?last:"";
+  },[invoice.consignee,customers]);
+  const countryAlert=useMemo(()=>{
+    if(!consigneeCountry||!countryDocs?.length) return null;
+    return (countryDocs||[]).find((d:any)=>d.country===consigneeCountry)||null;
+  },[consigneeCountry,countryDocs]);
   const [invoiceItems,setInvoiceItems]=useState<any[]>(invoice.invoice_items||invoice.items||[]);
   const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
   const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
@@ -1378,6 +1416,20 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
 
   return(
     <div className="fade-in">
+      {countryAlert&&(
+        <div style={{background:"#FEF3C7",border:"1px solid #F59E0B",borderRadius:"var(--radius-lg)",padding:"12px 16px",marginBottom:14,display:"flex",gap:12,alignItems:"flex-start"}}>
+          <div style={{fontSize:20,flexShrink:0}}>🌏</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#92400E",marginBottom:4}}>{consigneeCountry} 向け輸出 — PDF印刷前に必要書類をご確認ください</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:countryAlert.notes?6:0}}>
+              {(countryAlert.documents||[]).map((doc:string,i:number)=>(
+                <span key={i} style={{background:"#FDE68A",color:"#78350F",fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:4}}>📄 {doc}</span>
+              ))}
+            </div>
+            {countryAlert.notes&&<div style={{fontSize:11,color:"#92400E",marginTop:4}}>ℹ️ {countryAlert.notes}</div>}
+          </div>
+        </div>
+      )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
         <div className="tabs no-print" style={{marginBottom:0}}>
           <button className={`tab ${activeDoc==="proforma"?"active":""}`} onClick={()=>setActiveDoc("proforma")}>📋 Proforma Invoice</button>
@@ -1953,7 +2005,7 @@ function ProductPage(){
 // ORG SETTINGS
 // ============================================================
 function OrgPage({org,setOrg}:any){
-  const [saved,setSaved]=useState(false);
+  const [localToast,setLocalToast]=useState("");
   const [saving,setSaving]=useState(false);
   const save=async()=>{
     setSaving(true);
@@ -1998,13 +2050,13 @@ function OrgPage({org,setOrg}:any){
         });
       }
     }catch(e){console.warn("Supabase org save failed, using localStorage only",e);}
-    setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2000);
+    setSaving(false);setLocalToast("✅ 設定を保存しました");setTimeout(()=>setLocalToast(""),3000);
   };
   const f=(key:string,val:any)=>setOrg((v:any)=>({...v,[key]:val}));
 
   return(
     <div className="fade-in">
-      {saved&&<div className="saved-banner">✅ 設定を保存しました（Supabase + ブラウザ）</div>}
+      {localToast&&<Toast msg={localToast} onClose={()=>setLocalToast("")}/> }
       <div className="card">
         <div className="card-header"><div className="card-title">⚙️ 組織設定</div><button className="btn btn-primary btn-sm" disabled={saving} onClick={save}>{saving?<span className="spinner"/>:"💾"} 保存</button></div>
 
@@ -2535,6 +2587,7 @@ export default function App(){
   const [org,setOrg]=useState<any>(INIT_ORG);
   const [toast,setToast]=useState("");
   const [saving,setSaving]=useState(false);
+  const [countryDocs,setCountryDocs]=useState<any[]>([]);
   const [authToken,setAuthToken]=useState<string|null>(null);
   const [authUser,setAuthUser]=useState<any>(null);
   const [authLoading,setAuthLoading]=useState(true);
@@ -2587,6 +2640,7 @@ export default function App(){
     loadOrg();
     sb("customers?order=created_at.desc").then(d=>setCustomers(d||[])).catch(()=>{});
     sb("products?order=created_at.desc").then(d=>setProducts(d||[])).catch(()=>{});
+    sb("country_documents?order=country.asc").then(d=>setCountryDocs(d||[])).catch(()=>{});
   },[authToken]);
 
   const showToast=(msg:string)=>setToast(msg);
@@ -2815,7 +2869,7 @@ export default function App(){
 
                 {invoice.invoiceType==="proforma"?(
                   <>
-                    {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("draft");setStep(2);}} customers={customers} products={products} org={org} lang={lang}/>}
+                    {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("draft");setStep(2);}} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs}/>}
                     {step>=2&&<div className="card" style={{padding:24,textAlign:"center"}}>
                       <div style={{fontSize:32,marginBottom:12}}>📨</div>
                       <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>Proformaを保存しました</div>
@@ -2834,7 +2888,7 @@ export default function App(){
                             ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong> から自動引用済みです</div>
                             :<div style={{fontSize:13,color:"#92400E"}}>⚠️ Proformaからの変換でない場合は②へ進んでください</div>}
                         </div>
-                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang}/>
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs}/>
                         <div style={{display:"flex",justifyContent:"flex-end",marginTop:8,gap:8}}>
                           <button className="btn btn-amber" onClick={()=>{saveInvoice("draft");showToast("💾 保存しました");}}>💾 下書き保存</button>
                           <button className="btn btn-primary" onClick={()=>setStep(2)}>② Invoice編集へ →</button>
@@ -2875,7 +2929,7 @@ export default function App(){
                     {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
 
                     {/* ⑤ PDF出力 */}
-                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)}/>}
+                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)} countryDocs={countryDocs} customers={customers}/>}
 
                     {/* ⑥ 承認申請→承認 */}
                     {step===6&&(
