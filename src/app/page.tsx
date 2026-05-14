@@ -321,7 +321,7 @@ textarea{resize:vertical;min-height:64px}
 .modal{background:var(--surface);border-radius:var(--radius-xl);padding:22px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .modal-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
 .spinner{display:inline-block;width:15px;height:15px;border:2px solid var(--blue-mid);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite}
-.toast{position:fixed;bottom:20px;right:20px;background:#1A1A1A;color:#fff;padding:10px 18px;border-radius:var(--radius-lg);font-size:13px;z-index:9999;box-shadow:var(--shadow-md);animation:fadeIn .2s ease}
+.toast{position:fixed;top:20px;right:20px;background:#1A1A1A;color:#fff;padding:10px 18px;border-radius:var(--radius-lg);font-size:13px;z-index:9999;box-shadow:var(--shadow-md);animation:fadeIn .2s ease}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
 .empty-icon{font-size:36px;margin-bottom:8px}
 .saved-banner{background:var(--green-light);border:1px solid var(--green-mid);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:13px;color:var(--green);}
