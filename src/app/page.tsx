@@ -2654,14 +2654,6 @@ export default function App(){
 
   const showToast=(msg:string)=>setToast(msg);
 
-  useEffect(()=>{
-    const handler=(e:BeforeUnloadEvent)=>{
-      if(isDirty){e.preventDefault();e.returnValue="";}
-    };
-    window.addEventListener("beforeunload",handler);
-    return ()=>window.removeEventListener("beforeunload",handler);
-  },[isDirty]);
-
   const isDirty=useMemo(()=>{
     if(!invoice.invoiceNo) return false;
     if(!savedSnapshot) return true;
@@ -2676,6 +2668,14 @@ export default function App(){
     if(isDirty){setPendingAction(()=>action);}
     else{action();}
   };
+
+  useEffect(()=>{
+    const handler=(e:BeforeUnloadEvent)=>{
+      if(isDirty){e.preventDefault();e.returnValue="";}
+    };
+    window.addEventListener("beforeunload",handler);
+    return ()=>window.removeEventListener("beforeunload",handler);
+  },[isDirty]);
 
   const {errors}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
 
