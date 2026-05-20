@@ -1593,11 +1593,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                     </div>
                     {/* 品目テーブル */}
                     {(()=>{
-                      // invoice_itemsにlotNo/expiryDateが欠落している場合、itemsから補完する
+                      // itemsからlotNo/expiryDateを補完する（invoice_itemsには引き継がれないため）
   const recItems=(invoice.invoice_items||invoice.items||[]).map((it:any)=>{
-    if(it.lotNo||it.expiryDate) return it;
     const base=(invoice.items||[]).find((b:any)=>b.productName===it.productName);
-    return base?{...base,...it}:it;
+    return base?{...it,lotNo:it.lotNo||base.lotNo,expiryDate:it.expiryDate||base.expiryDate}:it;
   });
                       const showLotR=recItems.some((it:any)=>it.lotNo);
                       const showExpR=recItems.some((it:any)=>it.expiryDate);
@@ -2529,11 +2528,10 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
   const [shipDate,setShipDate]=useState(invoice.trackingDate||invoice.date||"");
   const [printLang,setPrintLang]=useState(lang||"ja");
 
-  // invoice_itemsにlotNo/expiryDateが欠落している場合、itemsから補完する
+  // itemsからlotNo/expiryDateを補完する（invoice_itemsには引き継がれないため）
   const recItems=(invoice.invoice_items||invoice.items||[]).map((it:any)=>{
-    if(it.lotNo||it.expiryDate) return it;
     const base=(invoice.items||[]).find((b:any)=>b.productName===it.productName);
-    return base?{...base,...it}:it;
+    return base?{...it,lotNo:it.lotNo||base.lotNo,expiryDate:it.expiryDate||base.expiryDate}:it;
   });
   const showLotR=recItems.some((it:any)=>it.lotNo);
   const showExpR=recItems.some((it:any)=>it.expiryDate);
