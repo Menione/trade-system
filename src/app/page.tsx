@@ -1656,16 +1656,18 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                     </tr></thead>
                     <tbody>
                       {pageRows.map((row:any,i:number)=>{
-                        // 同カートン番号の最初の行かどうか
                         const isFirstInCarton=i===0||pageRows[i-1].cartonNo!==row.cartonNo;
+                        // 同じカートン番号が何行続くか数える（rowSpan用）
+                        const rowSpanCount=isFirstInCarton?pageRows.slice(i).findIndex((r:any,j:number)=>j>0&&r.cartonNo!==row.cartonNo):0;
+                        const spanVal=isFirstInCarton?(rowSpanCount===-1?pageRows.length-i:rowSpanCount):0;
                         return(
                         <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{isFirstInCarton?row.cartonNo:""}</td>
+                          {isFirstInCarton&&<td rowSpan={spanVal} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle",fontWeight:600}}>{row.cartonNo}</td>}
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.quantity}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{isFirstInCarton?row.grossWeight:""}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{isFirstInCarton?row.netWeight:""}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{isFirstInCarton?row.dimensions:""}</td>
+                          {isFirstInCarton&&<td rowSpan={spanVal} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{row.grossWeight}</td>}
+                          {isFirstInCarton&&<td rowSpan={spanVal} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{row.netWeight}</td>}
+                          {isFirstInCarton&&<td rowSpan={spanVal} style={{border:"1px solid #ccc",padding:"4px 6px",verticalAlign:"middle"}}>{row.dimensions}</td>}
                           {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.lotNo||""}</td>}
                           {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.expiryDate||""}</td>}
                         </tr>
