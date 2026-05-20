@@ -715,7 +715,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
                 <th style={{width:60}}>通貨</th>
                 <th style={{width:100}}>{t.hsCode}(任意)</th>
                 <th style={{width:95}}>ロット番号(任意)</th>
-                <th style={{width:95}}>ロット番号(任意)</th>
                 <th style={{width:120}}>{t.expiryDate}(任意)</th>
                 <th style={{width:85,textAlign:"right"}}>{t.subtotal}</th>
                 <th style={{width:32}}></th>
