@@ -476,7 +476,7 @@ function ValidationPanel({invoice,packing,setStep}:any){
 // ============================================================
 // INVOICE FORM
 // ============================================================
-function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,countryDocs}:any){
+function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,countryDocs,hideNextButton}:any){
   const t=T[lang||"ja"];
   const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",lotNo:"",expiryDate:""}]}));
   const upd=(id:number,f:string,val:any)=>setInvoice((v:any)=>({...v,items:v.items.map((it:any)=>it.id===id?{...it,[f]:val}:it)}));
@@ -765,9 +765,9 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
             onChange={(e:any)=>setInvoice((v:any)=>({...v,remarks:e.target.value}))}/>
         </div>
       </div>
-      <div style={{display:"flex",justifyContent:"flex-end"}}>
+      {!hideNextButton&&<div style={{display:"flex",justifyContent:"flex-end"}}>
         <button className="btn btn-primary" onClick={onNext}>{t.packingList}へ / 次のステップへ →</button>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -1242,7 +1242,82 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
         </div>`;
     };
 
+    const buildDeliveryNoteSection=()=>{
+      const dnItems=(invoice.invoice_items||invoice.items||[]).map((it:any)=>{
+        const base=(invoice.items||[]).find((b:any)=>b.productName===it.productName);
+        return base?{...it,lotNo:it.lotNo||base.lotNo,expiryDate:it.expiryDate||base.expiryDate}:it;
+      });
+      if(dnItems.length===0) return "";
+      const showLot=dnItems.some((it:any)=>it.lotNo);
+      const showExp=dnItems.some((it:any)=>it.expiryDate);
+      const dnTotal=dnItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
+      const rows=dnItems.map((it:any,i:number)=>`
+        <tr style="background:${i%2===0?"#fafafa":"#fff"}">
+          <td style="border:1px solid #ddd;padding:4px 6px">${it.productName}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${Number(it.unitPrice||0).toLocaleString()}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
+          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
+          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
+        </tr>`).join("");
+      return `
+        <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000;page-break-after:always">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+            <div>
+              <div style="font-size:32px;font-weight:800;letter-spacing:2px">Delivery Note</div>
+              ${invoice.invoiceNo?`<div style="font-size:11px;color:#444">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
+              ${invoice.trackingDate||invoice.date?`<div style="font-size:11px;color:#444">Ship Date: <strong>${invoice.trackingDate||invoice.date}</strong></div>`:""}
+            </div>
+            <div style="text-align:right;font-size:10px">
+              ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:60px;max-width:200px;object-fit:contain;margin-left:auto"/>`:""} 
+              ${org?.companyName?`<div style="font-weight:700;font-size:12px">${org.companyName}</div>`:""}
+              ${org?.address?`<div style="white-space:pre-wrap">${org.address}</div>`:""}
+              ${org?.tel?`<div>Tel: ${org.tel}</div>`:""}
+            </div>
+          </div>
+          <div style="height:2px;background:#000;margin-bottom:16px"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-bottom:16px">
+            <div>
+              <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:4px">CONSIGNEE</div>
+              <div style="font-weight:700;font-size:12px">${(invoice.consignee||"").split("\n")[0]}</div>
+              <div style="font-size:10px;white-space:pre-wrap;color:#333">${(invoice.consignee||"").split("\n").slice(1).join("\n")}</div>
+            </div>
+            <div>
+              ${invoice.poNumber?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">P.O. No: </span><span style="font-size:10px">${invoice.poNumber}</span></div>`:""}
+              ${invoice.paymentDue?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">Payment Due: </span><span style="font-size:10px">${invoice.paymentDue}</span></div>`:""}
+              ${invoice.incoterms?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">Incoterms: </span><span style="font-size:10px">${invoice.incoterms}</span></div>`:""}
+              ${invoice.shippingMethod?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">Shipping: </span><span style="font-size:10px">${invoice.shippingMethod}</span></div>`:""}
+            </div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+            <thead><tr style="background:#222;color:#fff">
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px">Description</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:45px">Qty</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:80px">Unit Price</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:90px">Amount</th>
+              ${showLot?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Lot No.</th>`:""}
+              ${showExp?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Expiry</th>`:""}
+            </tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot><tr style="font-weight:700;background:#f5f5f5">
+              <td colspan="3" style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000">TOTAL</td>
+              <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-size:13px">${invoice.currency||"JPY"} ${dnTotal.toLocaleString()}</td>
+              ${showLot?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
+              ${showExp?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
+            </tr></tfoot>
+          </table>
+          <div style="margin-top:40px;display:flex;justify-content:flex-end">
+            <div style="text-align:center;min-width:200px">
+              ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:""} 
+              <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
+              <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
+            </div>
+          </div>
+        </div>`;
+    };
+
     const buildPackingSection=()=>{
+      if(packing.length===0) return "";
       const rows=packingRows.map((row:any,i:number)=>`
         <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
           <td style="text-align:center">${row.cartonNo}</td>
@@ -1307,6 +1382,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     const proformaSection=isProforma?buildInvoiceSection("PROFORMA INVOICE",invoiceItems,invoiceRemarks,true):"";
     const invoiceSection=buildInvoiceSection("INVOICE",invoiceItems,invoiceRemarks,true);
     const commercialSection=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
+    const deliveryNoteSection=buildDeliveryNoteSection();
     const packingSection=buildPackingSection();
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
     <style>*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
@@ -1314,6 +1390,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       ${proformaSection}
       ${invoiceSection}
       ${commercialSection}
+      ${deliveryNoteSection}
       ${packingSection}
     </div></body></html>`);
     w.document.close();
@@ -3163,7 +3240,7 @@ export default function App(){
                             ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong> から自動引用済みです</div>
                             :<div style={{fontSize:13,color:"#92400E"}}>⚠️ Proformaからの変換でない場合は②へ進んでください</div>}
                         </div>
-                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs}/>
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs} hideNextButton={true}/>
                         <div style={{display:"flex",justifyContent:"flex-end",marginTop:8,gap:8}}>
                           <button className="btn btn-amber" onClick={()=>{saveInvoice("draft");showToast("💾 保存しました");}}>💾 下書き保存</button>
                           <button className="btn btn-primary" onClick={()=>setStep(2)}>② Invoice編集へ →</button>
