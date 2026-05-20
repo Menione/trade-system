@@ -1173,7 +1173,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>":""}
+          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
           ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
         </tr>`).join("");
       const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
@@ -1231,7 +1231,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
-              ${showLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="ja"?"ロット番号":"Lot No."}</th>":""}
+              ${showLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
               ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
@@ -1252,7 +1252,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <td style="text-align:right">${row.grossWeight}</td>
           <td style="text-align:right">${row.netWeight}</td>
           <td>${row.dimensions}</td>
-          ${packingRows.some((r:any)=>r.lotNo)?`<td>${row.lotNo||""}</td>":""}
+          ${packingRows.some((r:any)=>r.lotNo)?`<td>${row.lotNo||""}</td>`:""}
           ${packingRows.some((r:any)=>r.expiryDate)?`<td>${row.expiryDate||""}</td>`:""}
         </tr>`).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
@@ -1278,8 +1278,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
-              ${packingRows.some((r:any)=>r.lotNo)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"ロット番号":"Lot No."}</th>":""}
-              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>":""}
+              ${packingRows.some((r:any)=>r.lotNo)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
+              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
@@ -1289,7 +1289,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totNW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
-              ${packingRows.some((r:any)=>r.lotNo)?`<td style="border:1px solid #ccc;padding:4px 6px"></td>":""}
+              ${packingRows.some((r:any)=>r.lotNo)?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
               ${packingRows.some((r:any)=>r.expiryDate)?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
             </tr></tfoot>
           </table>
