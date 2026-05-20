@@ -412,7 +412,7 @@ function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
 
   const labels=isProforma
     ?["①Proforma作成","②承認申請"]
-    :["①Proforma","②Invoice","③Commercial","④Packing","⑤納品書","⑥PDF","⑦承認","⑧出荷"];
+    :["①Proforma","②Invoice","③Commercial","④Packing","⑤Delivery Note","⑥PDF","⑦承認","⑧出荷"];
   const icons=isProforma
     ?["📋","📨"]
     :["📋","📄","🔄","📦","📝","🖨️","✅","🚢"];
@@ -1436,7 +1436,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <button className={`tab ${activeDoc==="invoice"?"active":""}`} onClick={()=>setActiveDoc("invoice")}>📄 Invoice</button>
           <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
-          <button className={`tab ${activeDoc==="receipt"?"active":""}`} onClick={()=>setActiveDoc("receipt")}>📝 納品書</button>
+          <button className={`tab ${activeDoc==="receipt"?"active":""}`} onClick={()=>setActiveDoc("receipt")}>📝 Delivery Note</button>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <div style={{display:"flex",background:"#F0EEE9",borderRadius:"var(--radius)",padding:3,gap:2}}>
@@ -1564,7 +1564,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                     {/* 納品書ヘッダー */}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                       <div>
-                        <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>{printLang==="ja"?"納　品　書":"DELIVERY NOTE"}</div>
+                        <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>{printLang==="ja"?"Delivery Note":"Delivery Note"}</div>
                         <div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"番号":"No."} {invoice.invoiceNo}</div>
                         {invoice.trackingDate&&<div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"出荷日":"Ship Date"}: {invoice.trackingDate}</div>}
                       </div>
@@ -2557,7 +2557,7 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
             <button className={`btn btn-sm ${printLang==="ja"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("ja")}>🇯🇵 日本語</button>
             <button className={`btn btn-sm ${printLang==="en"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("en")}>🇺🇸 English</button>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ 納品書印刷</button>
+          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ Delivery Note 印刷</button>
           <button className="btn btn-amber btn-sm" onClick={()=>{onSave("draft");showToast("💾 保存しました");}} style={{marginLeft:"auto"}}>💾 保存</button>
         </div>
       </div>
@@ -2568,7 +2568,7 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
           {/* ヘッダー */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
             <div>
-              <div style={{fontSize:28,fontWeight:900,letterSpacing:3,marginBottom:6}}>{printLang==="ja"?"納　品　書":"DELIVERY NOTE"}</div>
+              <div style={{fontSize:28,fontWeight:900,letterSpacing:3,marginBottom:6}}>{printLang==="ja"?"Delivery Note":"Delivery Note"}</div>
               <div style={{fontSize:10,color:"#444"}}>{printLang==="ja"?"番号":"No."} <strong>{invoice.invoiceNo}</strong></div>
               {shipDate&&<div style={{fontSize:10,color:"#444"}}>{printLang==="ja"?"出荷日":"Ship Date"}: <strong>{shipDate}</strong></div>}
             </div>
@@ -2601,22 +2601,22 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
           {/* 品目テーブル */}
           <table style={{width:"100%",borderCollapse:"collapse",marginBottom:16}}>
             <thead><tr style={{background:"#222",color:"#fff"}}>
-              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
-              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:55,textAlign:"right"}}>{printLang==="ja"?"数量":"Qty"}</th>
-              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85,textAlign:"right"}}>{printLang==="ja"?"単価":"Unit Price"}</th>
-              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:95,textAlign:"right"}}>{printLang==="ja"?"金額":"Amount"}</th>
-              {showLotR&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
-              {showExpR&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
+              <th style={{border:"1px solid #444",padding:"4px 6px",fontSize:9,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
+              <th style={{border:"1px solid #444",padding:"4px 6px",fontSize:9,fontWeight:600,width:45,textAlign:"right"}}>{printLang==="ja"?"数量":"Qty"}</th>
+              <th style={{border:"1px solid #444",padding:"4px 6px",fontSize:9,fontWeight:600,width:75,textAlign:"right"}}>{printLang==="ja"?"単価":"Unit Price"}</th>
+              <th style={{border:"1px solid #444",padding:"4px 6px",fontSize:9,fontWeight:600,width:85,textAlign:"right"}}>{printLang==="ja"?"金額":"Amount"}</th>
+              {showLotR&&<th style={{border:"1px solid #444",padding:"4px 6px",fontSize:9,fontWeight:600,width:75}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
+              {showExpR&&<th style={{border:"1px solid #444",padding:"4px 6px",fontSize:9,fontWeight:600,width:75}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
             </tr></thead>
             <tbody>
               {recItems.map((it:any,i:number)=>(
                 <tr key={i} style={{background:i%2===0?"#fafafa":"#fff"}}>
-                  <td style={{border:"1px solid #ddd",padding:"5px 6px"}}>{it.productName}</td>
-                  <td style={{border:"1px solid #ddd",padding:"5px 6px",textAlign:"right"}}>{it.quantity}</td>
-                  <td style={{border:"1px solid #ddd",padding:"5px 6px",textAlign:"right"}}>{cur} {Number(it.unitPrice||0).toLocaleString()}</td>
-                  <td style={{border:"1px solid #ddd",padding:"5px 6px",textAlign:"right"}}>{cur} {(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
-                  {showLotR&&<td style={{border:"1px solid #ddd",padding:"5px 6px"}}>{it.lotNo||""}</td>}
-                  {showExpR&&<td style={{border:"1px solid #ddd",padding:"5px 6px"}}>{it.expiryDate||""}</td>}
+                  <td style={{border:"1px solid #ddd",padding:"4px 5px",fontSize:9}}>{it.productName}</td>
+                  <td style={{border:"1px solid #ddd",padding:"4px 5px",fontSize:9,textAlign:"right"}}>{it.quantity}</td>
+                  <td style={{border:"1px solid #ddd",padding:"4px 5px",fontSize:9,textAlign:"right"}}>{cur} {Number(it.unitPrice||0).toLocaleString()}</td>
+                  <td style={{border:"1px solid #ddd",padding:"4px 5px",fontSize:9,textAlign:"right"}}>{cur} {(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
+                  {showLotR&&<td style={{border:"1px solid #ddd",padding:"4px 5px",fontSize:9}}>{it.lotNo||""}</td>}
+                  {showExpR&&<td style={{border:"1px solid #ddd",padding:"4px 5px",fontSize:9}}>{it.expiryDate||""}</td>}
                 </tr>
               ))}
             </tbody>
