@@ -2595,6 +2595,8 @@ function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
 export default function App(){
   const [page,setPage]=useState("new");
   const [step,setStep]=useState(1);
+  const [savedSnapshot,setSavedSnapshot]=useState<string>("");
+  const [pendingAction,setPendingAction]=useState<(()=>void)|null>(null);
   const [invoice,setInvoice]=useState<any>({...INIT_INVOICE,date:new Date().toISOString().split("T")[0]});
   const [packing,setPacking]=useState<any[]>([]);
   const [customers,setCustomers]=useState<any[]>([]);
@@ -2603,8 +2605,6 @@ export default function App(){
   const [toast,setToast]=useState("");
   const [saving,setSaving]=useState(false);
   const [countryDocs,setCountryDocs]=useState<any[]>([]);
-  const [savedSnapshot,setSavedSnapshot]=useState<string>("");
-  const [pendingAction,setPendingAction]=useState<(()=>void)|null>(null);
   const [authToken,setAuthToken]=useState<string|null>(null);
   const [authUser,setAuthUser]=useState<any>(null);
   const [authLoading,setAuthLoading]=useState(true);
@@ -2660,7 +2660,8 @@ export default function App(){
     sb("country_documents?order=country.asc").then(d=>setCountryDocs(d||[])).catch(()=>{});
   },[authToken]);
 
-  // ブラウザ更新・タブ閉じガード
+  const showToast=(msg:string)=>setToast(msg);
+
   useEffect(()=>{
     const handler=(e:BeforeUnloadEvent)=>{
       if(isDirty){e.preventDefault();e.returnValue="";}
@@ -2669,20 +2670,16 @@ export default function App(){
     return ()=>window.removeEventListener("beforeunload",handler);
   },[isDirty]);
 
-  const showToast=(msg:string)=>setToast(msg);
-
   const isDirty=useMemo(()=>{
-    if(!invoice.invoiceNo) return false; // Invoice No 未入力なら警告不要
-    if(!savedSnapshot) return true;       // 一度も保存していない＆No入力済み
+    if(!invoice.invoiceNo) return false;
+    if(!savedSnapshot) return true;
     try{
       const snap=JSON.parse(savedSnapshot);
-      // packing は別管理なので invoice だけ比較
       const keys=Object.keys({...invoice,...snap}) as (keyof typeof invoice)[];
       return keys.some(k=>JSON.stringify(invoice[k])!==JSON.stringify(snap[k]));
     }catch{return false;}
   },[invoice,savedSnapshot]);
 
-  // ナビ遷移前ガード：isDirtyならダイアログ、そうでなければ即実行
   const guardedNavigate=(action:()=>void)=>{
     if(isDirty){setPendingAction(()=>action);}
     else{action();}
