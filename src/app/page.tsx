@@ -412,23 +412,23 @@ function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
 
   const labels=isProforma
     ?["①Proforma作成","②承認申請"]
-    :["①Proforma引用","②Invoice編集","③Commercial編集","④Packing List","⑤PDF出力","⑥承認","⑦出荷管理"];
+    :["①Proforma","②Invoice","③Commercial","④Packing","⑤納品書","⑥PDF","⑦承認","⑧出荷"];
   const icons=isProforma
     ?["📋","📨"]
-    :["📋","📄","🔄","📦","🖨️","✅","🚢"];
+    :["📋","📄","🔄","📦","📝","🖨️","✅","🚢"];
   const total=labels.length;
 
   return(
     <div className="step-bar" style={{overflowX:"auto"}}>
-      <div style={{display:"flex",alignItems:"center",minWidth:isProforma?240:700,flex:1}}>
+      <div style={{display:"flex",alignItems:"center",minWidth:isProforma?240:820,flex:1}}>
       {labels.map((label,i)=>{
         const s=i+1;
         let dotClass="pending";
         if(step>s)dotClass="done";
         else if(step===s)dotClass="active";
         // ⑥承認はapprovalStatusに応じて色変え
-        if(!isProforma&&s===6){
-          if(approvalStatus==="approved")dotClass=step>=6?"done":"active";
+        if(!isProforma&&s===7){
+          if(approvalStatus==="approved")dotClass=step>=7?"done":"active";
           else if(approvalStatus==="pending_approval")dotClass="active";
         }
         return(
@@ -1436,6 +1436,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <button className={`tab ${activeDoc==="invoice"?"active":""}`} onClick={()=>setActiveDoc("invoice")}>📄 Invoice</button>
           <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
+          <button className={`tab ${activeDoc==="receipt"?"active":""}`} onClick={()=>setActiveDoc("receipt")}>📝 納品書</button>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <div style={{display:"flex",background:"#F0EEE9",borderRadius:"var(--radius)",padding:3,gap:2}}>
@@ -1558,6 +1559,84 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                     <SignatureSection/>
                   </div>
                 )}
+                {activeDoc==="receipt"&&(
+                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
+                    {/* 納品書ヘッダー */}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                      <div>
+                        <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>{printLang==="ja"?"納　品　書":"DELIVERY NOTE"}</div>
+                        <div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"番号":"No."} {invoice.invoiceNo}</div>
+                        {invoice.trackingDate&&<div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"出荷日":"Ship Date"}: {invoice.trackingDate}</div>}
+                      </div>
+                      <div style={{textAlign:"right",fontSize:10}}>
+                        {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:55,maxWidth:180,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
+                        {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
+                        {org?.signerName&&<div>{org.signerName}</div>}
+                        {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
+                        {org?.tel&&<div>Tel: {org.tel}</div>}
+                      </div>
+                    </div>
+                    <div style={{height:2,background:"#000",marginBottom:14}}></div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px",marginBottom:16}}>
+                      <div>
+                        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"納品先":"CONSIGNEE"}</div>
+                        <div style={{fontWeight:700,fontSize:12}}>{(invoice.consignee||"").split("
+")[0]}</div>
+                        <div style={{fontSize:10,whiteSpace:"pre-wrap",color:"#333"}}>{(invoice.consignee||"").split("
+").slice(1).join("
+")}</div>
+                      </div>
+                      <div>
+                        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"お支払い条件":"PAYMENT TERMS"}</div>
+                        {invoice.paymentTerms&&<div style={{fontSize:10}}>{invoice.paymentTerms}</div>}
+                        {invoice.paymentDue&&<div style={{fontSize:10}}>{printLang==="ja"?"支払期限":"Due"}: {invoice.paymentDue}</div>}
+                        {invoice.incoterms&&<div style={{fontSize:10}}>Incoterms: {invoice.incoterms}</div>}
+                        {invoice.poNumber&&<div style={{fontSize:10}}>{printLang==="ja"?"発注番号":"P.O. No"}: {invoice.poNumber}</div>}
+                      </div>
+                    </div>
+                    {/* 品目テーブル */}
+                    {(()=>{
+                      const recItems=invoice.invoice_items||invoice.items||[];
+                      const showLotR=recItems.some((it:any)=>it.lotNo);
+                      const showExpR=recItems.some((it:any)=>it.expiryDate);
+                      const recTotal=recItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
+                      return(
+                        <table style={{width:"100%",borderCollapse:"collapse",marginBottom:16}}>
+                          <thead><tr style={{background:"#222",color:"#fff"}}>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:60,textAlign:"right"}}>{printLang==="ja"?"数量":"Qty"}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80,textAlign:"right"}}>{printLang==="ja"?"単価":"Unit Price"}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90,textAlign:"right"}}>{printLang==="ja"?"金額":"Amount"}</th>
+                            {showLotR&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
+                            {showExpR&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
+                          </tr></thead>
+                          <tbody>
+                            {recItems.map((it:any,i:number)=>(
+                              <tr key={i} style={{background:i%2===0?"#fafafa":"#fff"}}>
+                                <td style={{border:"1px solid #ddd",padding:"4px 6px"}}>{it.productName}</td>
+                                <td style={{border:"1px solid #ddd",padding:"4px 6px",textAlign:"right"}}>{it.quantity}</td>
+                                <td style={{border:"1px solid #ddd",padding:"4px 6px",textAlign:"right"}}>{cur} {Number(it.unitPrice||0).toLocaleString()}</td>
+                                <td style={{border:"1px solid #ddd",padding:"4px 6px",textAlign:"right"}}>{cur} {(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
+                                {showLotR&&<td style={{border:"1px solid #ddd",padding:"4px 6px"}}>{it.lotNo||""}</td>}
+                                {showExpR&&<td style={{border:"1px solid #ddd",padding:"4px 6px"}}>{it.expiryDate||""}</td>}
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr style={{fontWeight:700}}>
+                              <td colSpan={3} style={{border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",borderTop:"2px solid #000"}}>{printLang==="ja"?"合計":"TOTAL"}</td>
+                              <td style={{border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",borderTop:"2px solid #000",fontSize:13}}>{cur} {recTotal.toLocaleString()}</td>
+                              {showLotR&&<td style={{border:"1px solid #ddd",borderTop:"2px solid #000"}}></td>}
+                              {showExpR&&<td style={{border:"1px solid #ddd",borderTop:"2px solid #000"}}></td>}
+                            </tr>
+                          </tfoot>
+                        </table>
+                      );
+                    })()}
+                    {invoice.remarks&&<div style={{marginTop:8,fontSize:10}}><span style={{fontWeight:700}}>{printLang==="ja"?"備考":"Remarks"}: </span>{invoice.remarks}</div>}
+                    <SignatureSection/>
+                  </div>
+                )}
                 {activeDoc==="packing"&&(
                               <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
               {packingPages.map((pageRows,pi)=>(
@@ -1575,18 +1654,22 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                       {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Expiry</th>}
                     </tr></thead>
                     <tbody>
-                      {pageRows.map((row:any,i:number)=>(
+                      {pageRows.map((row:any,i:number)=>{
+                        // 同カートン番号の最初の行かどうか
+                        const isFirstInCarton=i===0||pageRows[i-1].cartonNo!==row.cartonNo;
+                        return(
                         <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{row.cartonNo}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{isFirstInCarton?row.cartonNo:""}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.quantity}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{isFirstInCarton?row.grossWeight:""}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{isFirstInCarton?row.netWeight:""}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{isFirstInCarton?row.dimensions:""}</td>
                           {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.lotNo||""}</td>}
                           {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.expiryDate||""}</td>}
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                     {pi===packingPages.length-1&&(
                       <tfoot>
@@ -2437,6 +2520,123 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
 // ============================================================
 // APPROVAL STEP (⑥ 承認申請→承認)
 // ============================================================
+
+function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,showToast}:any){
+  const t=T[lang]||T["ja"];
+  const cur=invoice.currency||"JPY";
+  const [shipDate,setShipDate]=useState(invoice.trackingDate||invoice.date||"");
+  const [printLang,setPrintLang]=useState(lang||"ja");
+
+  const recItems=invoice.invoice_items||invoice.items||[];
+  const showLotR=recItems.some((it:any)=>it.lotNo);
+  const showExpR=recItems.some((it:any)=>it.expiryDate);
+  const recTotal=recItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
+
+  const handlePrint=()=>{
+    setInvoice((v:any)=>({...v,trackingDate:shipDate}));
+    setTimeout(()=>window.print(),300);
+  };
+
+  return(
+    <div className="fade-in">
+      <div className="card no-print" style={{marginBottom:14,padding:"12px 16px"}}>
+        <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <label style={{fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>{printLang==="ja"?"出荷日":"Ship Date"}：</label>
+            <input type="date" className="input" style={{width:160}} value={shipDate}
+              onChange={(e:any)=>{setShipDate(e.target.value);setInvoice((v:any)=>({...v,trackingDate:e.target.value}));}}/>
+          </div>
+          <div style={{display:"flex",background:"#F0EEE9",borderRadius:"var(--radius)",padding:3,gap:2}}>
+            <button className={`btn btn-sm ${printLang==="ja"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("ja")}>🇯🇵 日本語</button>
+            <button className={`btn btn-sm ${printLang==="en"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("en")}>🇺🇸 English</button>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ 納品書印刷</button>
+          <button className="btn btn-amber btn-sm" onClick={()=>{onSave("draft");showToast("💾 保存しました");}} style={{marginLeft:"auto"}}>💾 保存</button>
+        </div>
+      </div>
+
+      {/* 納品書プレビュー */}
+      <div id="print-area" style={{background:"#e8e8e8",padding:"24px 0"}}>
+        <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
+          {/* ヘッダー */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+            <div>
+              <div style={{fontSize:28,fontWeight:900,letterSpacing:3,marginBottom:6}}>{printLang==="ja"?"納　品　書":"DELIVERY NOTE"}</div>
+              <div style={{fontSize:10,color:"#444"}}>{printLang==="ja"?"番号":"No."} <strong>{invoice.invoiceNo}</strong></div>
+              {shipDate&&<div style={{fontSize:10,color:"#444"}}>{printLang==="ja"?"出荷日":"Ship Date"}: <strong>{shipDate}</strong></div>}
+            </div>
+            <div style={{textAlign:"right",fontSize:10}}>
+              {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
+              {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
+              {org?.signerName&&<div>{org.signerName}</div>}
+              {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
+              {org?.tel&&<div>Tel: {org.tel}</div>}
+            </div>
+          </div>
+          <div style={{height:2,background:"#000",marginBottom:16}}></div>
+
+          {/* 納品先・支払情報 */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px",marginBottom:16}}>
+            <div>
+              <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"納品先":"CONSIGNEE"}</div>
+              <div style={{fontWeight:700,fontSize:12}}>{(invoice.consignee||"").split("\n")[0]}</div>
+              <div style={{fontSize:10,whiteSpace:"pre-wrap",color:"#333",lineHeight:1.6}}>{(invoice.consignee||"").split("\n").slice(1).join("\n")}</div>
+            </div>
+            <div>
+              {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{fontSize:9,fontWeight:700,color:"#555"}}>{printLang==="ja"?"発注番号":"P.O. No"}: </span><span style={{fontSize:10}}>{invoice.poNumber}</span></div>}
+              {invoice.paymentTerms&&<div style={{marginBottom:4}}><span style={{fontSize:9,fontWeight:700,color:"#555"}}>{printLang==="ja"?"支払条件":"Payment Terms"}: </span><span style={{fontSize:10}}>{invoice.paymentTerms}</span></div>}
+              {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{fontSize:9,fontWeight:700,color:"#555"}}>{printLang==="ja"?"支払期限":"Payment Due"}: </span><span style={{fontSize:10}}>{invoice.paymentDue}</span></div>}
+              {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{fontSize:9,fontWeight:700,color:"#555"}}>Incoterms: </span><span style={{fontSize:10}}>{invoice.incoterms}</span></div>}
+              {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{fontSize:9,fontWeight:700,color:"#555"}}>{printLang==="ja"?"配送方法":"Shipping"}: </span><span style={{fontSize:10}}>{invoice.shippingMethod}</span></div>}
+            </div>
+          </div>
+
+          {/* 品目テーブル */}
+          <table style={{width:"100%",borderCollapse:"collapse",marginBottom:16}}>
+            <thead><tr style={{background:"#222",color:"#fff"}}>
+              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
+              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:55,textAlign:"right"}}>{printLang==="ja"?"数量":"Qty"}</th>
+              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85,textAlign:"right"}}>{printLang==="ja"?"単価":"Unit Price"}</th>
+              <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:95,textAlign:"right"}}>{printLang==="ja"?"金額":"Amount"}</th>
+              {showLotR&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
+              {showExpR&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:85}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
+            </tr></thead>
+            <tbody>
+              {recItems.map((it:any,i:number)=>(
+                <tr key={i} style={{background:i%2===0?"#fafafa":"#fff"}}>
+                  <td style={{border:"1px solid #ddd",padding:"5px 6px"}}>{it.productName}</td>
+                  <td style={{border:"1px solid #ddd",padding:"5px 6px",textAlign:"right"}}>{it.quantity}</td>
+                  <td style={{border:"1px solid #ddd",padding:"5px 6px",textAlign:"right"}}>{cur} {Number(it.unitPrice||0).toLocaleString()}</td>
+                  <td style={{border:"1px solid #ddd",padding:"5px 6px",textAlign:"right"}}>{cur} {(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
+                  {showLotR&&<td style={{border:"1px solid #ddd",padding:"5px 6px"}}>{it.lotNo||""}</td>}
+                  {showExpR&&<td style={{border:"1px solid #ddd",padding:"5px 6px"}}>{it.expiryDate||""}</td>}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{fontWeight:700,background:"#f5f5f5"}}>
+                <td colSpan={3} style={{border:"1px solid #ddd",padding:"7px 8px",textAlign:"right",borderTop:"2px solid #000"}}>{printLang==="ja"?"合　計":"TOTAL"}</td>
+                <td style={{border:"1px solid #ddd",padding:"7px 8px",textAlign:"right",borderTop:"2px solid #000",fontSize:13}}>{cur} {recTotal.toLocaleString()}</td>
+                {showLotR&&<td style={{border:"1px solid #ddd",borderTop:"2px solid #000"}}></td>}
+                {showExpR&&<td style={{border:"1px solid #ddd",borderTop:"2px solid #000"}}></td>}
+              </tr>
+            </tfoot>
+          </table>
+
+          {invoice.remarks&&<div style={{fontSize:10,marginBottom:16}}><span style={{fontWeight:700}}>{printLang==="ja"?"備考":"Remarks"}: </span>{invoice.remarks}</div>}
+          <SignatureSection/>
+        </div>
+      </div>
+
+      {/* ナビボタン */}
+      <div className="no-print" style={{display:"flex",justifyContent:"space-between",marginTop:16}}>
+        <button className="btn btn-secondary" onClick={onBack}>← ④ Packing List</button>
+        <button className="btn btn-primary" onClick={()=>{onSave("in_progress");onNext();}}>⑥ PDF出力へ →</button>
+      </div>
+    </div>
+  );
+}
+
 function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
   const [comment,setComment]=useState("");
   const approvalStatusLabel:any={draft:"未申請",pending_approval:"承認待ち",approved:"承認済み ✅",rejected:"差し戻し ❌"};
@@ -2990,16 +3190,19 @@ export default function App(){
                     {/* ④ Packing List */}
                     {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
 
-                    {/* ⑤ PDF出力 */}
-                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)} countryDocs={countryDocs} customers={customers}/>}
+                    {/* ⑤ 納品書 */}
+                    {step===5&&<ReceiptPage invoice={invoice} setInvoice={setInvoice} packing={packing} org={org} lang={lang} onSave={saveInvoice} onBack={()=>setStep(4)} onNext={()=>setStep(6)} showToast={showToast}/>}
 
-                    {/* ⑥ 承認申請→承認 */}
-                    {step===6&&(
-                      <ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(5)} onNext={()=>setStep(7)} showToast={showToast}/>
+                    {/* ⑥ PDF出力 */}
+                    {step===6&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(5)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(7)} countryDocs={countryDocs} customers={customers}/>}
+
+                    {/* ⑦ 承認申請→承認 */}
+                    {step===7&&(
+                      <ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(6)} onNext={()=>setStep(8)} showToast={showToast}/>
                     )}
 
-                    {/* ⑦ 出荷管理 */}
-                    {step===7&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(6)}/>}
+                    {/* ⑧ 出荷管理 */}
+                    {step===8&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(7)}/>}
                   </>
                 )}
               </>
