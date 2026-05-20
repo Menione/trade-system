@@ -412,7 +412,7 @@ function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
 
   const labels=isProforma
     ?["①Proforma作成","②承認申請"]
-    :["①Proforma","②Invoice","③Commercial","④Packing","⑤Delivery Note","⑥PDF","⑦承認","⑧出荷"];
+    :["①Proforma","②Invoice","③Commercial","④Packing","⑤DELIVERY NOTE","⑥PDF","⑦承認","⑧出荷"];
   const icons=isProforma
     ?["📋","📨"]
     :["📋","📄","🔄","📦","📝","🖨️","✅","🚢"];
@@ -1264,7 +1264,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000;page-break-after:always">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
             <div>
-              <div style="font-size:32px;font-weight:800;letter-spacing:2px">Delivery Note</div>
+              <div style="font-size:32px;font-weight:800;letter-spacing:2px">DELIVERY NOTE</div>
               ${invoice.invoiceNo?`<div style="font-size:11px;color:#444">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
               ${invoice.trackingDate||invoice.date?`<div style="font-size:11px;color:#444">Ship Date: <strong>${invoice.trackingDate||invoice.date}</strong></div>`:""}
             </div>
@@ -1513,7 +1513,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <button className={`tab ${activeDoc==="invoice"?"active":""}`} onClick={()=>setActiveDoc("invoice")}>📄 Invoice</button>
           <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
-          <button className={`tab ${activeDoc==="receipt"?"active":""}`} onClick={()=>setActiveDoc("receipt")}>📝 Delivery Note</button>
+          <button className={`tab ${activeDoc==="receipt"?"active":""}`} onClick={()=>setActiveDoc("receipt")}>📝 DELIVERY NOTE</button>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <div style={{display:"flex",background:"#F0EEE9",borderRadius:"var(--radius)",padding:3,gap:2}}>
@@ -1641,7 +1641,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                     {/* 納品書ヘッダー */}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                       <div>
-                        <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>{printLang==="ja"?"Delivery Note":"Delivery Note"}</div>
+                        <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>{printLang==="ja"?"DELIVERY NOTE":"DELIVERY NOTE"}</div>
                         <div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"番号":"No."} {invoice.invoiceNo}</div>
                         {invoice.trackingDate&&<div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"出荷日":"Ship Date"}: {invoice.trackingDate}</div>}
                       </div>
@@ -2634,7 +2634,7 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
             <button className={`btn btn-sm ${printLang==="ja"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("ja")}>🇯🇵 日本語</button>
             <button className={`btn btn-sm ${printLang==="en"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("en")}>🇺🇸 English</button>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ Delivery Note 印刷</button>
+          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ DELIVERY NOTE 印刷</button>
           <button className="btn btn-amber btn-sm" onClick={()=>{onSave("draft");showToast("💾 保存しました");}} style={{marginLeft:"auto"}}>💾 保存</button>
         </div>
       </div>
@@ -2645,7 +2645,7 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
           {/* ヘッダー */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
             <div>
-              <div style={{fontSize:28,fontWeight:900,letterSpacing:3,marginBottom:6}}>{printLang==="ja"?"Delivery Note":"Delivery Note"}</div>
+              <div style={{fontSize:28,fontWeight:900,letterSpacing:3,marginBottom:6}}>{printLang==="ja"?"DELIVERY NOTE":"DELIVERY NOTE"}</div>
               <div style={{fontSize:10,color:"#444"}}>{printLang==="ja"?"番号":"No."} <strong>{invoice.invoiceNo}</strong></div>
               {shipDate&&<div style={{fontSize:10,color:"#444"}}>{printLang==="ja"?"出荷日":"Ship Date"}: <strong>{shipDate}</strong></div>}
             </div>
