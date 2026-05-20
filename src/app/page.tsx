@@ -1580,11 +1580,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px",marginBottom:16}}>
                       <div>
                         <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"納品先":"CONSIGNEE"}</div>
-                        <div style={{fontWeight:700,fontSize:12}}>{(invoice.consignee||"").split("
-")[0]}</div>
-                        <div style={{fontSize:10,whiteSpace:"pre-wrap",color:"#333"}}>{(invoice.consignee||"").split("
-").slice(1).join("
-")}</div>
+                        <div style={{fontWeight:700,fontSize:12}}>{(invoice.consignee||"").split("\n")[0]}</div>
+                        <div style={{fontSize:10,whiteSpace:"pre-wrap",color:"#333"}}>{(invoice.consignee||"").split("\n").slice(1).join("\n")}</div>
                       </div>
                       <div>
                         <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"お支払い条件":"PAYMENT TERMS"}</div>
