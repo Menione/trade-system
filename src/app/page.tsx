@@ -497,30 +497,14 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
   },[consigneeCountry,countryDocs]);
 
   const applyCustomer=(c:any)=>{
-    setInvoice((v:any)=>{
-      // 価格リストがあれば品目を自動設定
-      const newItems=c.price_list&&c.price_list.length>0
-        ?c.price_list.map((p:any)=>({
-            id:Date.now()+Math.random(),
-            productName:p.productName||"",
-            hsCode:p.hsCode||"",
-            unitPrice:p.unitPrice||"",
-            quantity:"",
-            currency:c.currency||v.currency||"JPY",
-            countryOfOrigin:v.countryOfOrigin||"",
-            lotNo:"",
-            expiryDate:"",
-          }))
-        :v.items;
-      return{...v,
-        consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
-        shipTo:c.consignee_name?[c.consignee_name,c.consignee_address].filter(Boolean).join("\n"):v.shipTo,
-        currency:c.currency||v.currency,
-        incoterms:c.incoterms||v.incoterms,
-        remarks:c.remarks?((v.remarks?v.remarks+"\n":"")+c.remarks):v.remarks,
-        items:newItems,
-      };
-    });
+    setInvoice((v:any)=>({...v,
+      consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
+      shipTo:c.consignee_name?[c.consignee_name,c.consignee_address].filter(Boolean).join("\n"):v.shipTo,
+      currency:c.currency||v.currency,
+      incoterms:c.incoterms||v.incoterms,
+      remarks:c.remarks?((v.remarks?v.remarks+"\n":"")+c.remarks):v.remarks,
+      // 品目は変えない（製品選択時に得意先別価格を反映）
+    }));
   };
 
   const applyShipTo=(c:any)=>{
@@ -530,9 +514,16 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
   };
 
   const applyProduct=(p:any,itemId:number)=>{
+    // 現在の得意先を逆引きして price_list から対象製品の単価を探す
+    const matchedCustomer=customers.find((c:any)=>
+      invoice.consignee&&invoice.consignee.startsWith(c.name||"__")
+    );
+    const customerPrice=matchedCustomer?.price_list?.find(
+      (pl:any)=>pl.productName===p.name
+    );
     upd(itemId,"productName",p.name);
-    upd(itemId,"hsCode",p.hs_code||"");
-    upd(itemId,"unitPrice",p.unit_price||"");
+    upd(itemId,"hsCode",customerPrice?.hsCode||p.hs_code||"");
+    upd(itemId,"unitPrice",customerPrice?.unitPrice||p.unit_price||"");
     upd(itemId,"currency",p.currency||cur);
     upd(itemId,"countryOfOrigin",p.country_of_origin||invoice.countryOfOrigin||"");
   };
@@ -723,6 +714,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
                 <th style={{width:85}}>{t.unitPrice}</th>
                 <th style={{width:60}}>通貨</th>
                 <th style={{width:100}}>{t.hsCode}(任意)</th>
+                <th style={{width:95}}>ロット番号(任意)</th>
                 <th style={{width:95}}>ロット番号(任意)</th>
                 <th style={{width:120}}>{t.expiryDate}(任意)</th>
                 <th style={{width:85,textAlign:"right"}}>{t.subtotal}</th>
