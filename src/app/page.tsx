@@ -2621,7 +2621,13 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
           </table>
 
           {invoice.remarks&&<div style={{fontSize:10,marginBottom:16}}><span style={{fontWeight:700}}>{printLang==="ja"?"備考":"Remarks"}: </span>{invoice.remarks}</div>}
-          <SignatureSection/>
+          <div style={{marginTop:40,display:"flex",justifyContent:"flex-end"}}>
+            <div style={{textAlign:"center",minWidth:200}}>
+              {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:60,display:"block",margin:"0 auto",borderBottom:"1px solid #000",marginBottom:4}}></img>:null}
+              <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
+              <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
+            </div>
+          </div>
         </div>
       </div>
 
