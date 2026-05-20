@@ -478,7 +478,7 @@ function ValidationPanel({invoice,packing,setStep}:any){
 // ============================================================
 function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,countryDocs}:any){
   const t=T[lang||"ja"];
-  const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",expiryDate:""}]}));
+  const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",lotNo:"",expiryDate:""}]}));
   const upd=(id:number,f:string,val:any)=>setInvoice((v:any)=>({...v,items:v.items.map((it:any)=>it.id===id?{...it,[f]:val}:it)}));
   const del=(id:number)=>setInvoice((v:any)=>({...v,items:v.items.filter((it:any)=>it.id!==id)}));
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
@@ -508,6 +508,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
             quantity:"",
             currency:c.currency||v.currency||"JPY",
             countryOfOrigin:v.countryOfOrigin||"",
+            lotNo:"",
             expiryDate:"",
           }))
         :v.items;
@@ -722,6 +723,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
                 <th style={{width:85}}>{t.unitPrice}</th>
                 <th style={{width:60}}>通貨</th>
                 <th style={{width:100}}>{t.hsCode}(任意)</th>
+                <th style={{width:95}}>ロット番号(任意)</th>
                 <th style={{width:120}}>{t.expiryDate}(任意)</th>
                 <th style={{width:85,textAlign:"right"}}>{t.subtotal}</th>
                 <th style={{width:32}}></th>
@@ -747,6 +749,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
                       <td><select className="input" value={item.currency||cur} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
                         {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
                       <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
+                      <td><input className="input" value={item.lotNo||""} placeholder="LOT-001" onChange={(e:any)=>upd(item.id,"lotNo",e.target.value)}/></td>
                       <td><input className="input" type="month" value={item.expiryDate||""} onChange={(e:any)=>upd(item.id,"expiryDate",e.target.value)}/></td>
                       <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
                       <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
@@ -1170,6 +1173,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const handlePrintAll=()=>{
     const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
+      const showLot=items.some((it:any)=>it.lotNo);
       const rows=items.map((it:any,i:number)=>`
         <tr style="background:${i%2===0?"#ffffff":"#f5f5f5"}">
           <td style="border:1px solid #ddd;padding:4px 6px">${it.productName||""}</td>
@@ -1177,6 +1181,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
+          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>":""}
           ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
         </tr>`).join("");
       const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
@@ -1234,6 +1239,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
+              ${showLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="ja"?"ロット番号":"Lot No."}</th>":""}
               ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
@@ -1254,6 +1260,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <td style="text-align:right">${row.grossWeight}</td>
           <td style="text-align:right">${row.netWeight}</td>
           <td>${row.dimensions}</td>
+          ${packingRows.some((r:any)=>r.lotNo)?`<td>${row.lotNo||""}</td>":""}
           ${packingRows.some((r:any)=>r.expiryDate)?`<td>${row.expiryDate||""}</td>`:""}
         </tr>`).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
@@ -1279,7 +1286,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
-              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
+              ${packingRows.some((r:any)=>r.lotNo)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"ロット番号":"Lot No."}</th>":""}
+              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>":""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
@@ -1289,6 +1297,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totNW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
+              ${packingRows.some((r:any)=>r.lotNo)?`<td style="border:1px solid #ccc;padding:4px 6px"></td>":""}
               ${packingRows.some((r:any)=>r.expiryDate)?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
             </tr></tfoot>
           </table>
@@ -1455,7 +1464,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
         <div id="print-area" style={{background:"#e8e8e8",padding:"24px 0"}}>
           {(()=>{
             const showExp=(invoiceItems||[]).some((it:any)=>it.expiryDate)||(commercialItems||[]).some((it:any)=>it.expiryDate);
-            const editTable=(items:any[],updFn:any,delFn:any,addFn:any,showExp:boolean,remarks:string,setRemarks:any,docCur:string)=>(
+            const showLot=(invoiceItems||[]).some((it:any)=>it.lotNo)||(commercialItems||[]).some((it:any)=>it.lotNo);
+            const editTable=(items:any[],updFn:any,delFn:any,addFn:any,showExp:boolean,remarks:string,setRemarks:any,docCur:string,showLot:boolean)=>(
                 <>
                   <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                     <thead><tr style={{background:"#222",color:"#fff"}}>
@@ -1464,7 +1474,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>Qty</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
-                      {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>Expiry</th>}
+                      {showLot&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
+                      {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
                       <th style={{border:"1px solid #444",padding:"4px",width:28}} className="no-print"></th>
                     </tr></thead>
                     <tbody>
@@ -1475,13 +1486,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:50,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
+                          {showLot&&<td style={{border:"1px solid #ddd",padding:"3px 6px",fontSize:9}}>{it.lotNo||""}</td>}
                           {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="date" style={{border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
                           <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr><td colSpan={showExp?7:6} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
+                      <tr><td colSpan={(showExp?1:0)+(showLot?1:0)+6} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
                         TOTAL: {docCur} {fmt(items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
                       </td></tr>
                     </tfoot>
@@ -1501,7 +1513,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                 {activeDoc==="proforma"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="PROFORMA INVOICE"/>
-                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
+                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur,showLot)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
@@ -1520,7 +1532,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                 {activeDoc==="invoice"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="INVOICE"/>
-                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
+                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur,showLot)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
@@ -1539,7 +1551,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                 {activeDoc==="commercial"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="COMMERCIAL INVOICE"/>
-                    {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur)}
+                    {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur,showLot)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
@@ -1568,6 +1580,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{t.grossWeight}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{t.netWeight}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>Dimensions(cm)</th>
+                      {packingRows.some((r:any)=>r.lotNo)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Lot No.</th>}
                       {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Expiry</th>}
                     </tr></thead>
                     <tbody>
@@ -1579,6 +1592,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
+                          {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.lotNo||""}</td>}
                           {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.expiryDate||""}</td>}
                         </tr>
                       ))}
@@ -1592,6 +1606,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
+                          {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
                           {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
                         </tr>
                       </tfoot>
@@ -2588,6 +2603,8 @@ export default function App(){
   const [toast,setToast]=useState("");
   const [saving,setSaving]=useState(false);
   const [countryDocs,setCountryDocs]=useState<any[]>([]);
+  const [savedSnapshot,setSavedSnapshot]=useState<string>("");
+  const [pendingAction,setPendingAction]=useState<(()=>void)|null>(null);
   const [authToken,setAuthToken]=useState<string|null>(null);
   const [authUser,setAuthUser]=useState<any>(null);
   const [authLoading,setAuthLoading]=useState(true);
@@ -2643,7 +2660,33 @@ export default function App(){
     sb("country_documents?order=country.asc").then(d=>setCountryDocs(d||[])).catch(()=>{});
   },[authToken]);
 
+  // ブラウザ更新・タブ閉じガード
+  useEffect(()=>{
+    const handler=(e:BeforeUnloadEvent)=>{
+      if(isDirty){e.preventDefault();e.returnValue="";}
+    };
+    window.addEventListener("beforeunload",handler);
+    return ()=>window.removeEventListener("beforeunload",handler);
+  },[isDirty]);
+
   const showToast=(msg:string)=>setToast(msg);
+
+  const isDirty=useMemo(()=>{
+    if(!invoice.invoiceNo) return false; // Invoice No 未入力なら警告不要
+    if(!savedSnapshot) return true;       // 一度も保存していない＆No入力済み
+    try{
+      const snap=JSON.parse(savedSnapshot);
+      // packing は別管理なので invoice だけ比較
+      const keys=Object.keys({...invoice,...snap}) as (keyof typeof invoice)[];
+      return keys.some(k=>JSON.stringify(invoice[k])!==JSON.stringify(snap[k]));
+    }catch{return false;}
+  },[invoice,savedSnapshot]);
+
+  // ナビ遷移前ガード：isDirtyならダイアログ、そうでなければ即実行
+  const guardedNavigate=(action:()=>void)=>{
+    if(isDirty){setPendingAction(()=>action);}
+    else{action();}
+  };
 
   const {errors}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
 
@@ -2683,6 +2726,7 @@ export default function App(){
         if(r?.[0]?.id)setInvoice((v:any)=>({...v,dbId:r[0].id}));
       }
       showToast(status==="draft"?"💾 下書きを保存しました":"✅ 保存しました");
+      setSavedSnapshot(JSON.stringify(invoice));
     }catch(e){showToast("❌ 保存に失敗しました");}
     setSaving(false);
   };
@@ -2791,6 +2835,33 @@ export default function App(){
     <>
       <style>{css}</style>
       {toast&&<Toast msg={toast} onClose={()=>setToast("")}/>}
+      {pendingAction&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:10000,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:12,padding:"28px 32px",width:340,boxShadow:"0 8px 32px rgba(0,0,0,0.22)"}}>
+            <div style={{fontSize:18,marginBottom:8}}>⚠️ 未保存の変更があります</div>
+            <div style={{fontSize:13,color:"#555",marginBottom:24,lineHeight:1.6}}>
+              このまま移動すると変更内容が失われます。<br/>保存してから移動しますか？
+            </div>
+            <div style={{display:"flex",flexDirection:"column" as any,gap:8}}>
+              <button className="btn btn-primary" style={{width:"100%"}} onClick={async()=>{
+                await saveInvoice("draft");
+                const action=pendingAction;
+                setPendingAction(null);
+                action&&action();
+              }}>💾 保存して移動</button>
+              <button className="btn btn-danger" style={{width:"100%"}} onClick={()=>{
+                const action=pendingAction;
+                setPendingAction(null);
+                setSavedSnapshot("");
+                action&&action();
+              }}>🗑️ 保存せずに移動</button>
+              <button className="btn btn-secondary" style={{width:"100%"}} onClick={()=>setPendingAction(null)}>
+                キャンセル（作業を続ける）
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="app">
         <aside className="sidebar">
           <div className="sidebar-logo">
@@ -2802,8 +2873,11 @@ export default function App(){
             <div className="nav-label">メニュー</div>
             {navItems.map(n=>(
               <button key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={()=>{
-                if(n.id==="new"){reset();}
-                else{setPage(n.id);}
+                if(page==="new"&&n.id!=="new"){
+                  guardedNavigate(()=>setPage(n.id));
+                }else if(n.id==="new"){
+                  guardedNavigate(()=>reset());
+                }else{setPage(n.id);}
               }}>
                 <span className="nav-icon">{n.icon}</span>{n.label}
               </button>
@@ -2874,7 +2948,7 @@ export default function App(){
                       <div style={{fontSize:32,marginBottom:12}}>📨</div>
                       <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>Proformaを保存しました</div>
                       <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:20}}>保存済み案件から「🔄 Commercialに変換」で①〜⑦フローを開始してください</div>
-                      <button className="btn btn-green" onClick={()=>setPage("history")}>📚 保存済み案件を見る</button>
+                      <button className="btn btn-green" onClick={()=>guardedNavigate(()=>setPage("history"))}>📚 保存済み案件を見る</button>
                     </div>}
                   </>
                 ):(
