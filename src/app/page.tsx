@@ -743,7 +743,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
                       <td><input className="input" value={item.lotNo||""} placeholder="LOT-001" onChange={(e:any)=>upd(item.id,"lotNo",e.target.value)}/></td>
                       <td><input className="input" type="month" value={item.expiryDate||""} onChange={(e:any)=>upd(item.id,"expiryDate",e.target.value)}/></td>
                       <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
-                      <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
+                      <td className="no-print"><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
                     </tr>
                   );
                 })}
@@ -2566,7 +2566,7 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
                         {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
                       <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
                       <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
-                      <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
+                      <td className="no-print"><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
                     </tr>
                   );
                 })}
