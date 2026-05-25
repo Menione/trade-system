@@ -317,7 +317,15 @@ textarea{resize:vertical;min-height:64px}
 .empty-icon{font-size:36px;margin-bottom:8px}
 .saved-banner{background:var(--green-light);border:1px solid var(--green-mid);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:13px;color:var(--green);}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* 署名セクション改ページ防止 */
+.sig-block {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+.total-sig-block {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .fade-in{animation:fadeIn .2s ease}
 /* PDF print styles */
 @media print{
@@ -1186,14 +1194,21 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
             ${org.swiftCode?`<div><span style="color:#666">SWIFT: </span>${org.swiftCode}</div>`:""}
           </div>
         </div>`:"";
-      const sigSection=`
-        <div style="margin-top:40px;display:flex;justify-content:flex-end">
-          <div style="text-align:center;min-width:200px">
-            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
-            <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
-            <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
-          </div>
-        </div>`;
+     const sigSection=`
+  <div style="page-break-inside:avoid;break-inside:avoid;margin-top:0">
+    <div style="text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000;padding:8px 0">
+      TOTAL: ${cur} ${fmt(total,cur)}
+    </div>
+    <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid;break-inside:avoid">
+      <div style="text-align:center;min-width:200px">
+        ${org?.signatureBase64
+          ?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`
+          :`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+        <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
+        <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
+      </div>
+    </div>
+  </div>`;
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000;page-break-after:always">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
@@ -1366,14 +1381,15 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               ${packingRows.some((r:any)=>r.expiryDate)?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
             </tr></tfoot>
           </table>
-          <div style="margin-top:40px;display:flex;justify-content:flex-end">
-            <div style="text-align:center;min-width:200px">
-              ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
-              <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
-              <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
-            </div>
-          </div>
-        </div>`;
+       `<div style="page-break-inside:avoid;break-inside:avoid;margin-top:40px;display:flex;justify-content:flex-end">
+  <div style="text-align:center;min-width:200px;page-break-inside:avoid;break-inside:avoid">
+    ${org?.signatureBase64
+      ?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`
+      :`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+    <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
+    <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
+  </div>
+</div>`;
     };
 
     const w=window.open("","_blank","width=1100,height=1400");
@@ -1477,15 +1493,28 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       </div>
     </>
   );
-  const SignatureSection=()=>(
-    <div style={{marginTop:40,display:"flex",justifyContent:"flex-end"}}>
-      <div style={{textAlign:"center",minWidth:200}}>
-        {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
-        <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
-        <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
-      </div>
+const SignatureSection=()=>(
+  <div className="sig-block" style={{
+    marginTop:40,
+    display:"flex",
+    justifyContent:"flex-end",
+    pageBreakInside:"avoid" as any,
+    breakInside:"avoid" as any,
+  }}>
+    <div style={{
+      textAlign:"center",
+      minWidth:200,
+      pageBreakInside:"avoid" as any,
+      breakInside:"avoid" as any,
+    }}>
+      {org?.signatureBase64
+        ?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4}}/>
+        :<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
+      <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
+      <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
     </div>
-  );
+  </div>
+);
   return(
     <div className="fade-in">
       {countryAlert&&(
@@ -1556,11 +1585,55 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot>
-                      <tr><td colSpan={(showExp?1:0)+(showLot?1:0)+6} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
-                        TOTAL: {docCur} {fmt(items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
-                      </td></tr>
-                    </tfoot>
+                    // tableのtfootを削除し、テーブルの外に合計+署名ブロックを作る
+// ↓ <table> ... </table> の直後に追加
+<div className="total-sig-block" style={{
+  pageBreakInside:"avoid" as any,
+  breakInside:"avoid" as any,
+  marginTop:0,
+}}>
+  {/* 合計行 */}
+  <div style={{
+    textAlign:"right",
+    fontWeight:700,
+    fontSize:12,
+    borderTop:"2px solid #000",
+    padding:"8px 0",
+    marginBottom: remarks ? 0 : 40,
+  }}>
+    TOTAL: {docCur} {fmt(items.reduce((s:number,it:any)=>
+      s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
+  </div>
+
+  {/* 備考（あれば） */}
+  {remarks!==undefined && (
+    <div style={{marginTop:10,marginBottom:24}}>
+      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>Remarks</div>
+      <textarea className="no-print" style={{
+        width:"100%",fontSize:10,border:"1px solid #eee",
+        borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36
+      }} value={remarks} onChange={(e:any)=>setRemarks(e.target.value)}/>
+      <div className="print-only" style={{fontSize:10,whiteSpace:"pre-wrap" as any}}>{remarks}</div>
+    </div>
+  )}
+
+  {/* 署名 */}
+  <div style={{
+    marginTop: remarks ? 16 : 40,
+    display:"flex",
+    justifyContent:"flex-end",
+    pageBreakInside:"avoid" as any,
+    breakInside:"avoid" as any,
+  }}>
+    <div style={{textAlign:"center",minWidth:200}}>
+      {org?.signatureBase64
+        ?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4}}/>
+        :<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
+      <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
+      <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
+    </div>
+  </div>
+</div>
                   </table>
                   <div className="no-print" style={{marginTop:6}}>
                     <button onClick={addFn} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
@@ -2683,13 +2756,22 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
           </table>
 
           {invoice.remarks&&<div style={{fontSize:10,marginBottom:16}}><span style={{fontWeight:700}}>{printLang==="ja"?"備考":"Remarks"}: </span>{invoice.remarks}</div>}
-          <div style={{marginTop:40,display:"flex",justifyContent:"flex-end"}}>
-            <div style={{textAlign:"center",minWidth:200}}>
-              {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:60,display:"block",margin:"0 auto",borderBottom:"1px solid #000",marginBottom:4}}></img>:null}
-              <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
-              <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
-            </div>
-          </div>
+<div style={{
+  marginTop:40,
+  display:"flex",
+  justifyContent:"flex-end",
+  pageBreakInside:"avoid" as any,
+  breakInside:"avoid" as any,
+}}>
+  <div style={{
+    textAlign:"center",
+    minWidth:200,
+    pageBreakInside:"avoid" as any,
+    breakInside:"avoid" as any,
+  }}>
+    ...同内容...
+  </div>
+</div>
         </div>
       </div>
 
