@@ -2271,6 +2271,96 @@ export default function App(){
       </div>
     </>
   );
+} から引用してCommercial Invoiceを作成します</div>
+                            :<div style={{fontSize:13,color:"#92400E"}}>⚠️ 引用元のProforma情報がありません</div>
+                          }
+                        </div>
+                        {/* 既存のフォーム（引継ぎ済みのデータを表示・編集） */}
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("in_progress");setStep(2);}} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs}/>
+                      </div>
+                    )}
+
+                    {step===2&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(1)} onNext={()=>setStep(3)} onSave={saveInvoice} org={org} lang={lang} stepNum={2} title="② Invoice (金額調整)" itemsKey="invoice_items" remarksKey="invoice_remarks" nextLabel="③ Commercial Invoiceへ →" hint="この書類専用の品目・金額・備考を調整できます" syncFrom="items" showToast={showToast}/>}
+                    {step===3&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(2)} onNext={()=>setStep(4)} onSave={saveInvoice} org={org} lang={lang} stepNum={3} title="③ Commercial Invoice (通関用)" itemsKey="commercial_items" remarksKey="commercial_remarks" nextLabel="④ Packing Listへ →" hint="通関用に無償サンプルの単価を入れる等の調整が可能です" syncFrom="invoice_items" showToast={showToast}/>}
+                    {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
+                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} onNext={()=>setStep(6)} onSave={saveInvoice} org={org} lang={lang} countryDocs={countryDocs} customers={customers}/>}
+                    {step===6&&<ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(5)} onNext={()=>{saveInvoice("in_progress");setStep(7);}} showToast={showToast}/>}
+                    {step===7&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(6)}/>}
+                  </>
+                )}
+              </>
+            )}
+            {page==="history"&&<HistoryPage onLoad={loadInvoice} onConvert={convertToCommercial} onEdit={editInvoice} onCopy={copyInvoice}/>}
+            {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
+            {page==="products"&&<ProductPage/>}
+            {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
+            {page==="approval"&&<ApprovalPage showToast={showToast}/>}
+            {page==="countryDocs"&&<CountryDocsPage/>}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+} から引用してCommercial Invoiceを作成します</div>
+                            :<div style={{fontSize:13,color:"#92400E"}}>⚠️ 引用元のProforma情報がありません</div>
+                          }
+                        </div>
+                        {/* 既存のフォーム（引継ぎ済みのデータを表示・編集） */}
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("in_progress");setStep(2);}} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs}/>
+                      </div>
+                    )}
+
+                    {step===2&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(1)} onNext={()=>setStep(3)} onSave={saveInvoice} org={org} lang={lang} stepNum={2} title="② Invoice (金額調整)" itemsKey="invoice_items" remarksKey="invoice_remarks" nextLabel="③ Commercial Invoiceへ →" hint="この書類専用の品目・金額・備考を調整できます" syncFrom="items" showToast={showToast}/>}
+                    {step===3&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(2)} onNext={()=>setStep(4)} onSave={saveInvoice} org={org} lang={lang} stepNum={3} title="③ Commercial Invoice (通関用)" itemsKey="commercial_items" remarksKey="commercial_remarks" nextLabel="④ Packing Listへ →" hint="通関用に無償サンプルの単価を入れる等の調整が可能です" syncFrom="invoice_items" showToast={showToast}/>}
+                    {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
+                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} onNext={()=>setStep(6)} onSave={saveInvoice} org={org} lang={lang} countryDocs={countryDocs} customers={customers}/>}
+                    {step===6&&<ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(5)} onNext={()=>{saveInvoice("in_progress");setStep(7);}} showToast={showToast}/>}
+                    {step===7&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(6)}/>}
+                  </>
+                )}
+              </>
+            )}
+            {page==="history"&&<HistoryPage onLoad={loadInvoice} onConvert={convertToCommercial} onEdit={editInvoice} onCopy={copyInvoice}/>}
+            {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
+            {page==="products"&&<ProductPage/>}
+            {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
+            {page==="approval"&&<ApprovalPage showToast={showToast}/>}
+            {page==="countryDocs"&&<CountryDocsPage/>}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+} から引用してCommercial Invoiceを作成します</div>
+                            :<div style={{fontSize:13,color:"#92400E"}}>⚠️ 引用元のProforma情報がありません</div>
+                          }
+                        </div>
+                        {/* 既存のフォーム（引継ぎ済みのデータを表示・編集） */}
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("in_progress");setStep(2);}} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs}/>
+                      </div>
+                    )}
+
+                    {step===2&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(1)} onNext={()=>setStep(3)} onSave={saveInvoice} org={org} lang={lang} stepNum={2} title="② Invoice (金額調整)" itemsKey="invoice_items" remarksKey="invoice_remarks" nextLabel="③ Commercial Invoiceへ →" hint="この書類専用の品目・金額・備考を調整できます" syncFrom="items" showToast={showToast}/>}
+                    {step===3&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(2)} onNext={()=>setStep(4)} onSave={saveInvoice} org={org} lang={lang} stepNum={3} title="③ Commercial Invoice (通関用)" itemsKey="commercial_items" remarksKey="commercial_remarks" nextLabel="④ Packing Listへ →" hint="通関用に無償サンプルの単価を入れる等の調整が可能です" syncFrom="invoice_items" showToast={showToast}/>}
+                    {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
+                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} onNext={()=>setStep(6)} onSave={saveInvoice} org={org} lang={lang} countryDocs={countryDocs} customers={customers}/>}
+                    {step===6&&<ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(5)} onNext={()=>{saveInvoice("in_progress");setStep(7);}} showToast={showToast}/>}
+                    {step===7&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(6)}/>}
+                  </>
+                )}
+              </>
+            )}
+            {page==="history"&&<HistoryPage onLoad={loadInvoice} onConvert={convertToCommercial} onEdit={editInvoice} onCopy={copyInvoice}/>}
+            {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
+            {page==="products"&&<ProductPage/>}
+            {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
+            {page==="approval"&&<ApprovalPage showToast={showToast}/>}
+            {page==="countryDocs"&&<CountryDocsPage/>}
+          </div>
+        </main>
+      </div>
+    </>
+  );
 }
 
 ```
