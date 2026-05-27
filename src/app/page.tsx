@@ -2054,6 +2054,289 @@ function ProductPage(){
     </div>
   );
 }
+// ============================================================
+// APPROVAL PAGE
+// ============================================================
+function ApprovalPage({showToast}:any){
+  const [items,setItems]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
+
+  const fetch=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const d=await sb("invoices?approval_status=in.(pending_approval,approved,rejected)&order=created_at.desc");
+      setItems(d||[]);
+    }catch(e){console.error(e);}
+    setLoading(false);
+  },[]);
+  useEffect(()=>{fetch();},[fetch]);
+
+  const updateApproval=async(id:string,status:string,comment?:string)=>{
+    try{
+      await sb(`invoices?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({approval_status:status,approval_comment:comment||""})});
+      showToast(status==="approved"?"✅ 承認しました":"🔄 差戻しました");
+      fetch();
+    }catch(e){showToast("❌ 更新に失敗しました");}
+  };
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">✅ 承認管理</div><div className="card-subtitle">承認待ちの案件を確認・承認・差戻しできます</div></div>
+          <button className="btn btn-secondary btn-sm" onClick={fetch}>🔄 更新</button>
+        </div>
+        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
+        :items.length===0?<div className="empty-state"><div className="empty-icon">✅</div><div style={{fontSize:13}}>承認待ちの案件はありません</div></div>
+        :items.map((h:any)=>(
+          <div key={h.id} className="history-item">
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+              <div>
+                <strong style={{fontSize:13}}>{h.invoice_no||"No Invoice No"}</strong>
+                <span className={`status-badge status-${h.approval_status||"draft"}`} style={{marginLeft:8}}>● {statusLabel[h.approval_status||"draft"]}</span>
+              </div>
+              {h.approval_status==="pending_approval"&&(
+                <div style={{display:"flex",gap:6}}>
+                  <button className="btn btn-green btn-sm" onClick={()=>updateApproval(h.id,"approved")}>✅ 承認</button>
+                  <button className="btn btn-danger btn-sm" onClick={()=>{
+                    const c=window.prompt("差戻しコメントを入力してください（任意）");
+                    if(c!==null)updateApproval(h.id,"rejected",c);
+                  }}>🔄 差戻し</button>
+                </div>
+              )}
+            </div>
+            <div className="history-meta">
+              {h.consignee&&<span className="tag tag-blue">{h.consignee.split("\n")[0]}</span>}
+              {h.date&&<span className="tag tag-gray">{h.date}</span>}
+              {h.currency&&<span className="tag tag-green">{h.currency}</span>}
+              {h.approval_comment&&<div style={{fontSize:12,color:"var(--red)",marginTop:4}}>💬 {h.approval_comment}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// COUNTRY DOCS PAGE
+// ============================================================
+function CountryDocsPage(){
+  const [items,setItems]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [showForm,setShowForm]=useState(false);
+  const [editId,setEditId]=useState<string|null>(null);
+  const empty={country:"",required_docs:"",notes:""};
+  const [form,setForm]=useState<any>(empty);
+
+  const fetch=useCallback(async()=>{
+    setLoading(true);
+    try{const d=await sb("country_documents?order=country.asc");setItems(d||[]);}
+    catch(e){}
+    setLoading(false);
+  },[]);
+  useEffect(()=>{fetch();},[fetch]);
+
+  const save=async()=>{
+    if(!form.country.trim())return alert("国名を入力してください");
+    if(editId){
+      await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(form)});
+    }else{
+      await sb("country_documents",{method:"POST",body:JSON.stringify(form)});
+    }
+    setForm(empty);setShowForm(false);setEditId(null);fetch();
+  };
+
+  const startEdit=(item:any)=>{
+    setForm({country:item.country||"",required_docs:item.required_docs||"",notes:item.notes||""});
+    setEditId(item.id);setShowForm(true);
+  };
+
+  const del=async(id:string)=>{
+    if(!confirm("削除しますか？"))return;
+    await sb(`country_documents?id=eq.${id}`,{method:"DELETE"});fetch();
+  };
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">🌏 国別必要書類</div><div className="card-subtitle">輸出先国ごとに必要な書類・注意事項を登録。Invoice作成時に自動アラート。</div></div>
+          <button className="btn btn-primary btn-sm" onClick={()=>{setForm(empty);setEditId(null);setShowForm(v=>!v);}}>+ 国を追加</button>
+        </div>
+        {showForm&&(
+          <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:14}}>
+            <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>{editId?"✏️ 編集":"+ 新規追加"}</div>
+            <div className="field" style={{marginBottom:10}}>
+              <label className="label"><span className="req">*</span>国名</label>
+              <AcInput value={form.country} suggestions={COUNTRIES} placeholder="Japan" onChange={(val:string)=>setForm((v:any)=>({...v,country:val}))}/>
+            </div>
+            <div className="field" style={{marginBottom:10}}>
+              <label className="label">必要書類（改行区切りで複数入力可）</label>
+              <textarea className="input" rows={4} value={form.required_docs} placeholder="例：&#10;Certificate of Origin&#10;Phytosanitary Certificate&#10;商業送り状（3部）" onChange={(e:any)=>setForm((v:any)=>({...v,required_docs:e.target.value}))}/>
+            </div>
+            <div className="field" style={{marginBottom:10}}>
+              <label className="label">注意事項・備考</label>
+              <textarea className="input" rows={2} value={form.notes} placeholder="例：原産地証明書はJETRO発行のもの" onChange={(e:any)=>setForm((v:any)=>({...v,notes:e.target.value}))}/>
+            </div>
+            <div style={{display:"flex",gap:7}}>
+              <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
+            </div>
+          </div>
+        )}
+        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
+        :items.length===0?<div className="empty-state"><div className="empty-icon">🌏</div><div style={{fontSize:13}}>国別必要書類を登録してください</div></div>
+        :items.map((item:any)=>(
+          <div key={item.id} className="history-item">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <strong style={{fontSize:13}}>🌐 {item.country}</strong>
+              <div style={{display:"flex",gap:5}}>
+                <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(item)}>✏️ 編集</button>
+                <button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>削除</button>
+              </div>
+            </div>
+            {item.required_docs&&(
+              <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:3}}>
+                {item.required_docs.split("\n").filter(Boolean).map((doc:string,i:number)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:4}}>
+                    <span style={{color:"var(--blue)"}}>•</span>{doc}
+                  </div>
+                ))}
+              </div>
+            )}
+            {item.notes&&<div style={{fontSize:11,color:"var(--amber)",marginTop:3}}>📌 {item.notes}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ORG PAGE (組織設定)
+// ============================================================
+function OrgPage({org,setOrg}:any){
+  const [form,setForm]=useState<any>(org||{});
+  const [saving,setSaving]=useState(false);
+  const [saved,setSaved]=useState(false);
+
+  useEffect(()=>{setForm(org||{});},[org]);
+
+  const save=async()=>{
+    setSaving(true);
+    try{
+      const payload={
+        company_name:form.companyName||"",address:form.address||"",
+        tel:form.tel||"",email:form.email||"",website:form.website||"",
+        bank_name:form.bankName||"",bank_branch:form.bankBranch||"",
+        bank_address:form.bankAddress||"",account_type:form.accountType||"普通",
+        account_no:form.accountNo||"",account_name:form.accountName||"",
+        swift_code:form.swiftCode||"",
+        signer_name:form.signerName||"",signer_title:form.signerTitle||"",
+        logo_base64:form.logoBase64||"",signature_base64:form.signatureBase64||"",
+        ship_locations:form.shipLocations||[],
+      };
+      const existing=await sb("organization?limit=1").catch(()=>null);
+      if(existing&&existing.length>0){
+        await sb(`organization?id=eq.${existing[0].id}`,{method:"PATCH",body:JSON.stringify(payload)});
+      }else{
+        await sb("organization",{method:"POST",body:JSON.stringify(payload)});
+      }
+      setOrg(form);
+      localStorage.setItem("tradeOrg",JSON.stringify(form));
+      setSaved(true);
+      setTimeout(()=>setSaved(false),2500);
+    }catch(e){alert("保存に失敗しました");}
+    setSaving(false);
+  };
+
+  const upd=(key:string,val:any)=>setForm((v:any)=>({...v,[key]:val}));
+
+  return(
+    <div className="fade-in">
+      {saved&&<div style={{background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius)",padding:"10px 16px",marginBottom:12,fontSize:13,color:"#166534",fontWeight:600}}>✅ 保存しました</div>}
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">⚙️ 組織設定</div><div className="card-subtitle">会社情報・銀行口座・署名者をInvoiceに反映</div></div>
+          <button className="btn btn-primary btn-sm" disabled={saving} onClick={save}>{saving?"保存中...":"💾 保存"}</button>
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10}}>🏢 会社基本情報</div>
+        <div className="grid-2" style={{marginBottom:12}}>
+          <div className="field"><label className="label">会社名</label>
+            <input className="input" value={form.companyName||""} placeholder="株式会社〇〇" onChange={(e:any)=>upd("companyName",e.target.value)}/></div>
+          <div className="field"><label className="label">電話番号</label>
+            <input className="input" value={form.tel||""} placeholder="+81-xx-xxxx-xxxx" onChange={(e:any)=>upd("tel",e.target.value)}/></div>
+        </div>
+        <div className="field" style={{marginBottom:12}}>
+          <label className="label">住所</label>
+          <textarea className="input" rows={2} value={form.address||""} placeholder="〒xxx-xxxx 東京都..." onChange={(e:any)=>upd("address",e.target.value)}/>
+        </div>
+        <div className="grid-2" style={{marginBottom:16}}>
+          <div className="field"><label className="label">メールアドレス</label>
+            <input className="input" value={form.email||""} placeholder="info@example.com" onChange={(e:any)=>upd("email",e.target.value)}/></div>
+          <div className="field"><label className="label">ウェブサイト</label>
+            <input className="input" value={form.website||""} placeholder="https://example.com" onChange={(e:any)=>upd("website",e.target.value)}/></div>
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:14}}>🏦 銀行口座情報</div>
+        <div className="grid-2" style={{marginBottom:10}}>
+          <div className="field"><label className="label">銀行名</label>
+            <input className="input" value={form.bankName||""} placeholder="〇〇銀行" onChange={(e:any)=>upd("bankName",e.target.value)}/></div>
+          <div className="field"><label className="label">支店名</label>
+            <input className="input" value={form.bankBranch||""} placeholder="〇〇支店" onChange={(e:any)=>upd("bankBranch",e.target.value)}/></div>
+        </div>
+        <div className="field" style={{marginBottom:10}}>
+          <label className="label">銀行住所</label>
+          <input className="input" value={form.bankAddress||""} placeholder="東京都〇〇区..." onChange={(e:any)=>upd("bankAddress",e.target.value)}/>
+        </div>
+        <div className="grid-4" style={{marginBottom:16}}>
+          <div className="field"><label className="label">口座種別</label>
+            <select className="input" value={form.accountType||"普通"} onChange={(e:any)=>upd("accountType",e.target.value)}>
+              <option>普通</option><option>当座</option></select></div>
+          <div className="field"><label className="label">口座番号</label>
+            <input className="input" value={form.accountNo||""} placeholder="1234567" onChange={(e:any)=>upd("accountNo",e.target.value)}/></div>
+          <div className="field"><label className="label">口座名義</label>
+            <input className="input" value={form.accountName||""} onChange={(e:any)=>upd("accountName",e.target.value)}/></div>
+          <div className="field"><label className="label">SWIFTコード</label>
+            <input className="input" value={form.swiftCode||""} placeholder="XXXXXXJPXXX" onChange={(e:any)=>upd("swiftCode",e.target.value)}/></div>
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:14}}>✍️ 署名者情報</div>
+        <div className="grid-2" style={{marginBottom:16}}>
+          <div className="field"><label className="label">署名者氏名</label>
+            <input className="input" value={form.signerName||""} placeholder="山田 太郎" onChange={(e:any)=>upd("signerName",e.target.value)}/></div>
+          <div className="field"><label className="label">役職</label>
+            <input className="input" value={form.signerTitle||""} placeholder="Export Manager" onChange={(e:any)=>upd("signerTitle",e.target.value)}/></div>
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:14}}>🖼️ ロゴ・署名画像</div>
+        <div className="grid-2" style={{marginBottom:16}}>
+          <ImageUpload label="会社ロゴ" value={form.logoBase64||""} onChange={(v:string)=>upd("logoBase64",v)} hint="PNG/JPG推奨 横長ロゴ"/>
+          <ImageUpload label="署名画像" value={form.signatureBase64||""} onChange={(v:string)=>upd("signatureBase64",v)} hint="白背景または透過PNG"/>
+        </div>
+
+        <div style={{borderTop:"1px solid var(--border)",paddingTop:14}}>
+          <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10}}>🚢 出荷元ロケーション（Port of Loading 候補）</div>
+          {(form.shipLocations||[]).map((loc:string,i:number)=>(
+            <div key={i} style={{display:"flex",gap:6,marginBottom:6}}>
+              <input className="input" value={loc} onChange={(e:any)=>upd("shipLocations",(form.shipLocations||[]).map((l:string,j:number)=>j===i?e.target.value:l))}/>
+              <button className="btn btn-danger btn-xs" onClick={()=>upd("shipLocations",(form.shipLocations||[]).filter((_:string,j:number)=>j!==i))}>✕</button>
+            </div>
+          ))}
+          <button className="btn btn-secondary btn-sm" onClick={()=>upd("shipLocations",[...(form.shipLocations||[]),""])}>+ ロケーション追加</button>
+        </div>
+
+        <div style={{marginTop:20,display:"flex",justifyContent:"flex-end"}}>
+          <button className="btn btn-primary" disabled={saving} onClick={save}>{saving?"保存中...":"💾 保存する"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App(){
   const [page,setPage]=useState("new");
   const [step,setStep]=useState(1);
