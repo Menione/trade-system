@@ -2055,6 +2055,238 @@ function ProductPage(){
   );
 }
 // ============================================================
+// INVOICE EDIT STEP (② Invoice / ③ Commercial)
+// ============================================================
+function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,lang,stepNum,title,itemsKey,remarksKey,nextLabel,hint,syncFrom,showToast}:any){
+  const t=T[lang||"ja"];
+  const cur=invoice.currency||"JPY";
+
+  // Initialize items from syncFrom key if empty
+  useEffect(()=>{
+    if(!(invoice[itemsKey]?.length)){
+      setInvoice((v:any)=>({...v,[itemsKey]:(v[syncFrom]||v.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()}))}));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  const items:any[]=invoice[itemsKey]||[];
+  const setItems=(fn:any)=>setInvoice((v:any)=>({...v,[itemsKey]:typeof fn==="function"?fn(v[itemsKey]||[]):fn}));
+  const remarks:string=invoice[remarksKey]||"";
+  const setRemarks=(val:string)=>setInvoice((v:any)=>({...v,[remarksKey]:val}));
+
+  const addItem=()=>setItems((v:any[])=>[...v,{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:cur,hsCode:"",countryOfOrigin:"",lotNo:"",expiryDate:""}]);
+  const upd=(id:number,f:string,val:any)=>setItems((v:any[])=>v.map((it:any)=>it.id===id?{...it,[f]:val}:it));
+  const del=(id:number)=>setItems((v:any[])=>v.filter((it:any)=>it.id!==id));
+  const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
+
+  const syncFromParent=()=>{
+    setInvoice((v:any)=>({...v,[itemsKey]:(v[syncFrom]||v.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()}))}));
+    showToast&&showToast("🔄 元データから再同期しました");
+  };
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">{title}</div>{hint&&<div className="card-subtitle">{hint}</div>}</div>
+          <button className="btn btn-secondary btn-sm" onClick={syncFromParent}>🔄 元データから再同期</button>
+        </div>
+        <div className="field" style={{marginBottom:12}}>
+          <label className="label">備考 (Remarks)</label>
+          <textarea className="input" rows={2} value={remarks} onChange={(e:any)=>setRemarks(e.target.value)}/>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table className="items-table">
+            <thead>
+              <tr>
+                <th style={{minWidth:160}}>製品名</th>
+                <th style={{width:70}}>数量</th>
+                <th style={{width:90}}>単価</th>
+                <th style={{width:70}}>通貨</th>
+                <th style={{width:100}}>HSコード</th>
+                <th style={{width:90}}>小計</th>
+                <th style={{width:32}}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item:any)=>{
+                const sub=Number(item.quantity||0)*Number(item.unitPrice||0);
+                const ic=item.currency||cur;
+                return(
+                  <tr key={item.id}>
+                    <td><input className="input" value={item.productName||""} onChange={(e:any)=>upd(item.id,"productName",e.target.value)}/></td>
+                    <td><input className="input" type="number" value={item.quantity||""} onChange={(e:any)=>upd(item.id,"quantity",e.target.value)}/></td>
+                    <td><input className="input" type="number" value={item.unitPrice||""} onChange={(e:any)=>upd(item.id,"unitPrice",e.target.value)}/></td>
+                    <td>
+                      <select className="input" value={item.currency||cur} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
+                        {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}
+                      </select>
+                    </td>
+                    <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
+                    <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
+                    <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={addItem}>+ 品目追加</button>
+        {items.length>0&&(
+          <div className="total-row" style={{marginTop:8}}>
+            <div><div className="total-label">{t.totalAmount}</div><div className="total-value">{cur} {fmt(total,cur)}</div></div>
+          </div>
+        )}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button className="btn btn-secondary" onClick={onBack}>← 戻る</button>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn btn-amber btn-sm" onClick={()=>onSave("in_progress")}>💾 保存</button>
+          <button className="btn btn-primary" onClick={onNext}>{nextLabel||"次へ →"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// APPROVAL STEP (⑥ 承認申請)
+// ============================================================
+function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
+  const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
+  const statusColor:any={draft:"var(--text-muted)",in_progress:"var(--blue)",pending_approval:"var(--amber)",approved:"var(--green)",rejected:"var(--red)",completed:"var(--green)"};
+  const approvalStatus=invoice.approvalStatus||"draft";
+
+  const requestApproval=async()=>{
+    setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
+    await onSave("draft");
+    showToast&&showToast("📨 承認依頼を送信しました");
+  };
+
+  const markApproved=async()=>{
+    setInvoice((v:any)=>({...v,approvalStatus:"approved"}));
+    await onSave("draft");
+    showToast&&showToast("✅ 承認しました");
+  };
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">⑥ 承認管理</div><div className="card-subtitle">書類の承認フローを管理します</div></div>
+        </div>
+        <div style={{textAlign:"center",padding:"24px 0"}}>
+          <div style={{fontSize:48,marginBottom:12}}>
+            {approvalStatus==="approved"?"✅":approvalStatus==="pending_approval"?"⏳":approvalStatus==="rejected"?"❌":"📋"}
+          </div>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>承認ステータス</div>
+          <div style={{fontSize:22,fontWeight:800,color:statusColor[approvalStatus]||"var(--text)",marginBottom:20}}>
+            {statusLabel[approvalStatus]||approvalStatus}
+          </div>
+          <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+            {approvalStatus==="draft"||approvalStatus==="in_progress"||approvalStatus==="rejected"?(
+              <button className="btn btn-purple" onClick={requestApproval}>📨 承認依頼を送る</button>
+            ):null}
+            {approvalStatus==="pending_approval"?(
+              <>
+                <button className="btn btn-green" onClick={markApproved}>✅ 承認する</button>
+                <button className="btn btn-danger" onClick={async()=>{
+                  setInvoice((v:any)=>({...v,approvalStatus:"rejected"}));
+                  await onSave("draft");
+                  showToast&&showToast("🔄 差戻しました");
+                }}>🔄 差戻す</button>
+              </>
+            ):null}
+            {approvalStatus==="approved"?(
+              <div style={{background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",padding:"12px 20px",fontSize:13,color:"#166534"}}>
+                ✅ 承認済みです。出荷ステップへ進めます。
+              </div>
+            ):null}
+          </div>
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button className="btn btn-secondary" onClick={onBack}>← ⑤ PDFに戻る</button>
+        <button className="btn btn-primary" onClick={onNext} disabled={approvalStatus!=="approved"} style={{opacity:approvalStatus!=="approved"?0.5:1}}>
+          ⑦ 出荷管理へ →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// TRACKING PAGE (⑦ 出荷管理)
+// ============================================================
+function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
+  const t=T[lang||"ja"];
+  const upd=(k:string,v:any)=>setInvoice((inv:any)=>({...inv,[k]:v}));
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">🚢 ⑦ 出荷管理</div><div className="card-subtitle">追跡番号・入金確認・出荷完了を記録します</div></div>
+        </div>
+
+        <div className="grid-2" style={{marginBottom:14}}>
+          <div className="field">
+            <label className="label">追跡番号 (Tracking No.)</label>
+            <input className="input" value={invoice.trackingNumber||""} placeholder="例: 1234567890" onChange={(e:any)=>upd("trackingNumber",e.target.value)}/>
+          </div>
+          <div className="field">
+            <label className="label">出荷日</label>
+            <input className="input" type="date" value={invoice.trackingDate||""} onChange={(e:any)=>upd("trackingDate",e.target.value)}/>
+          </div>
+        </div>
+
+        <div className="field" style={{marginBottom:14}}>
+          <label className="label">配送業者</label>
+          <select className="input" value={invoice.shippingMethod||""} onChange={(e:any)=>upd("shippingMethod",e.target.value)}>
+            <option value="">選択...</option>
+            {SHIPPING_METHODS.map((m:string)=><option key={m}>{m}</option>)}
+          </select>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column" as any,gap:10,marginBottom:14}}>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"12px 16px",background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)"}}>
+            <input type="checkbox" checked={!!invoice.paymentConfirmed} onChange={(e:any)=>upd("paymentConfirmed",e.target.checked)} style={{width:18,height:18}}/>
+            <div>
+              <div style={{fontSize:13,fontWeight:600,color:"#166534"}}>💰 入金確認済み</div>
+              <div style={{fontSize:11,color:"#166534",opacity:0.8}}>お支払いを確認した場合にチェック</div>
+            </div>
+          </label>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"12px 16px",background:"var(--blue-light)",border:"1px solid var(--blue-mid)",borderRadius:"var(--radius-lg)"}}>
+            <input type="checkbox" checked={invoice.status==="completed"} onChange={(e:any)=>setInvoice((v:any)=>({...v,status:e.target.checked?"completed":"in_progress"}))} style={{width:18,height:18}}/>
+            <div>
+              <div style={{fontSize:13,fontWeight:600,color:"var(--blue)"}}>🚢 出荷完了</div>
+              <div style={{fontSize:11,color:"var(--blue)",opacity:0.8}}>出荷が完了した場合にチェック</div>
+            </div>
+          </label>
+        </div>
+
+        <div className="field" style={{marginBottom:14}}>
+          <label className="label">備考・メモ</label>
+          <textarea className="input" rows={3} value={invoice.trackingNotes||""} placeholder="特記事項など" onChange={(e:any)=>upd("trackingNotes",e.target.value)}/>
+        </div>
+
+        {invoice.status==="completed"&&(
+          <div style={{background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",padding:"16px",textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:6}}>🎉</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#166534"}}>出荷完了！</div>
+            <div style={{fontSize:12,color:"#166534",marginTop:4}}>この案件のすべてのステップが完了しました</div>
+          </div>
+        )}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button className="btn btn-secondary" onClick={onBack}>← ⑥ 承認に戻る</button>
+        <button className="btn btn-green" onClick={()=>onSave(invoice.status==="completed"?"completed":"in_progress")}>💾 保存する</button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // APPROVAL PAGE
 // ============================================================
 function ApprovalPage({showToast}:any){
