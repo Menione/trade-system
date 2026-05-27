@@ -333,15 +333,12 @@ textarea{resize:vertical;min-height:64px}
 }
 `;
 
-// ============================================================
-// SUB COMPONENTS
-// ============================================================
 function Toast({msg,onClose}:any){
   useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t);},[onClose]);
   return <div className="toast">{msg}</div>;
 }
 
-function AcInput({value,onChange,suggestions,placeholder,className="",textOnly}:any){
+function AcInput({value,onChange,suggestions,placeholder,className=""}:any){
   const [open,setOpen]=useState(false);
   const filtered=(suggestions||[]).filter((s:any)=>{
     const v=(value||"").toLowerCase();
@@ -453,9 +450,6 @@ function ValidationPanel({invoice,packing,setStep}:any){
   );
 }
 
-// ============================================================
-// INVOICE FORM
-// ============================================================
 function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,countryDocs,hideNextButton}:any){
   const t=T[lang||"ja"];
   const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",lotNo:"",expiryDate:""}]}));
@@ -742,10 +736,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
     </div>
   );
 }
-
-// ============================================================
-// PACKING LIST FORM
-// ============================================================
 function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:any){
   const t=T[lang||"ja"];
   const invProducts=(invoice.items||[]).map((i:any)=>i.productName).filter(Boolean);
@@ -929,9 +919,6 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
   );
 }
 
-// ============================================================
-// REVIEW PAGE
-// ============================================================
 function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
   const t=T[lang||"ja"];
   const {errors,riskLevel}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
@@ -990,9 +977,6 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
   );
 }
 
-// ============================================================
-// PDF OUTPUT
-// ============================================================
 function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,customers}:any){
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
@@ -1030,7 +1014,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const updComItem=(id:any,k:string,v:any)=>updItem(commercialItems,setCommercialItems,id,k,v);
   const delComItem=(id:any)=>delItem(commercialItems,setCommercialItems,id);
   const addComItem=()=>addItem(setCommercialItems);
-  
+
   const packingRows:any[]=[];
   packing.forEach((carton:any)=>{
     const lines=carton.lines||[{productName:"",quantity:""}];
@@ -1110,9 +1094,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           </div>
         </div>`:"";
       const sigSection=`
-        <div style="margin-top:40px;display:flex;justify-content:flex-end">
-          <div style="text-align:center;min-width:200px">
-            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+        <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
+          <div style="text-align:center;min-width:200px;page-break-inside:avoid">
+            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+            ${org?.signerName?`<div style="font-weight:700;font-size:12px;margin-top:4px">${org.signerName}</div>`:""}
+            ${org?.signerTitle?`<div style="font-size:10px;color:#333">${org.signerTitle}</div>`:""}
           </div>
         </div>`;
       return `
@@ -1180,6 +1166,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
           ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
         </tr>`).join("");
+      const sigSection=`
+        <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
+          <div style="text-align:center;min-width:200px;page-break-inside:avoid">
+            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+            ${org?.signerName?`<div style="font-weight:700;font-size:12px;margin-top:4px">${org.signerName}</div>`:""}
+            ${org?.signerTitle?`<div style="font-size:10px;color:#333">${org.signerTitle}</div>`:""}
+          </div>
+        </div>`;
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000;page-break-after:always">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
@@ -1226,11 +1220,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               ${showExp?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
             </tr></tfoot>
           </table>
-          <div style="margin-top:40px;display:flex;justify-content:flex-end">
-            <div style="text-align:center;min-width:200px">
-              ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:""} 
-            </div>
-          </div>
+          ${sigSection}
         </div>`;
   };
 
@@ -1256,6 +1246,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
       const totNW=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2);
       const totQty=packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
+      const sigSection=`
+        <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
+          <div style="text-align:center;min-width:200px;page-break-inside:avoid">
+            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+            ${org?.signerName?`<div style="font-weight:700;font-size:12px;margin-top:4px">${org.signerName}</div>`:""}
+            ${org?.signerTitle?`<div style="font-size:10px;color:#333">${org.signerTitle}</div>`:""}
+          </div>
+        </div>`;
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
@@ -1292,11 +1290,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               ${hasExp?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
             </tr></tfoot>
           </table>
-          <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
-            <div style="text-align:center;min-width:200px;page-break-inside:avoid">
-              ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
-            </div>
-          </div>
+          ${sigSection}
         </div>`;
   };
 
@@ -1429,7 +1423,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const SignatureSection=()=>(
     <div style={{marginTop:40,display:"flex",justifyContent:"flex-end",pageBreakInside:"avoid" as any}}>
       <div style={{textAlign:"center",minWidth:200,pageBreakInside:"avoid" as any}}>
-        {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
+        {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4,display:"block",margin:"0 auto",borderBottom:"1px solid #000"}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
+        {org?.signerName&&<div style={{fontWeight:700,fontSize:12,marginTop:4}}>{org.signerName}</div>}
+        {org?.signerTitle&&<div style={{fontSize:10,color:"#333"}}>{org.signerTitle}</div>}
       </div>
     </div>
   );
@@ -1580,7 +1576,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                 )}
                 {activeDoc==="receipt"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
-                    {/* 納品書ヘッダー */}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                       <div>
                         <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>{printLang==="ja"?"DELIVERY NOTE":"DELIVERY NOTE"}</div>
@@ -1609,13 +1604,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                         {invoice.poNumber&&<div style={{fontSize:10}}>{printLang==="ja"?"発注番号":"P.O. No"}: {invoice.poNumber}</div>}
                       </div>
                     </div>
-                    {/* 品目テーブル */}
                     {(()=>{
-                      // itemsからlotNo/expiryDateを補完する（invoice_itemsには引き継がれないため）
-  const recItems=(invoice.invoice_items||invoice.items||[]).map((it:any)=>{
-    const base=(invoice.items||[]).find((b:any)=>b.productName===it.productName);
-    return base?{...it,lotNo:it.lotNo||base.lotNo,expiryDate:it.expiryDate||base.expiryDate}:it;
-  });
+                      const recItems=(invoice.invoice_items||invoice.items||[]).map((it:any)=>{
+                        const base=(invoice.items||[]).find((b:any)=>b.productName===it.productName);
+                        return base?{...it,lotNo:it.lotNo||base.lotNo,expiryDate:it.expiryDate||base.expiryDate}:it;
+                      });
                       const showLotR=recItems.some((it:any)=>it.lotNo);
                       const showExpR=recItems.some((it:any)=>it.expiryDate);
                       const recTotal=recItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
@@ -1651,7 +1644,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                           </tfoot>
                         </table>
                       );
-})()}
+                    })()}
                     {invoice.remarks&&<div style={{marginTop:8,fontSize:10}}><span style={{fontWeight:700}}>{printLang==="ja"?"備考":"Remarks"}: </span>{invoice.remarks}</div>}
                     <SignatureSection/>
                   </div>
@@ -1709,7 +1702,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                 )}
               </>
             );
-})()}
+          })()}
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
@@ -1718,658 +1711,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <button className="btn btn-amber btn-sm" onClick={()=>onSave("in_progress")}>💾 保存</button>
           <button className="btn btn-primary" onClick={onNext}>⑥ 承認申請へ →</button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
-  const [items,setItems]=useState<any[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [search,setSearch]=useState("");
-  const [filterStatus,setFilterStatus]=useState("all");
-  const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
-  const fetch=useCallback(async()=>{
-    setLoading(true);
-    try{const d=await sb("invoices?order=created_at.desc");setItems(d||[]);}
-    catch(e){console.error(e);}
-    setLoading(false);
-  },[]);
-  useEffect(()=>{fetch();},[fetch]);
-
-  const del=async(id:string,e:any)=>{
-    e.stopPropagation();
-    if(!confirm("削除しますか？"))return;
-    await sb(`invoices?id=eq.${id}`,{method:"DELETE"});
-    fetch();
-  };
-  const filtered=items.filter(h=>{
-    const q=search.toLowerCase();
-    const mq=!q||(h.invoice_no||"").toLowerCase().includes(q)||(h.consignee||"").toLowerCase().includes(q)||(h.country_of_origin||"").toLowerCase().includes(q);
-    const ms=filterStatus==="all"||h.status===filterStatus||h.approval_status===filterStatus;
-    return mq&&ms;
-  });
-  return(
-    <div className="fade-in">
-      <div className="card">
-        <div className="card-header">
-          <div className="card-title">📚 保存済み案件一覧</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {["all","draft","pending_approval","approved","in_progress","completed"].map(s=>(
-              <button key={s} className={`btn btn-xs ${filterStatus===s?"btn-primary":"btn-secondary"}`} onClick={()=>setFilterStatus(s)}>
-                {s==="all"?"全て":statusLabel[s]||s}
-              </button>
-            ))}
-          </div>
-        </div>
-        <input className="input" placeholder="🔍 Invoice No・得意先・国で検索..." value={search} onChange={(e:any)=>setSearch(e.target.value)} style={{marginBottom:14}}/>
-        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
-        :filtered.length===0?<div className="empty-state"><div className="empty-icon">📭</div><div style={{fontSize:13}}>保存済みの案件がありません</div></div>
-        :filtered.map(h=>(
-          <div key={h.id} className="history-item">
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>onLoad(h)}>
-                <strong style={{fontSize:13}}>{h.invoice_no||"No Invoice No"}</strong>
-                <span className={`status-badge status-${h.approval_status||h.status||"draft"}`}>● {statusLabel[h.approval_status||h.status||"draft"]}</span>
-                {h.invoice_type==="proforma"&&<span className="tag tag-amber">Proforma</span>}
-              </div>
-              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                {h.invoice_type==="proforma"&&(
-                  <button className="btn btn-primary btn-xs" onClick={(e)=>{e.stopPropagation();onConvert(h);}}>🔄 ①〜⑦フロー開始</button>
-                )}
-                {h.invoice_type!=="proforma"&&(
-                  <button className="btn btn-secondary btn-xs" onClick={(e)=>{e.stopPropagation();onEdit(h);}}>✏️ 編集</button>
-                )}
-                <button className="btn btn-secondary btn-xs" onClick={()=>onCopy(h)}>📋 コピー</button>
-                <button className="btn btn-danger btn-xs" onClick={(e)=>del(h.id,e)}>削除</button>
-              </div>
-            </div>
-            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:4,cursor:"pointer"}} onClick={()=>onLoad(h)}>{h.consignee?.split("\n")[0]||"—"}</div>
-            <div className="history-meta">
-              {h.country_of_origin&&<span className="tag tag-blue">{h.country_of_origin}</span>}
-              {h.date&&<span className="tag tag-gray">{h.date}</span>}
-              {h.currency&&<span className="tag tag-green">{h.currency}</span>}
-              {h.tracking_number&&<span className="tag tag-purple">追跡: {h.tracking_number}</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CustomerPage({onCustomersChange,products}:any){
-  const [items,setItems]=useState<any[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [showForm,setShowForm]=useState(false);
-  const [editId,setEditId]=useState<string|null>(null);
-  const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:"",price_list:[]};
-  const [form,setForm]=useState<any>(empty);
-  const fetch=useCallback(async()=>{
-    setLoading(true);
-    try{const d=await sb("customers?order=created_at.desc");setItems(d||[]);onCustomersChange(d||[]);}
-    catch(e){}
-    setLoading(false);
-  },[onCustomersChange]);
-  useEffect(()=>{fetch();},[fetch]);
-
-  const save=async()=>{
-    if(!form.name.trim())return alert("会社名を入力してください");
-    if(editId){
-      await sb(`customers?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(form)});
-    }else{
-      await sb("customers",{method:"POST",body:JSON.stringify(form)});
-    }
-    setForm(empty);setShowForm(false);setEditId(null);fetch();
-  };
-
-  const startEdit=(c:any)=>{
-    setForm({name:c.name||"",address:c.address||"",consignee_name:c.consignee_name||"",consignee_address:c.consignee_address||"",country:c.country||"Japan",currency:c.currency||"JPY",incoterms:c.incoterms||"",contact:c.contact||"",email:c.email||"",remarks:c.remarks||"",price_list:c.price_list||[]});
-    setEditId(c.id);setShowForm(true);
-  };
-
-  const del=async(id:string)=>{
-    if(!confirm("削除しますか？"))return;
-    await sb(`customers?id=eq.${id}`,{method:"DELETE"});fetch();
-  };
-  return(
-    <div className="fade-in">
-      <div className="card">
-        <div className="card-header">
-          <div><div className="card-title">🏢 得意先マスタ</div><div className="card-subtitle">Consignee・Ship Toを登録。Invoice作成時に自動入力。</div></div>
-          <button className="btn btn-primary btn-sm" onClick={()=>{setForm(empty);setEditId(null);setShowForm(v=>!v);}}>+ 得意先追加</button>
-        </div>
-        {showForm&&(
-          <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:14}}>
-            <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>{editId?"✏️ 編集":"+ 新規追加"}</div>
-            <div className="grid-2" style={{marginBottom:10}}>
-              <div className="field"><label className="label"><span className="req">*</span>会社名</label>
-                <input className="input" value={form.name} placeholder="ABC Co., Ltd." onChange={(e:any)=>setForm((v:any)=>({...v,name:e.target.value}))}/></div>
-              <div className="field"><label className="label">担当者名</label>
-                <input className="input" value={form.contact} onChange={(e:any)=>setForm((v:any)=>({...v,contact:e.target.value}))}/></div>
-            </div>
-            <div className="field" style={{marginBottom:10}}>
-              <label className="label">住所（Consignee欄に表示）</label>
-              <textarea className="input" rows={2} value={form.address} onChange={(e:any)=>setForm((v:any)=>({...v,address:e.target.value}))}/>
-            </div>
-            <div style={{fontSize:12,fontWeight:600,color:"var(--blue)",marginBottom:8}}>荷受先（Ship To）情報</div>
-            <div className="field" style={{marginBottom:10}}>
-              <label className="label">荷受先会社名</label>
-              <input className="input" value={form.consignee_name} onChange={(e:any)=>setForm((v:any)=>({...v,consignee_name:e.target.value}))}/>
-            </div>
-            <div className="field" style={{marginBottom:10}}>
-              <label className="label">荷受先住所</label>
-              <textarea className="input" rows={2} value={form.consignee_address} onChange={(e:any)=>setForm((v:any)=>({...v,consignee_address:e.target.value}))}/>
-            </div>
-            <div className="grid-4" style={{marginBottom:10}}>
-              <div className="field"><label className="label">国</label>
-                <AcInput value={form.country} suggestions={COUNTRIES} placeholder="Japan" onChange={(val:string)=>setForm((v:any)=>({...v,country:val}))}/></div>
-              <div className="field"><label className="label">通貨</label>
-                <select className="input" value={form.currency} onChange={(e:any)=>setForm((v:any)=>({...v,currency:e.target.value}))}>
-                  {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></div>
-              <div className="field"><label className="label">Incoterms</label>
-                <select className="input" value={form.incoterms} onChange={(e:any)=>setForm((v:any)=>({...v,incoterms:e.target.value}))}>
-                  <option value="">選択</option>{INCOTERMS.map((t:string)=><option key={t}>{t}</option>)}</select></div>
-              <div className="field"><label className="label">メール</label>
-                <input className="input" value={form.email} onChange={(e:any)=>setForm((v:any)=>({...v,email:e.target.value}))}/></div>
-            </div>
-            <div className="field" style={{marginBottom:10}}>
-              <label className="label">備考（Invoiceに反映）</label>
-              <textarea className="input" rows={2} value={form.remarks} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,remarks:e.target.value}))}/>
-            </div>
-
-            {/* 💰 製品別価格リスト */}
-            <div style={{borderTop:"1px solid var(--border)",paddingTop:12,marginBottom:10}}>
-              <div style={{fontSize:13,fontWeight:600,color:"#166534",marginBottom:8}}>💰 製品別価格リスト（この得意先専用の価格）</div>
-              {(form.price_list||[]).map((p:any,i:number)=>(
-                <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-                  <select
-                    className="input"
-                    style={{flex:2}}
-                    value={p.productName||""}
-                    onChange={(e:any)=>{
-                      const selected=products.find((pr:any)=>pr.name===e.target.value);
-                      setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{
-                        ...pl,
-                        productName:e.target.value,
-                        hsCode:selected?.hs_code||pl.hsCode||"",
-                        unitPrice:pl.unitPrice||selected?.unit_price||"",
-                      }:pl)}));
-                    }}
-                  >
-                    <option value="">― 製品を選択 ―</option>
-                    {(products||[]).map((pr:any)=><option key={pr.id} value={pr.name}>{pr.name}</option>)}
-                  </select>
-                  <input
-                    className="input"
-                    style={{flex:1}}
-                    placeholder="HSコード"
-                    value={p.hsCode||""}
-                    onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,hsCode:e.target.value}:pl)}))}
-                  />
-                  <input
-                    className="input"
-                    style={{flex:1}}
-                    placeholder="単価"
-                    type="number"
-                    value={p.unitPrice||""}
-                    onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,unitPrice:e.target.value}:pl)}))}
-                  />
-                  <button className="btn btn-danger btn-xs" onClick={()=>setForm((v:any)=>({...v,price_list:v.price_list.filter((_:any,j:number)=>j!==i)}))}>✕</button>
-                </div>
-              ))}
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{marginTop:4}}
-                onClick={()=>setForm((v:any)=>({...v,price_list:[...(v.price_list||[]),{productName:"",hsCode:"",unitPrice:""}]}))}
-              >+ 製品を追加</button>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:6}}>
-                ※ 製品を選ぶとHSコードが自動入力されます。単価だけこの得意先専用に設定してください。
-              </div>
-            </div>
-
-            <div style={{display:"flex",gap:7}}>
-              <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
-              <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
-            </div>
-          </div>
-        )}
-        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
-        :items.length===0?<div className="empty-state"><div className="empty-icon">🏢</div><div style={{fontSize:13}}>得意先を登録してください</div></div>
-        :items.map((c:any)=>(
-          <div key={c.id} className="history-item">
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <strong style={{fontSize:13}}>{c.name}</strong>
-              <div style={{display:"flex",gap:5}}>
-                <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(c)}>✏️ 編集</button>
-                <button className="btn btn-danger btn-xs" onClick={()=>del(c.id)}>削除</button>
-              </div>
-            </div>
-            <div className="history-meta" style={{marginTop:5}}>
-              <span className="tag tag-blue">{c.country}</span>
-              <span className="tag tag-gray">{c.currency}</span>
-              {c.incoterms&&<span className="tag tag-green">{c.incoterms}</span>}
-              {c.contact&&<span className="tag tag-amber">{c.contact}</span>}
-              {c.email&&<span className="tag tag-purple">{c.email}</span>}
-            </div>
-            {c.address&&<div style={{fontSize:11,color:"var(--text-muted)",marginTop:3}}>{c.address}</div>}
-            {c.price_list&&c.price_list.length>0&&(
-              <div style={{marginTop:6,padding:"5px 9px",background:"#F0FDF4",borderRadius:"var(--radius)",fontSize:11}}>
-                <span style={{fontWeight:600,color:"#166534"}}>💰 価格リスト: </span>
-                {c.price_list.map((p:any,i:number)=>(
-                  <span key={i} style={{marginRight:8}}>{p.productName} ¥{Number(p.unitPrice).toLocaleString()}</span>
-                ))}
-              </div>
-            )}
-            {c.consignee_name&&(
-              <div style={{marginTop:6,padding:"5px 9px",background:"var(--blue-light)",borderRadius:"var(--radius)",fontSize:11}}>
-                <span style={{color:"var(--blue)",fontWeight:600}}>Ship To: </span>{c.consignee_name}
-                {c.consignee_address&&<span style={{color:"var(--text-muted)"}}> / {c.consignee_address}</span>}
-              </div>
-            )}
-            {c.remarks&&<div style={{marginTop:5,fontSize:11,color:"var(--text-muted)"}}>備考: {c.remarks}</div>}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ProductPage(){
-  const [items,setItems]=useState<any[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [showForm,setShowForm]=useState(false);
-  const [editId,setEditId]=useState<string|null>(null);
-  const empty={name:"",hs_code:"",unit:"pcs",unit_price:"",currency:"JPY",weight:"",net_weight_per_unit:"",cartons_per_box:"",country_of_origin:"Japan"};
-  const [form,setForm]=useState<any>(empty);
-  const fetch=useCallback(async()=>{
-    setLoading(true);
-    try{const d=await sb("products?order=created_at.desc");setItems(d||[]);}
-    catch(e){}
-    setLoading(false);
-  },[]);
-  useEffect(()=>{fetch();},[fetch]);
-
-  const save=async()=>{
-    if(!form.name.trim())return alert("製品名を入力してください");
-    const payload={...form,
-      unit_price:form.unit_price?Number(form.unit_price):null,
-      weight:form.weight?Number(form.weight):null,
-      net_weight_per_unit:form.net_weight_per_unit?Number(form.net_weight_per_unit):null,
-      cartons_per_box:form.cartons_per_box?Number(form.cartons_per_box):null,
-    };
-    if(editId){
-      await sb(`products?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(payload)});
-    }else{
-      await sb("products",{method:"POST",body:JSON.stringify(payload)});
-    }
-    setForm(empty);setShowForm(false);setEditId(null);fetch();
-  };
-
-  const startEdit=(p:any)=>{
-    setForm({name:p.name||"",hs_code:p.hs_code||"",unit:p.unit||"pcs",unit_price:p.unit_price||"",currency:p.currency||"JPY",weight:p.weight||"",net_weight_per_unit:p.net_weight_per_unit||"",cartons_per_box:p.cartons_per_box||"",country_of_origin:p.country_of_origin||"Japan"});
-    setEditId(p.id);setShowForm(true);
-  };
-
-  const del=async(id:string)=>{
-    if(!confirm("削除しますか？"))return;
-    await sb(`products?id=eq.${id}`,{method:"DELETE"});fetch();
-  };
-
-  return(
-    <div className="fade-in">
-      <div className="card">
-        <div className="card-header">
-          <div><div className="card-title">🗂️ 製品マスタ</div><div className="card-subtitle">製品情報を登録。Invoice・Packing List作成時に自動補完。</div></div>
-          <button className="btn btn-primary btn-sm" onClick={()=>{setForm(empty);setEditId(null);setShowForm(v=>!v);}}>+ 製品追加</button>
-        </div>
-        {showForm&&(
-          <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:14}}>
-            <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>{editId?"✏️ 編集":"+ 新規追加"}</div>
-            <div className="grid-2" style={{marginBottom:10}}>
-              <div className="field"><label className="label"><span className="req">*</span>製品名</label>
-                <input className="input" value={form.name} onChange={(e:any)=>setForm((v:any)=>({...v,name:e.target.value}))}/></div>
-              <div className="field"><label className="label">HSコード（手入力）</label>
-                <input className="input" value={form.hs_code} placeholder="例: 2309.90" onChange={(e:any)=>setForm((v:any)=>({...v,hs_code:e.target.value}))}/></div>
-            </div>
-            <div className="grid-4" style={{marginBottom:10}}>
-              <div className="field"><label className="label">単位</label>
-                <input className="input" value={form.unit} placeholder="pcs" onChange={(e:any)=>setForm((v:any)=>({...v,unit:e.target.value}))}/></div>
-              <div className="field"><label className="label">標準単価</label>
-                <input className="input" type="number" value={form.unit_price} onChange={(e:any)=>setForm((v:any)=>({...v,unit_price:e.target.value}))}/></div>
-              <div className="field"><label className="label">通貨</label>
-                <select className="input" value={form.currency} onChange={(e:any)=>setForm((v:any)=>({...v,currency:e.target.value}))}>
-                  {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></div>
-              <div className="field"><label className="label">原産国</label>
-                <AcInput value={form.country_of_origin} suggestions={COUNTRIES} placeholder="Japan" onChange={(val:string)=>setForm((v:any)=>({...v,country_of_origin:val}))}/></div>
-            </div>
-            <div className="grid-3" style={{marginBottom:10}}>
-              <div className="field"><label className="label">総重量(kg/個)</label>
-                <input className="input" type="number" value={form.weight} placeholder="0.00" onChange={(e:any)=>setForm((v:any)=>({...v,weight:e.target.value}))}/></div>
-              <div className="field"><label className="label">正味重量(kg/個)→PL反映</label>
-                <input className="input" type="number" value={form.net_weight_per_unit} placeholder="0.00" onChange={(e:any)=>setForm((v:any)=>({...v,net_weight_per_unit:e.target.value}))}/></div>
-              <div className="field"><label className="label">1カートン梱包数</label>
-                <input className="input" type="number" value={form.cartons_per_box} placeholder="例: 60" onChange={(e:any)=>setForm((v:any)=>({...v,cartons_per_box:e.target.value}))}/></div>
-            </div>
-            <div style={{display:"flex",gap:7}}>
-              <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
-              <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
-            </div>
-          </div>
-        )}
-        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
-        :items.length===0?<div className="empty-state"><div className="empty-icon">🗂️</div><div style={{fontSize:13}}>製品を登録してください</div></div>
-        :items.map((p:any)=>(
-          <div key={p.id} className="history-item">
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <strong style={{fontSize:13}}>{p.name}</strong>
-              <div style={{display:"flex",gap:5}}>
-                <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(p)}>✏️ 編集</button>
-                <button className="btn btn-danger btn-xs" onClick={()=>del(p.id)}>削除</button>
-              </div>
-            </div>
-            <div className="history-meta" style={{marginTop:5}}>
-              {p.hs_code&&<span className="tag tag-purple" style={{fontFamily:"monospace"}}>HS: {p.hs_code}</span>}
-              <span className="tag tag-gray">{p.unit}</span>
-              {p.unit_price&&<span className="tag tag-green">{p.currency} {Number(p.unit_price).toLocaleString()}</span>}
-              {p.country_of_origin&&<span className="tag tag-blue">{p.country_of_origin}</span>}
-              {p.weight&&<span className="tag tag-amber">総重量 {p.weight}kg</span>}
-              {p.net_weight_per_unit&&<span className="tag tag-green">正味 {p.net_weight_per_unit}kg</span>}
-              {p.cartons_per_box&&<span className="tag tag-gray">{p.cartons_per_box}個/ctn</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-function OrgPage({org,setOrg}:any){
-  const [localToast,setLocalToast]=useState("");
-  const [saving,setSaving]=useState(false);
-  const save=async()=>{
-    setSaving(true);
-    localStorage.setItem("tradeOrg",JSON.stringify(org));
-    try{
-      const existing=await sb("organization?limit=1").catch(()=>null);
-      if(existing&&existing.length>0){
-        await sb(`organization?id=eq.${existing[0].id}`,{
-          method:"PATCH",
-          headers:{"Prefer":"return=representation"},
-          body:JSON.stringify({
-            company_name:org.companyName||"",address:org.address||"",
-            tel:org.tel||"",email:org.email||"",website:org.website||"",
-            bank_name:org.bankName||"",bank_branch:org.bankBranch||"",
-            bank_address:org.bankAddress||"",account_type:org.accountType||"普通",
-            account_no:org.accountNo||"",account_name:org.accountName||"",
-            swift_code:org.swiftCode||"",
-            signer_name:org.signerName||"",signer_title:org.signerTitle||"",
-            logo_base64:org.logoBase64||"",signature_base64:org.signatureBase64||"",
-            ship_locations:org.shipLocations||[],
-            updated_at:new Date().toISOString(),
-          })
-        });
-      }else{
-        await sb("organization",{
-          method:"POST",
-          headers:{"Prefer":"return=representation"},
-          body:JSON.stringify({
-            company_name:org.companyName||"",address:org.address||"",
-            tel:org.tel||"",email:org.email||"",website:org.website||"",
-            bank_name:org.bankName||"",bank_branch:org.bankBranch||"",
-            bank_address:org.bankAddress||"",account_type:org.accountType||"普通",
-            account_no:org.accountNo||"",account_name:org.accountName||"",
-            swift_code:org.swiftCode||"",
-            signer_name:org.signerName||"",signer_title:org.signerTitle||"",
-            logo_base64:org.logoBase64||"",signature_base64:org.signatureBase64||"",
-            ship_locations:org.shipLocations||[],
-          })
-        });
-      }
-    }catch(e){console.warn("Supabase org save failed, using localStorage only",e);}
-    setSaving(false);setLocalToast("✅ 設定を保存しました");setTimeout(()=>setLocalToast(""),3000);
-  };
-  const f=(key:string,val:any)=>setOrg((v:any)=>({...v,[key]:val}));
-  return(
-    <div className="fade-in">
-      {localToast&&<Toast msg={localToast} onClose={()=>setLocalToast("")}/> }
-      <div className="card">
-        <div className="card-header"><div className="card-title">⚙️ 組織設定</div><button className="btn btn-primary btn-sm" disabled={saving} onClick={save}>{saving?<span className="spinner"/>:"💾"} 保存</button></div>
-
-        <div className="org-section-title">ロゴ設定</div>
-        <ImgUpload label="会社ロゴ（PDF左上に表示）" value={org.logoBase64||""} onChange={(v:string)=>f("logoBase64",v)} hint="推奨: 横長PNG 300x80px"/>
-
-        <div className="org-section-title">会社情報</div>
-        <div className="grid-2" style={{marginBottom:10}}>
-          <div className="field"><label className="label">会社名</label>
-            <input className="input" value={org.companyName||""} onChange={(e:any)=>f("companyName",e.target.value)}/></div>
-          <div className="field"><label className="label">電話番号</label>
-            <input className="input" value={org.tel||""} onChange={(e:any)=>f("tel",e.target.value)}/></div>
-        </div>
-        <div className="field" style={{marginBottom:10}}>
-          <label className="label">住所</label>
-          <textarea className="input" rows={2} value={org.address||""} onChange={(e:any)=>f("address",e.target.value)}/>
-        </div>
-        <div className="grid-2" style={{marginBottom:10}}>
-          <div className="field"><label className="label">メール</label>
-            <input className="input" value={org.email||""} onChange={(e:any)=>f("email",e.target.value)}/></div>
-          <div className="field"><label className="label">ウェブサイト</label>
-            <input className="input" value={org.website||""} onChange={(e:any)=>f("website",e.target.value)}/></div>
-        </div>
-
-        <div className="org-section-title">銀行口座情報（Invoiceに印刷）</div>
-        <div className="grid-3" style={{marginBottom:10}}>
-          <div className="field"><label className="label">銀行名</label>
-            <input className="input" value={org.bankName||""} onChange={(e:any)=>f("bankName",e.target.value)}/></div>
-          <div className="field"><label className="label">支店名</label>
-            <input className="input" value={org.bankBranch||""} onChange={(e:any)=>f("bankBranch",e.target.value)}/></div>
-          <div className="field"><label className="label">口座種別</label>
-            <select className="input" value={org.accountType||"普通"} onChange={(e:any)=>f("accountType",e.target.value)}>
-              <option>普通</option><option>当座</option><option>Savings</option><option>Current</option>
-            </select></div>
-        </div>
-        <div className="field" style={{marginBottom:10}}>
-          <label className="label">銀行住所</label>
-          <textarea className="input" rows={2} value={org.bankAddress||""} placeholder="銀行の住所（海外送金時に必要な場合あり）" onChange={(e:any)=>f("bankAddress",e.target.value)}/>
-        </div>
-        <div className="grid-3" style={{marginBottom:10}}>
-          <div className="field"><label className="label">口座番号</label>
-            <input className="input" value={org.accountNo||""} onChange={(e:any)=>f("accountNo",e.target.value)}/></div>
-          <div className="field"><label className="label">口座名義</label>
-            <input className="input" value={org.accountName||""} onChange={(e:any)=>f("accountName",e.target.value)}/></div>
-          <div className="field"><label className="label">SWIFTコード</label>
-            <input className="input" value={org.swiftCode||""} onChange={(e:any)=>f("swiftCode",e.target.value)}/></div>
-        </div>
-
-        <div className="org-section-title">署名・担当者設定（書類右下に表示）</div>
-        <div className="grid-2" style={{marginBottom:10}}>
-          <div className="field"><label className="label">署名者名</label>
-            <input className="input" value={org.signerName||""} onChange={(e:any)=>f("signerName",e.target.value)}/></div>
-          <div className="field"><label className="label">役職</label>
-            <input className="input" value={org.signerTitle||""} onChange={(e:any)=>f("signerTitle",e.target.value)}/></div>
-        </div>
-        <ImgUpload label="署名画像（書類右下に表示）" value={org.signatureBase64||""} onChange={(v:string)=>f("signatureBase64",v)} hint="署名をスキャンしてPNG/JPEGで保存してください"/>
-
-        <div className="org-section-title" style={{marginTop:20}}>📍 出荷場所（複数登録可）</div>
-        <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:8}}>本社以外の出荷場所を登録できます。Invoice作成時にボタンで選択できます。</div>
-        {(org.shipLocations||[]).map((loc:any,i:number)=>(
-          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 2fr 1fr auto",gap:6,marginBottom:6,alignItems:"center"}}>
-            <input className="input input-sm" placeholder="場所名（例：大阪倉庫）" value={loc.name||""} onChange={(e:any)=>f("shipLocations",(org.shipLocations||[]).map((l:any,j:number)=>j===i?{...l,name:e.target.value}:l))}/>
-            <input className="input input-sm" placeholder="住所" value={loc.address||""} onChange={(e:any)=>f("shipLocations",(org.shipLocations||[]).map((l:any,j:number)=>j===i?{...l,address:e.target.value}:l))}/>
-            <input className="input input-sm" placeholder="電話番号" value={loc.tel||""} onChange={(e:any)=>f("shipLocations",(org.shipLocations||[]).map((l:any,j:number)=>j===i?{...l,tel:e.target.value}:l))}/>
-            <button className="btn btn-danger btn-xs" onClick={()=>f("shipLocations",(org.shipLocations||[]).filter((_:any,j:number)=>j!==i))}>削除</button>
-          </div>
-        ))}
-        <button className="btn btn-secondary btn-sm" style={{marginBottom:16}} onClick={()=>f("shipLocations",[...(org.shipLocations||[]),{name:"",address:"",tel:""}])}>＋ 出荷場所を追加</button>
-
-        <div style={{marginTop:8}}>
-          <button className="btn btn-primary" disabled={saving} onClick={save}>{saving?<span className="spinner"/>:"💾"} 設定を保存（Supabase）</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ApprovalPage({showToast}:any){
-  const [items,setItems]=useState<any[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [comment,setComment]=useState<{[id:string]:string}>({});
-  const fetch=useCallback(async()=>{
-    setLoading(true);
-    try{
-      const d=await sb("invoices?approval_status=neq.draft&order=created_at.desc");
-      setItems(d||[]);
-    }catch(e){}
-    setLoading(false);
-  },[]);
-  useEffect(()=>{fetch();},[fetch]);
-
-  const updateStatus=async(id:string,status:string)=>{
-    await sb(`invoices?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({approval_status:status,approver_comment:comment[id]||""})});
-    showToast(status==="approved"?"✅ 承認しました":"❌ 差し戻しました");
-    fetch();
-  };
-
-  const statusLabel:any={draft:"下書き",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",in_progress:"作業中",completed:"完了"};
-  return(
-    <div className="fade-in">
-      <div className="card">
-        <div className="card-header"><div className="card-title">✅ 承認管理</div></div>
-        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
-        :items.length===0?<div className="empty-state"><div className="empty-icon">✅</div><div style={{fontSize:13}}>承認待ちの案件はありません</div></div>
-        :items.map((h:any)=>(
-          <div key={h.id} style={{padding:"12px 14px",border:"1px solid var(--border)",borderRadius:"var(--radius-lg)",marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <div>
-                <strong style={{fontSize:13}}>{h.invoice_no||"No Invoice No"}</strong>
-                <span className={`status-badge status-${h.approval_status||"draft"}`} style={{marginLeft:8}}>
-                  {statusLabel[h.approval_status||"draft"]}
-                </span>
-              </div>
-              <div style={{fontSize:11,color:"var(--text-muted)"}}>{new Date(h.created_at).toLocaleDateString("ja-JP")}</div>
-            </div>
-            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:8}}>{h.consignee?.split("\n")[0]||"—"} / {h.currency}</div>
-            {h.approval_status==="pending_approval"&&(
-              <div>
-                <div className="field" style={{marginBottom:8}}>
-                  <label className="label">コメント（任意）</label>
-                  <textarea className="input" rows={2} value={comment[h.id]||""} onChange={(e:any)=>setComment(v=>({...v,[h.id]:e.target.value}))}/>
-                </div>
-                <div style={{display:"flex",gap:7}}>
-                  <button className="btn btn-green btn-sm" onClick={()=>updateStatus(h.id,"approved")}>✅ 承認</button>
-                  <button className="btn btn-danger btn-sm" onClick={()=>updateStatus(h.id,"rejected")}>❌ 差し戻し</button>
-                </div>
-              </div>
-            )}
-            {h.approver_comment&&<div style={{marginTop:6,fontSize:11,color:"var(--text-muted)"}}>コメント: {h.approver_comment}</div>}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CountryDocsPage(){
-  const [items,setItems]=useState<any[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [showForm,setShowForm]=useState(false);
-  const [editId,setEditId]=useState<string|null>(null);
-  const empty={country:"",documents:["Commercial Invoice","Packing List"],notes:""};
-  const [form,setForm]=useState<any>({...empty,documents:[...empty.documents]});
-  const [newDoc,setNewDoc]=useState("");
-  const [checks,setChecks]=useState<{[k:string]:{[d:string]:boolean}}>({});
-
-  const fetch=useCallback(async()=>{
-    setLoading(true);
-    try{const d=await sb("country_documents?order=country.asc");setItems(d||[]);}
-    catch(e){}
-    setLoading(false);
-  },[]);
-  useEffect(()=>{fetch();},[fetch]);
-
-  const save=async()=>{
-    if(!form.country.trim())return alert("国名を入力してください");
-    const payload={country:form.country,documents:form.documents,notes:form.notes};
-    if(editId){
-      await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(payload)});
-    }else{
-      await sb("country_documents",{method:"POST",body:JSON.stringify(payload)});
-    }
-    setForm({...empty,documents:[...empty.documents]});setShowForm(false);setEditId(null);fetch();
-  };
-
-  const startEdit=(item:any)=>{
-    setForm({country:item.country,documents:[...(item.documents||[])],notes:item.notes||""});
-    setEditId(item.id);setShowForm(true);
-  };
-
-  const del=async(id:string)=>{
-    if(!confirm("削除しますか？"))return;
-    await sb(`country_documents?id=eq.${id}`,{method:"DELETE"});fetch();
-  };
-
-  const toggleCheck=(country:string,doc:string)=>{
-    setChecks(v=>({...v,[country]:{...(v[country]||{}),[doc]:!(v[country]||{})[doc]}}));
-  };
-  return(
-    <div className="fade-in">
-      <div className="card">
-        <div className="card-header">
-          <div><div className="card-title">🌏 国別必要書類</div><div className="card-subtitle">国ごとに必要書類を登録。輸出前のチェックリストとして使用。</div></div>
-          <button className="btn btn-primary btn-sm" onClick={()=>{setForm({...empty,documents:[...empty.documents]});setEditId(null);setShowForm(v=>!v);}}>+ 追加</button>
-        </div>
-        {showForm&&(
-          <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:14}}>
-            <div className="grid-2" style={{marginBottom:10}}>
-              <div className="field"><label className="label"><span className="req">*</span>国名</label>
-                <AcInput value={form.country} suggestions={COUNTRIES} placeholder="South Korea" onChange={(val:string)=>setForm((v:any)=>({...v,country:val}))}/></div>
-              <div className="field"><label className="label">備考</label>
-                <input className="input" value={form.notes} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,notes:e.target.value}))}/></div>
-            </div>
-            <div className="field" style={{marginBottom:10}}>
-              <label className="label">必要書類リスト</label>
-              {(form.documents||[]).map((doc:string,i:number)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                  <input className="input" value={doc} onChange={(e:any)=>setForm((v:any)=>({...v,documents:v.documents.map((d:string,j:number)=>j===i?e.target.value:d)}))}/>
-                  <button className="btn btn-danger btn-xs" onClick={()=>setForm((v:any)=>({...v,documents:v.documents.filter((_:any,j:number)=>j!==i)}))}>✕</button>
-                </div>
-              ))}
-              <div style={{display:"flex",gap:7,marginTop:6}}>
-                <input className="input" value={newDoc} placeholder="書類名を入力" onChange={(e:any)=>setNewDoc(e.target.value)}
-                  onKeyDown={(e:any)=>{if(e.key==="Enter"&&newDoc.trim()){setForm((v:any)=>({...v,documents:[...v.documents,newDoc.trim()]}));setNewDoc("");}}}/>
-                <button className="btn btn-secondary btn-sm" onClick={()=>{if(newDoc.trim()){setForm((v:any)=>({...v,documents:[...v.documents,newDoc.trim()]}));setNewDoc("");}}}>追加</button>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:7}}>
-              <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
-              <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);}}>キャンセル</button>
-            </div>
-          </div>
-        )}
-        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
-        :items.length===0?<div className="empty-state"><div className="empty-icon">🌏</div><div style={{fontSize:13}}>国別書類を登録してください</div></div>
-        :items.map((item:any)=>(
-          <div key={item.id} style={{border:"1px solid var(--border)",borderRadius:"var(--radius-lg)",marginBottom:10,overflow:"hidden"}}>
-            <div style={{background:"#FAFAF8",padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid var(--border)"}}>
-              <div style={{fontWeight:600,fontSize:14}}>🌏 {item.country}</div>
-              <div style={{display:"flex",gap:5}}>
-                <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(item)}>✏️ 編集</button>
-                <button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>削除</button>
-              </div>
-            </div>
-            <div style={{padding:"10px 14px"}}>
-              {item.notes&&<div style={{fontSize:11,color:"var(--amber)",marginBottom:8}}>ℹ️ {item.notes}</div>}
-              <div style={{fontSize:11,fontWeight:600,color:"var(--text-muted)",marginBottom:6}}>チェックリスト</div>
-              {(item.documents||[]).map((doc:string,i:number)=>(
-                <div key={i} className="checklist-item" style={{cursor:"pointer"}} onClick={()=>toggleCheck(item.country,doc)}>
-                  <div className={`check-icon ${(checks[item.country]||{})[doc]?"check-ok":"check-todo"}`}>
-                    {(checks[item.country]||{})[doc]?"✓":""}
-                  </div>
-                  <span style={{fontSize:12,color:(checks[item.country]||{})[doc]?"var(--green)":"var(--text)"}}>{doc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
