@@ -1065,57 +1065,27 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const delComItem=(id:any)=>delItem(commercialItems,setCommercialItems,id);
   const addComItem=()=>addItem(setCommercialItems);
 
-  // カートンを行に展開
-  // 同じ製品・同じ数量の連続カートンをグループ化してCarton No範囲表示
-  const packingRowsRaw:any[]=[];
+  // カートンを行に展開（1カートン = 複数lines → 複数行、先頭行だけrowSpanデータを持つ）
+  const packingRows:any[]=[];
   packing.forEach((carton:any)=>{
-    const lines=carton.lines||[];
+    const lines=carton.lines||[{productName:"",quantity:""}];
+    const dim=[carton.dimL,carton.dimW,carton.dimH].every(Boolean)?`${carton.dimL}x${carton.dimW}x${carton.dimH}`:"";
     lines.forEach((line:any,li:number)=>{
-      packingRowsRaw.push({
+      packingRows.push({
         cartonNo:carton.cartonNo,
-        productName:line.productName,
-        quantity:line.quantity,
-        grossWeight:Number(carton.grossWeight||0),
-        netWeight:Number(carton.netWeight||0),
-        dimL:carton.dimL,dimW:carton.dimW,dimH:carton.dimH,
-        isFirst:li===0,
+        productName:line.productName||"",
+        quantity:line.quantity||"",
+        grossWeight:Number(carton.grossWeight||0).toFixed(2),
+        netWeight:Number(carton.netWeight||0).toFixed(2),
+        dimensions:dim,
         isFraction:carton.isFraction,
         expiryDate:line.expiryDate||"",
+        lotNo:line.lotNo||"",
+        isFirst:li===0,           // このカートンの最初の行か
+        rowSpan:lines.length,     // このカートンの行数（先頭行でのみ使用）
       });
     });
   });
-
-  // グループ化：同製品・同数量・同重量・連続カートンをまとめる
-  const packingRows:any[]=[];
-  let gi=0;
-  while(gi<packingRowsRaw.length){
-    const cur=packingRowsRaw[gi];
-    let end=gi;
-    // 連続する同じ製品・同数量をまとめる
-    while(
-      end+1<packingRowsRaw.length&&
-      packingRowsRaw[end+1].productName===cur.productName&&
-      packingRowsRaw[end+1].quantity===cur.quantity&&
-      packingRowsRaw[end+1].isFraction===cur.isFraction&&
-      packingRowsRaw[end+1].cartonNo===packingRowsRaw[end].cartonNo+1
-    ){end++;}
-    const startNo=cur.cartonNo;
-    const endNo=packingRowsRaw[end].cartonNo;
-    const cartonLabel=startNo===endNo?String(startNo):`${startNo}～${endNo}`;
-    const count=end-gi+1;
-    packingRows.push({
-      cartonNo:cartonLabel,
-      productName:cur.productName,
-      quantity:cur.quantity, // 1カートンあたりの数量
-      totalQty:cur.quantity*count,
-      grossWeight:(cur.grossWeight*count).toFixed(2),
-      netWeight:(cur.netWeight*count).toFixed(2),
-      dimensions:[cur.dimL,cur.dimW,cur.dimH].every(Boolean)?`${cur.dimL}x${cur.dimW}x${cur.dimH}`:"—",
-      isFraction:cur.isFraction,
-      expiryDate:cur.expiryDate||"",
-    });
-    gi=end+1;
-  }
 
   const ROWS_PER_PAGE=15;
   const packingPages:any[][]=[];
@@ -1127,7 +1097,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const printStyle=`
     @page{margin:15mm}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
-    body{font-family:sans-serif;font-size:10px;color:#000}
+    body{font-family:sans-serif;font-size:10px;color:#000;background:#fff;margin:0;padding:0}
+    .doc-wrapper>div{width:auto !important;margin:0 !important;padding:24px 32px !important;box-shadow:none !important}
     table{width:100%;border-collapse:collapse}
     th,td{border:1px solid #ccc;padding:4px 6px}
     th{background:#222 !important;color:#fff !important;font-size:10px;font-weight:600;padding:6px 8px}
@@ -1148,21 +1119,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     .fraction-row{background:#FFFBEB}
     .bank-section{margin-top:16px;font-size:9px;border:1px solid #ddd;padding:8px;border-radius:4px}
     .bank-title{font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px}
+    .no-print{display:none !important}
   `;
 
-  const handlePrint=()=>{
-    const el=document.getElementById("print-area");
-    if(!el)return;
-    const w=window.open("","_blank","width=1000,height=1200");
-    if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
-    w.document.close();
-    setTimeout(()=>{w.print();},500);
-  };
-
   // 全書類（Proforma/Invoice/Commercial/Packing List）を一括で印刷
-  const handlePrintAll=()=>{
-    const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
+  const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
       const showLot=items.some((it:any)=>it.lotNo);
       const rows=items.map((it:any,i:number)=>`
@@ -1240,9 +1201,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           ${bankSection}
           ${sigSection}
         </div>`;
-    };
+  };
 
-    const buildDeliveryNoteSection=()=>{
+  const buildDeliveryNoteSection=()=>{
       const dnItems=(invoice.invoice_items||invoice.items||[]).map((it:any)=>{
         const base=(invoice.items||[]).find((b:any)=>b.productName===it.productName);
         return base?{...it,lotNo:it.lotNo||base.lotNo,expiryDate:it.expiryDate||base.expiryDate}:it;
@@ -1314,29 +1275,31 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
             </div>
           </div>
         </div>`;
-    };
+  };
 
-    const buildPackingSection=()=>{
+  const buildPackingSection=()=>{
       if(packing.length===0) return "";
-      // packingRowsはすでに「1カートン(or連続範囲)=1行」にグループ化済み
-      // 同一カートン内に複数製品ラインがある場合のみrowSpanが必要
-      // ここでは各行が独立しているため、そのまま1行ずつ描画する
       const hasLot=packingRows.some((r:any)=>r.lotNo);
       const hasExp=packingRows.some((r:any)=>r.expiryDate);
-      const rows=packingRows.map((row:any,i:number)=>`
-        <tr style="background:${row.isFraction?"#FFFBEB":"#fff"};page-break-inside:avoid">
-          <td style="text-align:center;border:1px solid #ccc;padding:4px 8px;vertical-align:middle">${row.cartonNo}</td>
+      // rowSpanを使って1カートン内の複数linesを正しく結合
+      const rows=packingRows.map((row:any)=>{
+        const isFirst=row.isFirst;
+        const span=row.rowSpan;
+        return `
+        <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;text-align:center;vertical-align:middle;font-weight:600">${row.cartonNo}</td>`:""}
           <td style="border:1px solid #ccc;padding:4px 8px">${row.productName}</td>
-          <td style="text-align:right;border:1px solid #ccc;padding:4px 8px">${row.quantity}</td>
-          <td style="text-align:right;border:1px solid #ccc;padding:4px 8px;vertical-align:middle">${row.grossWeight}</td>
-          <td style="text-align:right;border:1px solid #ccc;padding:4px 8px;vertical-align:middle">${row.netWeight}</td>
-          <td style="border:1px solid #ccc;padding:4px 8px;vertical-align:middle">${row.dimensions}</td>
+          <td style="border:1px solid #ccc;padding:4px 8px;text-align:right">${row.quantity}</td>
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;text-align:right;vertical-align:middle">${row.grossWeight}</td>`:""}
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;text-align:right;vertical-align:middle">${row.netWeight}</td>`:""}
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;vertical-align:middle">${row.dimensions}</td>`:""}
           ${hasLot?`<td style="border:1px solid #ccc;padding:4px 8px">${row.lotNo||""}</td>`:""}
           ${hasExp?`<td style="border:1px solid #ccc;padding:4px 8px">${row.expiryDate||""}</td>`:""}
-        </tr>`).join("");
+        </tr>`;
+      }).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
       const totNW=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2);
-      const totQty=packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0);
+      const totQty=packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
@@ -1381,8 +1344,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
             </div>
           </div>
         </div>`;
-    };
+  };
 
+  const handlePrintAll=()=>{
     const w=window.open("","_blank","width=1100,height=1400");
     if(!w)return;
     const proformaSection=isProforma?buildInvoiceSection("PROFORMA INVOICE",invoiceItems,invoiceRemarks,true):"";
@@ -1391,7 +1355,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     const deliveryNoteSection=buildDeliveryNoteSection();
     const packingSection=buildPackingSection();
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
-    <style>*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
+    <style>*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#fff;margin:0;padding:0} .doc-wrapper{padding:0}</style></head>
     <body><div class="doc-wrapper">
       ${proformaSection}
       ${invoiceSection}
@@ -1401,6 +1365,34 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     </div></body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},600);
+  };
+
+  const handlePrint=()=>{
+    // el.innerHTMLではなくbuild関数でクリーンなHTMLを生成（UI要素・ボタンの✕混入を防ぐ）
+    let section="";
+    let title="Document";
+    if(activeDoc==="proforma"){
+      section=buildInvoiceSection("PROFORMA INVOICE",invoiceItems,invoiceRemarks,true);
+      title="Proforma Invoice";
+    } else if(activeDoc==="invoice"){
+      section=buildInvoiceSection("INVOICE",invoiceItems,invoiceRemarks,true);
+      title="Invoice";
+    } else if(activeDoc==="commercial"){
+      section=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
+      title="Commercial Invoice";
+    } else if(activeDoc==="packing"){
+      section=buildPackingSection();
+      title="Packing List";
+    } else if(activeDoc==="receipt"){
+      section=buildDeliveryNoteSection();
+      title="Delivery Note";
+    }
+    if(!section)return;
+    const w=window.open("","_blank","width=1000,height=1200");
+    if(!w)return;
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title} - ${invoice.invoiceNo||""}</title><style>*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important} ${printStyle} body{background:#fff;margin:0;padding:0} .doc-wrapper{padding:0}</style></head><body><div class="doc-wrapper">${section}</div></body></html>`);
+    w.document.close();
+    setTimeout(()=>{w.print();},500);
   };
 
   const InvoiceHeader=({title}:{title:string})=>(
@@ -1739,13 +1731,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                           </tr></thead>
                           <tbody>
                             {pageRows.map((row:any,i:number)=>(
-                              <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff",pageBreakInside:"avoid" as any}}>
-                                <td style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"center",verticalAlign:"middle",fontWeight:600}}>{row.cartonNo}</td>
+                              <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
+                                {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"center",verticalAlign:"middle",fontWeight:600}}>{row.cartonNo}</td>}
                                 <td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.productName}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right"}}>{row.quantity}</td>
-                                <td style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right",verticalAlign:"middle"}}>{row.grossWeight}</td>
-                                <td style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right",verticalAlign:"middle"}}>{row.netWeight}</td>
-                                <td style={{border:"1px solid #ccc",padding:"4px 8px",verticalAlign:"middle"}}>{row.dimensions}</td>
+                                {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right",verticalAlign:"middle"}}>{row.grossWeight}</td>}
+                                {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right",verticalAlign:"middle"}}>{row.netWeight}</td>}
+                                {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",verticalAlign:"middle"}}>{row.dimensions}</td>}
                                 {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.lotNo||""}</td>}
                                 {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.expiryDate||""}</td>}
                               </tr>
@@ -1756,7 +1748,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                               <tr style={{fontWeight:700,borderTop:"2px solid #000"}}>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>TOTAL</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
-                                <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0)}</td>
+                                <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0)}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2)}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
