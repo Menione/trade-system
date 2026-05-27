@@ -12,10 +12,8 @@ async function signIn(email:string,password:string){
 }
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
 async function sb(path: string, options: any = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
@@ -53,7 +51,6 @@ function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
   const [password,setPassword]=useState("");
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(false);
-
   const handleLogin=async(e:any)=>{
     e.preventDefault();
     setError("");setLoading(true);
@@ -65,7 +62,6 @@ function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
       setError(err.message||"ログインに失敗しました");
     }finally{setLoading(false);}
   };
-
   return(
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)"}}>
       <div style={{background:"#fff",borderRadius:16,padding:"48px 40px",width:400,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
@@ -107,8 +103,6 @@ function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
   );
 }
 
-
-
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
 const INCOTERMS = ["EXW","FCA","CPT","CIP","DAP","DPU","DDP","FAS","FOB","CFR","CIF"];
 const SHIPPING_METHODS = ["FedEx","DHL","Net International","EMS","Other","Sea Freight","Air Freight"];
@@ -121,14 +115,12 @@ const INIT_INVOICE: any = {
   remarks:"", expiryDate:"", items:[], status:"draft", language:"ja",
   trackingNumber:"", paymentConfirmed:false, approvalStatus:"draft",
 };
-
 const INIT_ORG: any = {
   companyName:"", address:"", tel:"", email:"", website:"",
   bankName:"", bankBranch:"", bankAddress:"", accountType:"普通", accountNo:"", accountName:"", swiftCode:"",
   signerName:"", signerTitle:"", logoBase64:"", signatureBase64:"",
   shipLocations:[], // 出荷場所リスト [{name:"本社", address:"xxx"}]
 };
-
 function fmt(amount: number, currency: string) {
   const nd = ["JPY","KRW","TWD","VND","IDR"];
   return nd.includes(currency) ? Math.round(amount).toLocaleString("ja-JP") : amount.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -185,7 +177,6 @@ const T: any = {
     addItem:"+ Add Item", selectProduct:"Select from Products",
   }
 };
-
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -409,7 +400,6 @@ function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
   // ⑥ 承認申請→承認
   // ⑦ 印刷・送付・出荷管理
   const isProforma=invoiceType==="proforma";
-
   const labels=isProforma
     ?["①Proforma作成","②承認申請"]
     :["①Proforma","②Invoice","③Commercial","④Packing","⑤DELIVERY NOTE","⑥PDF","⑦承認","⑧出荷"];
@@ -417,7 +407,6 @@ function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
     ?["📋","📨"]
     :["📋","📄","🔄","📦","📝","🖨️","✅","🚢"];
   const total=labels.length;
-
   return(
     <div className="step-bar" style={{overflowX:"auto"}}>
       <div style={{display:"flex",alignItems:"center",minWidth:isProforma?240:820,flex:1}}>
@@ -495,7 +484,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
     if(!consigneeCountry||!countryDocs?.length) return null;
     return countryDocs.find((d:any)=>d.country===consigneeCountry)||null;
   },[consigneeCountry,countryDocs]);
-
   const applyCustomer=(c:any)=>{
     setInvoice((v:any)=>({...v,
       consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
@@ -512,7 +500,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
       shipTo:[c.consignee_name||c.name,c.consignee_address||c.address,c.country].filter(Boolean).join("\n"),
     }));
   };
-
   const applyProduct=(p:any,itemId:number)=>{
     // 現在の得意先を逆引きして price_list から対象製品の単価を探す
     const matchedCustomer=customers.find((c:any)=>
@@ -527,7 +514,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
     upd(itemId,"currency",p.currency||cur);
     upd(itemId,"countryOfOrigin",p.country_of_origin||invoice.countryOfOrigin||"");
   };
-
   return(
     <div className="fade-in">
       {countryAlert&&(
@@ -861,7 +847,6 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
     const iq=Number(inv.quantity||0);
     if(iq>0&&pq>0&&iq!==pq)qtyWarnings.push(`「${inv.productName}」: Invoice ${iq} / Packing ${pq}`);
   });
-
   return(
     <div className="fade-in">
       {qtyWarnings.length>0&&(
@@ -1064,7 +1049,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const updComItem=(id:any,k:string,v:any)=>updItem(commercialItems,setCommercialItems,id,k,v);
   const delComItem=(id:any)=>delItem(commercialItems,setCommercialItems,id);
   const addComItem=()=>addItem(setCommercialItems);
-
   // カートンを行に展開（1カートン = 複数lines → 複数行、先頭行だけrowSpanデータを持つ）
   const packingRows:any[]=[];
   packing.forEach((carton:any)=>{
@@ -1086,14 +1070,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       });
     });
   });
-
   const ROWS_PER_PAGE=15;
   const packingPages:any[][]=[];
   for(let i=0;i<packingRows.length;i+=ROWS_PER_PAGE){
     packingPages.push(packingRows.slice(i,i+ROWS_PER_PAGE));
   }
   if(packingPages.length===0)packingPages.push([]);
-
   const printStyle=`
     @page{margin:15mm}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
@@ -1121,7 +1103,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     .bank-title{font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px}
     .no-print{display:none !important}
   `;
-
   // 全書類（Proforma/Invoice/Commercial/Packing List）を一括で印刷
   const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
@@ -1316,10 +1297,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">Carton No</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px">Description</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"品名":"Description"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">${printLang==="ja"?"数量":"Qty"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
               ${hasLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
               ${hasExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
@@ -1340,7 +1321,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
             <div style="text-align:center;min-width:200px;page-break-inside:avoid">
               ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
               <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
-              <div style="font-size:9px;color:#666">${org?.signerTitle?`Authorized by ${org.signerName}, ${org.signerTitle}`:org?.signerName?`Authorized by ${org.signerName}`:""}</div>
+              <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
             </div>
           </div>
         </div>`;
@@ -1394,7 +1375,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
-
   const InvoiceHeader=({title}:{title:string})=>(
     <>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
@@ -1431,14 +1411,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       </div>
     </>
   );
-
   const MetaRow=({label,value}:any)=>(
     <div style={{display:"flex",padding:"5px 0",borderBottom:"1px solid #eee"}}>
       <div style={{width:120,color:"#555",fontSize:10}}>{label}</div>
       <div style={{flex:1,fontSize:10,fontWeight:500}}>{value||"—"}</div>
     </div>
   );
-
   const PackingHeader=()=>(
     <>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
@@ -1478,17 +1456,15 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       </div>
     </>
   );
-
   const SignatureSection=()=>(
     <div style={{marginTop:40,display:"flex",justifyContent:"flex-end",pageBreakInside:"avoid" as any}}>
       <div style={{textAlign:"center",minWidth:200,pageBreakInside:"avoid" as any}}>
         {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
         <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
-        <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle?`Authorized by ${org.signerName}, ${org.signerTitle}`:org?.signerName?`Authorized by ${org.signerName}`:""}</div>
+        <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
       </div>
     </div>
   );
-
   return(
     <div className="fade-in">
       {countryAlert&&(
@@ -1708,26 +1684,26 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                           </tfoot>
                         </table>
                       );
-                    })()}
+})()}
                     {invoice.remarks&&<div style={{marginTop:8,fontSize:10}}><span style={{fontWeight:700}}>{printLang==="ja"?"備考":"Remarks"}: </span>{invoice.remarks}</div>}
                     <SignatureSection/>
                   </div>
                 )}
                 {activeDoc==="packing"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
+                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
                     {packingPages.map((pageRows:any[],pi:number)=>(
                       <div key={pi} className={pi<packingPages.length-1?"pdf-page":""}>
                         <PackingHeader/>
                         <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                           <thead><tr style={{background:"#222",color:"#fff"}}>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Carton No</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Description</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>Qty</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{t.grossWeight}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{t.netWeight}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>{printLang==="ja"?"数量":"Qty"}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>Dimensions</th>
-                            {packingRows.some((r:any)=>r.lotNo)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Lot No.</th>}
-                            {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Expiry</th>}
+                            {packingRows.some((r:any)=>r.lotNo)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
+                            {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
                           </tr></thead>
                           <tbody>
                             {pageRows.map((row:any,i:number)=>(
@@ -1766,7 +1742,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                 )}
               </>
             );
-          })()}
+})()}
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
@@ -1789,14 +1765,12 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
   const [search,setSearch]=useState("");
   const [filterStatus,setFilterStatus]=useState("all");
   const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
-
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{const d=await sb("invoices?order=created_at.desc");setItems(d||[]);}
     catch(e){console.error(e);}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const del=async(id:string,e:any)=>{
@@ -1805,14 +1779,12 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
     await sb(`invoices?id=eq.${id}`,{method:"DELETE"});
     fetch();
   };
-
   const filtered=items.filter(h=>{
     const q=search.toLowerCase();
     const mq=!q||(h.invoice_no||"").toLowerCase().includes(q)||(h.consignee||"").toLowerCase().includes(q)||(h.country_of_origin||"").toLowerCase().includes(q);
     const ms=filterStatus==="all"||h.status===filterStatus||h.approval_status===filterStatus;
     return mq&&ms;
   });
-
   return(
     <div className="fade-in">
       <div className="card">
@@ -1872,14 +1844,12 @@ function CustomerPage({onCustomersChange,products}:any){
   const [editId,setEditId]=useState<string|null>(null);
   const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:"",price_list:[]};
   const [form,setForm]=useState<any>(empty);
-
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{const d=await sb("customers?order=created_at.desc");setItems(d||[]);onCustomersChange(d||[]);}
     catch(e){}
     setLoading(false);
   },[onCustomersChange]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const save=async()=>{
@@ -1901,7 +1871,6 @@ function CustomerPage({onCustomersChange,products}:any){
     if(!confirm("削除しますか？"))return;
     await sb(`customers?id=eq.${id}`,{method:"DELETE"});fetch();
   };
-
   return(
     <div className="fade-in">
       <div className="card">
@@ -2058,14 +2027,12 @@ function ProductPage(){
   const [editId,setEditId]=useState<string|null>(null);
   const empty={name:"",hs_code:"",unit:"pcs",unit_price:"",currency:"JPY",weight:"",net_weight_per_unit:"",cartons_per_box:"",country_of_origin:"Japan"};
   const [form,setForm]=useState<any>(empty);
-
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{const d=await sb("products?order=created_at.desc");setItems(d||[]);}
     catch(e){}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const save=async()=>{
@@ -2214,7 +2181,6 @@ function OrgPage({org,setOrg}:any){
     setSaving(false);setLocalToast("✅ 設定を保存しました");setTimeout(()=>setLocalToast(""),3000);
   };
   const f=(key:string,val:any)=>setOrg((v:any)=>({...v,[key]:val}));
-
   return(
     <div className="fade-in">
       {localToast&&<Toast msg={localToast} onClose={()=>setLocalToast("")}/> }
@@ -2302,7 +2268,6 @@ function ApprovalPage({showToast}:any){
   const [items,setItems]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [comment,setComment]=useState<{[id:string]:string}>({});
-
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{
@@ -2311,7 +2276,6 @@ function ApprovalPage({showToast}:any){
     }catch(e){}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const updateStatus=async(id:string,status:string)=>{
@@ -2321,7 +2285,6 @@ function ApprovalPage({showToast}:any){
   };
 
   const statusLabel:any={draft:"下書き",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",in_progress:"作業中",completed:"完了"};
-
   return(
     <div className="fade-in">
       <div className="card">
@@ -2379,7 +2342,6 @@ function CountryDocsPage(){
     catch(e){}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const save=async()=>{
@@ -2406,7 +2368,6 @@ function CountryDocsPage(){
   const toggleCheck=(country:string,doc:string)=>{
     setChecks(v=>({...v,[country]:{...(v[country]||{}),[doc]:!(v[country]||{})[doc]}}));
   };
-
   return(
     <div className="fade-in">
       <div className="card">
@@ -2478,7 +2439,6 @@ function CountryDocsPage(){
 function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,lang,stepNum,title,itemsKey,remarksKey,nextLabel,hint,syncFrom,showToast}:any){
   const t=T[lang||"ja"];
   const cur=invoice.currency||"JPY";
-
   // itemsKeyが未初期化の場合はitemsから自動引用
   const [localItems,setLocalItems]=useState<any[]>(()=>{
     const existing=invoice[itemsKey];
@@ -2500,7 +2460,6 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
   const upd=(id:any,f:string,val:any)=>setLocalItems(v=>v.map((it:any)=>it.id===id?{...it,[f]:val}:it));
   const del=(id:any)=>setLocalItems(v=>v.filter((it:any)=>it.id!==id));
   const total=localItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
-
   const syncFromSource=()=>{
     const source=syncFrom&&invoice[syncFrom]&&invoice[syncFrom].length>0
       ?invoice[syncFrom]
@@ -2513,7 +2472,6 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
     setInvoice((v:any)=>({...v,[itemsKey]:localItems,[remarksKey]:localRemarks}));
     onNext();
   };
-
   return(
     <div className="fade-in">
       <div className="card" style={{background:"var(--blue-light)",border:"1px solid var(--blue-mid)",padding:"12px 18px",marginBottom:14}}>
@@ -2598,7 +2556,6 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
   const cur=invoice.currency||"JPY";
   const [shipDate,setShipDate]=useState(invoice.trackingDate||invoice.date||"");
   const [printLang,setPrintLang]=useState(lang||"ja");
-
   // itemsからlotNo/expiryDateを補完する（invoice_itemsには引き継がれないため）
   const recItems=(invoice.invoice_items||invoice.items||[]).map((it:any)=>{
     const base=(invoice.items||[]).find((b:any)=>b.productName===it.productName);
@@ -2612,7 +2569,6 @@ function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,s
     setInvoice((v:any)=>({...v,trackingDate:shipDate}));
     setTimeout(()=>window.print(),300);
   };
-
   return(
     <div className="fade-in">
       <div className="card no-print" style={{marginBottom:14,padding:"12px 16px"}}>
@@ -2723,14 +2679,12 @@ function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
   const [comment,setComment]=useState("");
   const approvalStatusLabel:any={draft:"未申請",pending_approval:"承認待ち",approved:"承認済み ✅",rejected:"差し戻し ❌"};
   const st=invoice.approvalStatus||"draft";
-
   const requestApproval=async()=>{
     if(!invoice.invoiceNo){showToast("Invoice Noを入力してください");return;}
     setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
     await onSave("draft");
     showToast("📨 承認依頼を送信しました");
   };
-
   const selfApprove=async()=>{
     setInvoice((v:any)=>({...v,approvalStatus:"approved"}));
     await onSave("in_progress");
@@ -2881,7 +2835,6 @@ export default function App(){
   const [authToken,setAuthToken]=useState<string|null>(null);
   const [authUser,setAuthUser]=useState<any>(null);
   const [authLoading,setAuthLoading]=useState(true);
-
   const lang=invoice.language||"ja";
   const t=T[lang];
 
@@ -2898,7 +2851,6 @@ export default function App(){
     };
     checkAuth();
   },[]);
-
   useEffect(()=>{
     if(!authToken) return;
     // 組織設定をSupabaseから読み込み（localStorageをfallbackに）
@@ -2934,7 +2886,6 @@ export default function App(){
   },[authToken]);
 
   const showToast=(msg:string)=>setToast(msg);
-
   const isDirty=useMemo(()=>{
     if(!invoice.invoiceNo) return false;
     if(!savedSnapshot) return true;
@@ -2944,12 +2895,10 @@ export default function App(){
       return keys.some(k=>JSON.stringify(invoice[k])!==JSON.stringify(snap[k]));
     }catch{return false;}
   },[invoice,savedSnapshot]);
-
   const guardedNavigate=(action:()=>void)=>{
     if(isDirty){setPendingAction(()=>action);}
     else{action();}
   };
-
   useEffect(()=>{
     const handler=(e:BeforeUnloadEvent)=>{
       if(isDirty){e.preventDefault();e.returnValue="";}
@@ -2957,7 +2906,6 @@ export default function App(){
     window.addEventListener("beforeunload",handler);
     return ()=>window.removeEventListener("beforeunload",handler);
   },[isDirty]);
-
   const {errors}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
 
   const reset=useCallback(()=>{
@@ -2968,7 +2916,6 @@ export default function App(){
     });
     setPacking([]);setStep(1);setPage("new");
   },[]);
-
   const saveInvoice=async(status="draft")=>{
     setSaving(true);
     try{
@@ -3000,7 +2947,6 @@ export default function App(){
     }catch(e){showToast("❌ 保存に失敗しました");}
     setSaving(false);
   };
-
   const requestApproval=async()=>{
     if(!invoice.invoiceNo)return showToast("Invoice Noを入力してください");
     setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
@@ -3008,7 +2954,6 @@ export default function App(){
     setStep(6);
     showToast("📨 承認依頼を送信しました");
   };
-
   const loadInvoice=(h:any)=>{
     setInvoice({...INIT_INVOICE,
       dbId:h.id,invoiceNo:h.invoice_no||"",invoiceType:h.invoice_type||"proforma",
@@ -3060,7 +3005,6 @@ export default function App(){
   const editInvoice=(h:any)=>{
     loadInvoice(h);
   };
-
   const copyInvoice=(h:any)=>{
     const newInv={...INIT_INVOICE,
       invoiceNo:"",invoiceType:h.invoice_type||"proforma",
@@ -3088,7 +3032,6 @@ export default function App(){
     {id:"countryDocs",label:t.countryDocs,icon:"🌏"},
     {id:"org",label:t.org,icon:"⚙️"},
   ];
-
   const titles:any={new:t.newDoc,history:t.history,customers:t.customers,products:t.products,approval:t.approval,countryDocs:t.countryDocs,org:t.org};
 
   // ローディング中
@@ -3097,7 +3040,6 @@ export default function App(){
       <div style={{color:"#fff",fontSize:18}}>🌏 読み込み中...</div>
     </div>
   );
-
   // 未ログイン
   if(!authToken)return <LoginPage onLogin={(token,user)=>{setAuthToken(token);setAuthUser(user);}}/>;
 
@@ -3222,82 +3164,11 @@ export default function App(){
                     </div>}
                   </>
                 ):(
-                  <>
+                <>
                     {/* ① Proforma引用確認 */}
                     {step===1&&(
                       <div className="fade-in">
                         <div className="card" style={{padding:20,marginBottom:14,background:"var(--amber-light)",border:"1px solid var(--amber-mid)"}}>
                           <div style={{fontSize:14,fontWeight:700,marginBottom:8,color:"#92400E"}}>① Proforma Invoice 引用元確認</div>
                           {invoice.proformaRef
-                            ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong> から自動引用済みです</div>
-                            :<div style={{fontSize:13,color:"#92400E"}}>⚠️ Proformaからの変換でない場合は②へ進んでください</div>}
-                        </div>
-                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs} hideNextButton={true}/>
-                        <div style={{display:"flex",justifyContent:"flex-end",marginTop:8,gap:8}}>
-                          <button className="btn btn-amber" onClick={()=>{saveInvoice("draft");showToast("💾 保存しました");}}>💾 下書き保存</button>
-                          <button className="btn btn-primary" onClick={()=>setStep(2)}>② Invoice編集へ →</button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ② Invoice編集（金額調整可） */}
-                    {step===2&&(
-                      <InvoiceEditStep
-                        invoice={invoice} setInvoice={setInvoice} packing={packing}
-                        onBack={()=>setStep(1)} onNext={()=>setStep(3)}
-                        onSave={saveInvoice} org={org} lang={lang} stepNum={2}
-                        showToast={showToast}
-                        title="② Invoice 作成・編集（金額・品目を調整）"
-                        itemsKey="invoice_items" remarksKey="invoice_remarks"
-                        nextLabel="③ Commercial Invoice編集へ →"
-                        hint="Proformaから自動引用されています。金額・品目を調整してください。"
-                      />
-                    )}
-
-                    {/* ③ Commercial Invoice編集（通関用） */}
-                    {step===3&&(
-                      <InvoiceEditStep
-                        invoice={invoice} setInvoice={setInvoice} packing={packing}
-                        onBack={()=>setStep(2)} onNext={()=>setStep(4)}
-                        onSave={saveInvoice} org={org} lang={lang} stepNum={3}
-                        showToast={showToast}
-                        title="③ Commercial Invoice 編集（通関用・Invoice②から自動引用）"
-                        itemsKey="commercial_items" remarksKey="commercial_remarks"
-                        nextLabel="④ Packing List作成へ →"
-                        hint="Invoice②の内容から自動引用しています。通関用に品名・金額を変更できます。"
-                        syncFrom="invoice_items"
-                      />
-                    )}
-
-                    {/* ④ Packing List */}
-                    {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
-
-                    {/* ⑤ 納品書 */}
-                    {step===5&&<ReceiptPage invoice={invoice} setInvoice={setInvoice} packing={packing} org={org} lang={lang} onSave={saveInvoice} onBack={()=>setStep(4)} onNext={()=>setStep(6)} showToast={showToast}/>}
-
-                    {/* ⑥ PDF出力 */}
-                    {step===6&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(5)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(7)} countryDocs={countryDocs} customers={customers}/>}
-
-                    {/* ⑦ 承認申請→承認 */}
-                    {step===7&&(
-                      <ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(6)} onNext={()=>setStep(8)} showToast={showToast}/>
-                    )}
-
-                    {/* ⑧ 出荷管理 */}
-                    {step===8&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(7)}/>}
-                  </>
-                )}
-              </>
-            )}
-            {page==="history"&&<HistoryPage onLoad={loadInvoice} onCopy={copyInvoice} onConvert={convertToCommercial} onEdit={editInvoice}/>}
-            {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
-            {page==="products"&&<ProductPage/>}
-            {page==="approval"&&<ApprovalPage showToast={showToast}/>}
-            {page==="countryDocs"&&<CountryDocsPage/>}
-            {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
-          </div>
-        </main>
-      </div>
-    </>
-  );
-}
+                            ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong>
