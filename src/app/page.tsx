@@ -1109,17 +1109,14 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
     .no-print{display:none !important}
   `;
   const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
-      const showExp=items.some((it:any)=>it.expiryDate);
-      const showLot=items.some((it:any)=>it.lotNo);
+      // Lot No. and Expiry are not shown on Invoice/Commercial/Proforma
       const rows=items.map((it:any,i:number)=>`
         <tr style="background:${i%2===0?"#ffffff":"#f5f5f5"}">
-          <td style="border:1px solid #ddd;padding:4px 6px">${it.productName||""}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;font-family:monospace">${it.hsCode||""}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
-          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
+          <td style="border:1px solid #ddd;padding:3px 6px;font-size:10px">${it.productName||""}</td>
+          <td style="border:1px solid #ddd;padding:3px 6px;font-size:10px;font-family:monospace">${it.hsCode||""}</td>
+          <td style="border:1px solid #ddd;padding:3px 6px;font-size:10px;text-align:right">${it.quantity||0}</td>
+          <td style="border:1px solid #ddd;padding:3px 6px;font-size:10px;text-align:right">${it.unitPrice||0}</td>
+          <td style="border:1px solid #ddd;padding:3px 6px;font-size:10px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
         </tr>`).join("");
       const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
       const bankSection=showBank&&org?.bankName?`
@@ -1171,16 +1168,14 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">Description</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left">HS Code</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
-              ${showLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
-              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">Description of Goods</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important">HS Code</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px;background:#222 !important;color:#fff !important">Qty</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px;background:#222 !important;color:#fff !important">Unit Price</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px;background:#222 !important;color:#fff !important">Amount</th>
             </tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr><td colspan="${showExp?6:5}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">${printLang==="ja"?"合計":"TOTAL"}: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
+            <tfoot><tr><td colspan="5" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">${printLang==="ja"?"合計":"TOTAL"}: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
           </table>
           ${remarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">${printLang==="ja"?"備考":"Remarks"}</div><div style="font-size:10px;white-space:pre-wrap">${remarks}</div></div>`:""}
           ${bankSection}
@@ -1201,7 +1196,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${Number(it.unitPrice||0).toLocaleString()}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
           ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
-          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
+          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate?it.expiryDate.substring(0,7).replace('-','/'):""}` + `</td>`:""}
         </tr>`).join("");
       const sigSection=`
         <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
@@ -1278,7 +1273,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
           ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:6px 10px;text-align:right;vertical-align:middle;background:#fff">${row.netWeight}</td>`:""}
           ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:6px 10px;vertical-align:middle;background:#fff">${row.dimensions}</td>`:""}
           ${hasLot?`<td style="border:1px solid #ccc;padding:6px 10px;background:#fff">${row.lotNo||""}</td>`:""}
-          ${hasExp?`<td style="border:1px solid #ccc;padding:6px 10px;background:#fff">${row.expiryDate||""}</td>`:""}
+          ${hasExp?`<td style="border:1px solid #ccc;padding:6px 10px;background:#fff">${row.expiryDate?row.expiryDate.substring(0,7).replace('-','/'):""}` + `</td>`:""}
         </tr>`;
       }).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
@@ -1310,25 +1305,25 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
           ${invoice.remarks?`<div style="font-size:10px;padding:6px 0 12px 0;color:#333">REMARKS: ${invoice.remarks}</div>`:"<div style='margin-bottom:16px'></div>"}
           <table style="width:100%;border-collapse:collapse;margin-top:0">
             <thead><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">
-              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;width:90px;text-align:center;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"カートン番号":"Carton No"}</th>
-              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"品名":"Description"}</th>
-              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:65px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"数量":"Qty"}</th>
-              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:85px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
-              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:85px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
-              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;width:110px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"寸法(cm)":"Dimensions(cm)"}</th>
-              ${hasLot?`<th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
-              ${hasExp?`<th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;width:80px;text-align:center;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"カートン番号":"Carton No"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"品名":"Description"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;text-align:right;width:60px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"数量":"Qty"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;text-align:right;width:80px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;text-align:right;width:80px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;width:110px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"寸法(cm)":"Dimensions(cm)"}</th>
+              ${hasLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
+              ${hasExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;font-weight:600;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr style="font-weight:700;border-top:3px solid #000;background:#fff">
-              <td style="border:1px solid #ccc;padding:6px 10px;font-weight:700">${printLang==="ja"?"合計":"TOTAL"}</td>
-              <td style="border:1px solid #ccc;padding:6px 10px"></td>
-              <td style="border:1px solid #ccc;padding:6px 10px;text-align:right;font-weight:700">${totQty}</td>
-              <td style="border:1px solid #ccc;padding:6px 10px;text-align:right;font-weight:700">${totGW}</td>
-              <td style="border:1px solid #ccc;padding:6px 10px;text-align:right;font-weight:700">${totNW}</td>
-              <td style="border:1px solid #ccc;padding:6px 10px"></td>
-              ${hasLot?`<td style="border:1px solid #ccc;padding:6px 10px"></td>`:""}
-              ${hasExp?`<td style="border:1px solid #ccc;padding:6px 10px"></td>`:""}
+            <tfoot><tr style="font-weight:700;border-top:2px solid #000;background:#fff">
+              <td style="border:1px solid #ccc;padding:4px 6px;font-weight:700">${printLang==="ja"?"合計":"TOTAL"}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px"></td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right;font-weight:700">${totQty}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right;font-weight:700">${totGW}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right;font-weight:700">${totNW}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px"></td>
+              ${hasLot?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
+              ${hasExp?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
             </tr></tfoot>
           </table>
           ${sigSection}
@@ -1563,7 +1558,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                 {activeDoc==="proforma"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="PROFORMA INVOICE"/>
-                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur,showLot)}
+                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,false,invoiceRemarks,setInvoiceRemarks,cur,false)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
@@ -1582,7 +1577,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                 {activeDoc==="invoice"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="INVOICE"/>
-                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur,showLot)}
+                    {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,false,invoiceRemarks,setInvoiceRemarks,cur,false)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
@@ -1601,7 +1596,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                 {activeDoc==="commercial"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="COMMERCIAL INVOICE"/>
-                    {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur,showLot)}
+                    {editTable(commercialItems,updComItem,delComItem,addComItem,false,commercialRemarks,setCommercialRemarks,cur,false)}
                 {org?.bankName&&(
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
@@ -1674,7 +1669,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                               <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:68,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updDnItem(it.id,"unitPrice",e.target.value)}/></td>
                               <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
                               <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} placeholder="LOT-001" onChange={(e:any)=>updDnItem(it.id,"lotNo",e.target.value)}/></td>
-                              <td style={{border:"1px solid #ddd",padding:"3px 4px"}}><input type="date" style={{width:"100%",border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updDnItem(it.id,"expiryDate",e.target.value)}/></td>
+                              <td style={{border:"1px solid #ddd",padding:"3px 4px"}}><input type="month" style={{width:"100%",border:"none",outline:"none",fontSize:9,background:"transparent"}} value={(it.expiryDate||"").substring(0,7)} onChange={(e:any)=>updDnItem(it.id,"expiryDate",e.target.value)}/></td>
                               <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delDnItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                             </tr>
                           ))}
@@ -1726,7 +1721,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                                 {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right",verticalAlign:"middle"}}>{row.netWeight}</td>}
                                 {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",verticalAlign:"middle"}}>{row.dimensions}</td>}
                                 {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.lotNo||""}</td>}
-                                {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.expiryDate||""}</td>}
+                                {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.expiryDate?(row.expiryDate.substring(0,7).replace("-","/")):""}</td>}
                               </tr>
                             ))}
                           </tbody>
