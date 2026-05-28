@@ -1194,7 +1194,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
           <td style="border:1px solid #ddd;padding:4px 6px">${it.productName}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${Number(it.unitPrice||0).toLocaleString()}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;white-space:nowrap">${invoice.currency||"JPY"} ${(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
           ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
           ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate?it.expiryDate.substring(0,7).replace('-','/'):""}` + `</td>`:""}
         </tr>`).join("");
@@ -1240,14 +1240,14 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
               <th style="border:1px solid #444;padding:5px 6px;font-size:9px">Description</th>
               <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:45px">Qty</th>
               <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:80px">Unit Price</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:90px">Amount</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:120px">Amount</th>
               ${showLot?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Lot No.</th>`:""}
               ${showExp?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Expiry</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;background:#f5f5f5">
               <td colspan="3" style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-weight:700">TOTAL</td>
-              <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-size:13px;font-weight:700">${invoice.currency||"JPY"} ${dnTotal.toLocaleString()}</td>
+              <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-size:13px;font-weight:700;white-space:nowrap">${invoice.currency||"JPY"} ${dnTotal.toLocaleString()}</td>
               ${showLot?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
               ${showExp?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
             </tr></tfoot>
@@ -1656,7 +1656,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                           <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>{printLang==="ja"?"品名":"Description"}</th>
                           <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:55}}>Qty</th>
                           <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>Unit Price</th>
-                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Amount</th>
+                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:120}}>Amount</th>
                           <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>
                           <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>{printLang==="ja"?"使用期限":"Expiry"}</th>
                           <th style={{border:"1px solid #444",padding:"4px",width:28}} className="no-print"></th>
@@ -1667,7 +1667,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                               <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updDnItem(it.id,"productName",e.target.value)}/></td>
                               <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updDnItem(it.id,"quantity",e.target.value)}/></td>
                               <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:68,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updDnItem(it.id,"unitPrice",e.target.value)}/></td>
-                              <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
+                              <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10,whiteSpace:"nowrap"}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
                               <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} placeholder="LOT-001" onChange={(e:any)=>updDnItem(it.id,"lotNo",e.target.value)}/></td>
                               <td style={{border:"1px solid #ddd",padding:"3px 4px"}}><input type="month" style={{width:"100%",border:"none",outline:"none",fontSize:9,background:"transparent"}} value={(it.expiryDate||"").substring(0,7)} onChange={(e:any)=>updDnItem(it.id,"expiryDate",e.target.value)}/></td>
                               <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delDnItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
@@ -1677,7 +1677,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                         <tfoot>
                           <tr style={{fontWeight:700,background:"#f5f5f5"}}>
                             <td colSpan={3} style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:12}}>{printLang==="ja"?"合計":"TOTAL"}</td>
-                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{cur} {fmt(deliveryNoteItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
+                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>{cur} {fmt(deliveryNoteItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
                             <td style={{borderTop:"2px solid #000",border:"1px solid #ddd"}}></td>
                             <td style={{borderTop:"2px solid #000",border:"1px solid #ddd"}}></td>
                             <td style={{borderTop:"2px solid #000"}} className="no-print"></td>
