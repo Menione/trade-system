@@ -1045,7 +1045,8 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
     table{width:100%;border-collapse:collapse}
     th,td{border:1px solid #ccc;padding:4px 6px}
     th{background:#222 !important;color:#fff !important;font-size:10px;font-weight:600;padding:6px 8px}
-    tr:nth-child(even) td{background:#f5f5f5 !important}
+    .packing-th{background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+    tr:nth-child(even) td{background:#fff !important}
     .pdf-header{margin-bottom:12px}
     .pdf-title{font-size:26px;font-weight:800;letter-spacing:3px;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:16px}
     .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
@@ -1226,15 +1227,15 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
         const isFirst=row.isFirst;
         const span=row.rowSpan;
         return `
-        <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
-          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;text-align:center;vertical-align:middle;font-weight:600">${row.cartonNo}</td>`:""}
-          <td style="border:1px solid #ccc;padding:4px 8px">${row.productName}</td>
-          <td style="border:1px solid #ccc;padding:4px 8px;text-align:right">${row.quantity}</td>
-          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;text-align:right;vertical-align:middle">${row.grossWeight}</td>`:""}
-          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;text-align:right;vertical-align:middle">${row.netWeight}</td>`:""}
-          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:4px 8px;vertical-align:middle">${row.dimensions}</td>`:""}
-          ${hasLot?`<td style="border:1px solid #ccc;padding:4px 8px">${row.lotNo||""}</td>`:""}
-          ${hasExp?`<td style="border:1px solid #ccc;padding:4px 8px">${row.expiryDate||""}</td>`:""}
+        <tr style="background:#fff !important">
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:6px 10px;text-align:center;vertical-align:middle;font-weight:700;background:#fff">${row.cartonNo}</td>`:""}
+          <td style="border:1px solid #ccc;padding:6px 10px;background:#fff">${row.productName}</td>
+          <td style="border:1px solid #ccc;padding:6px 10px;text-align:right;background:#fff">${row.quantity}</td>
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:6px 10px;text-align:right;vertical-align:middle;background:#fff">${row.grossWeight}</td>`:""}
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:6px 10px;text-align:right;vertical-align:middle;background:#fff">${row.netWeight}</td>`:""}
+          ${isFirst?`<td rowspan="${span}" style="border:1px solid #ccc;padding:6px 10px;vertical-align:middle;background:#fff">${row.dimensions}</td>`:""}
+          ${hasLot?`<td style="border:1px solid #ccc;padding:6px 10px;background:#fff">${row.lotNo||""}</td>`:""}
+          ${hasExp?`<td style="border:1px solid #ccc;padding:6px 10px;background:#fff">${row.expiryDate||""}</td>`:""}
         </tr>`;
       }).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
@@ -1250,38 +1251,41 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
         </div>`;
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
-            <div><div style="font-size:32px;font-weight:800;letter-spacing:2px">PACKING LIST</div>
-            ${invoice.invoiceNo?`<div style="font-size:11px;color:#444">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div>
+              <div style="font-size:36px;font-weight:900;letter-spacing:1px;line-height:1.1">PACKING LIST</div>
+              ${invoice.invoiceNo?`<div style="font-size:12px;font-weight:700;margin-top:4px">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
             </div>
             <div style="text-align:right;font-size:10px">
-              ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:60px;max-width:200px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto"/>`:""}
+              ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:65px;max-width:210px;object-fit:contain;display:block;margin-left:auto;margin-bottom:4px"/>`:""}
               ${org?.companyName?`<div style="font-weight:700;font-size:12px">${org.companyName}</div>`:""}
-              ${org?.address?`<div style="white-space:pre-wrap">${org.address}</div>`:""}
+              ${org?.address?`<div style="white-space:pre-wrap;font-size:10px">${org.address}</div>`:""}
+              ${org?.tel?`<div style="font-size:10px">Tel: ${org.tel}</div>`:""}
             </div>
           </div>
-          <div style="height:2px;background:#000;margin-bottom:16px"></div>
-          <table style="width:100%;border-collapse:collapse;margin-top:12px">
-            <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">Carton No</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"品名":"Description"}</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">${printLang==="ja"?"数量":"Qty"}</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
-              ${hasLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
-              ${hasExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
+          <div style="height:3px;background:#000;margin-bottom:0;margin-top:8px"></div>
+          ${invoice.remarks?`<div style="font-size:10px;padding:6px 0 12px 0;color:#333">REMARKS: ${invoice.remarks}</div>`:"<div style='margin-bottom:16px'></div>"}
+          <table style="width:100%;border-collapse:collapse;margin-top:0">
+            <thead><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">
+              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;width:90px;text-align:center;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"カートン番号":"Carton No"}</th>
+              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"品名":"Description"}</th>
+              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:65px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"数量":"Qty"}</th>
+              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:85px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
+              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;text-align:right;width:85px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
+              <th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;width:110px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"寸法(cm)":"Dimensions(cm)"}</th>
+              ${hasLot?`<th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
+              ${hasExp?`<th style="border:1px solid #555;padding:8px 10px;font-size:11px;font-weight:700;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr style="font-weight:700;border-top:2px solid #000">
-              <td style="border:1px solid #ccc;padding:4px 6px">TOTAL</td>
-              <td style="border:1px solid #ccc;padding:4px 6px"></td>
-              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totQty}</td>
-              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
-              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totNW}</td>
-              <td style="border:1px solid #ccc;padding:4px 6px"></td>
-              ${hasLot?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
-              ${hasExp?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
+            <tfoot><tr style="font-weight:700;border-top:3px solid #000;background:#fff">
+              <td style="border:1px solid #ccc;padding:6px 10px;font-weight:700">${printLang==="ja"?"合計":"TOTAL"}</td>
+              <td style="border:1px solid #ccc;padding:6px 10px"></td>
+              <td style="border:1px solid #ccc;padding:6px 10px;text-align:right;font-weight:700">${totQty}</td>
+              <td style="border:1px solid #ccc;padding:6px 10px;text-align:right;font-weight:700">${totGW}</td>
+              <td style="border:1px solid #ccc;padding:6px 10px;text-align:right;font-weight:700">${totNW}</td>
+              <td style="border:1px solid #ccc;padding:6px 10px"></td>
+              ${hasLot?`<td style="border:1px solid #ccc;padding:6px 10px"></td>`:""}
+              ${hasExp?`<td style="border:1px solid #ccc;padding:6px 10px"></td>`:""}
             </tr></tfoot>
           </table>
           ${sigSection}
@@ -1390,17 +1394,19 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
           {org?.tel&&<div>Tel: {org.tel}</div>}
         </div>
       </div>
-      <div style={{height:2,background:"#000",marginBottom:16}}></div>
+      <div style={{height:3,background:"#000",marginBottom:0,marginTop:8}}></div>
+      {invoice.remarks&&<div style={{fontSize:10,padding:"6px 0 12px 0",color:"#333"}}>REMARKS: {invoice.remarks}</div>}
+      {!invoice.remarks&&<div style={{marginBottom:16}}></div>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px",marginBottom:16}}>
         <div>
           <MetaRow label={printLang==="ja"?"作成日：":"Date:"} value={invoice.date}/>
           {invoice.paymentTerms&&<MetaRow label={printLang==="ja"?"支払い条件：":"Payment Terms:"} value={invoice.paymentTerms}/>}
           {invoice.paymentDue&&<MetaRow label={printLang==="ja"?"支払い期限：":"Payment Due:"} value={invoice.paymentDue}/>}
           {invoice.poNumber&&<MetaRow label={printLang==="ja"?"発注番号：":"P.O. No:"} value={invoice.poNumber}/>}
-          {invoice.shippingMethod&&<MetaRow label="Shipping Method：" value={invoice.shippingMethod}/>}
+          {invoice.shippingMethod&&<MetaRow label={printLang==="ja"?"輸送方法：":"Shipping Method:"} value={invoice.shippingMethod}/>}
           {invoice.incoterms&&<MetaRow label="Incoterms：" value={invoice.incoterms}/>}
-          <MetaRow label="Total Cartons：" value={`${packing.length} CTNS`}/>
-          <MetaRow label="Total G.W.：" value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
+          <MetaRow label={printLang==="ja"?"カートン数：":"Total Cartons:"} value={`${packing.length} CTNS`}/>
+          <MetaRow label={printLang==="ja"?"総重量：":"Total G.W.:"} value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
         </div>
         <div>
           <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"請求先":"CONSIGNEE"}</div>
@@ -1599,9 +1605,12 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                       </div>
                     </div>
                     {/* DELIVERY NOTE 品目編集テーブル（Proformaと同形式、ロット番号・使用期限入力あり） */}
-                    <div className="no-print" style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div className="no-print" style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                       <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)"}}>📦 品目明細（編集可）</div>
-                      <button onClick={addDnItem} style={{fontSize:11,border:"1px dashed var(--border-strong)",background:"var(--blue-light)",color:"var(--blue)",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontWeight:600}}>＋ 品目追加</button>
+                      <div style={{display:"flex",gap:6}}>
+                        <button onClick={()=>{const base=invoiceItems.length>0?invoiceItems:invoice.items||[];setDeliveryNoteItems(base.map((it:any)=>({...it,id:Date.now()+Math.random(),lotNo:it.lotNo||"",expiryDate:it.expiryDate||""})));}} style={{fontSize:11,border:"1px solid var(--amber)",background:"var(--amber-light)",color:"var(--amber)",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontWeight:600}}>🔄 Proformaから反映</button>
+                        <button onClick={addDnItem} style={{fontSize:11,border:"1px dashed var(--border-strong)",background:"var(--blue-light)",color:"var(--blue)",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontWeight:600}}>＋ 品目追加</button>
+                      </div>
                     </div>
                     <div style={{overflowX:"auto"}}>
                       <table style={{width:"100%",borderCollapse:"collapse",marginBottom:6}}>
@@ -1655,18 +1664,18 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                         <PackingHeader/>
                         <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                           <thead><tr style={{background:"#222",color:"#fff"}}>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Carton No</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{printLang==="ja"?"カートン番号":"Carton No"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>{printLang==="ja"?"数量":"Qty"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>Dimensions</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:110}}>{printLang==="ja"?"寸法(cm)":"Dimensions(cm)"}</th>
                             {packingRows.some((r:any)=>r.lotNo)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
                             {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
                           </tr></thead>
                           <tbody>
                             {pageRows.map((row:any,i:number)=>(
-                              <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
+                              <tr key={i} style={{background:"#fff"}}>
                                 {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"center",verticalAlign:"middle",fontWeight:600}}>{row.cartonNo}</td>}
                                 <td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.productName}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right"}}>{row.quantity}</td>
