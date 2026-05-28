@@ -21,11 +21,14 @@ async function sb(path: string, options: any = {}) {
       "Content-Type": "application/json",
       "apikey": SUPABASE_ANON_KEY,
       "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      "Prefer": (options.method === "POST" || options.method === "PATCH") ? "return=representation" : "",
+      "Prefer": options.method === "POST" ? "return=representation" : options.method === "PATCH" ? "return=minimal" : "",
       ...options.headers,
     },
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `HTTP ${res.status}`);
+  }
   const t = await res.text();
   return t ? JSON.parse(t) : null;
 }
@@ -741,6 +744,27 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
   const updLine=(cid:number,lid:number,f:string,val:any)=>setPacking((v:any[])=>v.map((c:any)=>c.id===cid?{...c,lines:c.lines.map((l:any)=>l.id===lid?{...l,[f]:val}:l)}:c));
   const delLine=(cid:number,lid:number)=>setPacking((v:any[])=>v.map((c:any)=>c.id===cid?{...c,lines:c.lines.filter((l:any)=>l.id!==lid)}:c));
 
+  // Merge cartons that share the same cartonNo into one carton with multiple lines
+  const mergeByCartonNo=()=>{
+    const map=new Map<string,any>();
+    packing.forEach((c:any)=>{
+      const key=String(c.cartonNo);
+      if(!map.has(key)){
+        map.set(key,{...c,lines:[...(c.lines||[])]});
+      } else {
+        const existing=map.get(key);
+        existing.lines=[...existing.lines,...(c.lines||[])];
+        // keep the first carton's weight/dims (user can edit after merge)
+      }
+    });
+    const merged=Array.from(map.values());
+    setPacking(merged);
+  };
+
+  // Check if there are duplicate cartonNos
+  const cartonNos=packing.map((c:any)=>String(c.cartonNo));
+  const hasDuplicates=cartonNos.length!==new Set(cartonNos).size;
+
   const autoFill=()=>{
     if(!invoice.items?.length)return;
     const newCartons:any[]=[];
@@ -817,9 +841,18 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
           {qtyWarnings.map((w,i)=><div key={i} className="v-item"><span className="risk-badge HIGH">HIGH</span><span style={{color:"var(--red)"}}>{w}</span></div>)}
         </div>
       )}
+      {hasDuplicates&&(
+        <div style={{background:"#FEF3C7",border:"1px solid #F59E0B",borderRadius:"var(--radius-lg)",padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+          <div style={{fontSize:12,color:"#92400E"}}>
+            <strong>⚠️ 同じCarton Noが複数あります。</strong><br/>
+            <span style={{fontSize:11}}>同じカートン番号のカートンは「🔀 同番号をマージ」でまとめてください。1つのカートンに複数製品を入れる場合は「+ 混載品目追加」をご利用ください。</span>
+          </div>
+          <button className="btn btn-amber btn-sm" style={{whiteSpace:"nowrap"}} onClick={mergeByCartonNo}>🔀 同番号をマージ</button>
+        </div>
+      )}
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">{t.packingList}</div><div className="card-subtitle">1カートンに複数製品を混載できます。端数は🟡で表示。</div></div>
+          <div><div className="card-title">{t.packingList}</div><div className="card-subtitle">1カートンに複数製品を混載できます。「+ 混載品目追加」で同一カートンに品目を追加。</div></div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             <button className="btn btn-secondary btn-sm" onClick={autoFill}>{t.autoFill}</button>
             <div style={{display:"flex",alignItems:"center",gap:4,background:"#F0EEE9",borderRadius:"var(--radius)",padding:"4px 8px"}}>
@@ -1012,22 +1045,32 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
   const addDnItem=()=>setDeliveryNoteItems((prev:any[])=>[...prev,{id:Date.now(),productName:"",hsCode:"",quantity:0,unitPrice:0,lotNo:"",expiryDate:""}]);
 
   const packingRows:any[]=[];
+  // Group cartons by cartonNo to handle any legacy data where same cartonNo was split across multiple objects
+  const cartonGroups=new Map<string,any[]>();
   packing.forEach((carton:any)=>{
-    const lines=carton.lines||[{productName:"",quantity:""}];
-    const dim=[carton.dimL,carton.dimW,carton.dimH].every(Boolean)?`${carton.dimL}x${carton.dimW}x${carton.dimH}`:"";
-    lines.forEach((line:any,li:number)=>{
+    const key=String(carton.cartonNo);
+    if(!cartonGroups.has(key))cartonGroups.set(key,[]);
+    cartonGroups.get(key)!.push(carton);
+  });
+  cartonGroups.forEach((cartons,cartonNo)=>{
+    const allLines=cartons.flatMap((c:any)=>c.lines||[{productName:"",quantity:""}]);
+    const firstCarton=cartons[0];
+    const dim=[firstCarton.dimL,firstCarton.dimW,firstCarton.dimH].every(Boolean)?`${firstCarton.dimL}x${firstCarton.dimW}x${firstCarton.dimH}`:"";
+    const totalGW=cartons.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0);
+    const totalNW=cartons.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0);
+    allLines.forEach((line:any,li:number)=>{
       packingRows.push({
-        cartonNo:carton.cartonNo,
+        cartonNo,
         productName:line.productName||"",
         quantity:line.quantity||"",
-        grossWeight:Number(carton.grossWeight||0).toFixed(2),
-        netWeight:Number(carton.netWeight||0).toFixed(2),
+        grossWeight:totalGW.toFixed(2),
+        netWeight:totalNW.toFixed(2),
         dimensions:dim,
-        isFraction:carton.isFraction,
+        isFraction:firstCarton.isFraction,
         expiryDate:line.expiryDate||"",
         lotNo:line.lotNo||"",
         isFirst:li===0,
-        rowSpan:lines.length,
+        rowSpan:allLines.length,
       });
     });
   });
@@ -2706,7 +2749,7 @@ export default function App(){
       }
       showToast(status==="draft"?"💾 下書きを保存しました":"✅ 保存しました");
       setSavedSnapshot(JSON.stringify(invoice));
-    }catch(e){showToast("❌ 保存に失敗しました");}
+    }catch(e:any){showToast("❌ 保存に失敗しました: "+(e?.message||"不明なエラー"));}
     setSaving(false);
   };
   const requestApproval=async()=>{
