@@ -12,10 +12,8 @@ async function signIn(email:string,password:string){
 }
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
 async function sb(path: string, options: any = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
@@ -47,13 +45,11 @@ async function getUser(token:string){
   return res.json();
 }
 
-// ── LoginPage ─────────────────────────────────────────────
 function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(false);
-
   const handleLogin=async(e:any)=>{
     e.preventDefault();
     setError("");setLoading(true);
@@ -65,7 +61,6 @@ function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
       setError(err.message||"ログインに失敗しました");
     }finally{setLoading(false);}
   };
-
   return(
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)"}}>
       <div style={{background:"#fff",borderRadius:16,padding:"48px 40px",width:400,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
@@ -98,16 +93,10 @@ function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
         >
           {loading?"ログイン中...":"ログイン"}
         </button>
-        <div style={{marginTop:24,padding:"16px",background:"#F8FAFC",borderRadius:8,fontSize:12,color:"#666"}}>
-          <div style={{fontWeight:600,marginBottom:4}}>📋 ログインできない場合</div>
-          <div>Supabase管理画面の「Authentication」→「Users」でユーザーを作成してください。</div>
-        </div>
       </div>
     </div>
   );
 }
-
-
 
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
 const INCOTERMS = ["EXW","FCA","CPT","CIP","DAP","DPU","DDP","FAS","FOB","CFR","CIF"];
@@ -121,14 +110,12 @@ const INIT_INVOICE: any = {
   remarks:"", expiryDate:"", items:[], status:"draft", language:"ja",
   trackingNumber:"", paymentConfirmed:false, approvalStatus:"draft",
 };
-
 const INIT_ORG: any = {
   companyName:"", address:"", tel:"", email:"", website:"",
   bankName:"", bankBranch:"", bankAddress:"", accountType:"普通", accountNo:"", accountName:"", swiftCode:"",
   signerName:"", signerTitle:"", logoBase64:"", signatureBase64:"",
-  shipLocations:[], // 出荷場所リスト [{name:"本社", address:"xxx"}]
+  shipLocations:[],
 };
-
 function fmt(amount: number, currency: string) {
   const nd = ["JPY","KRW","TWD","VND","IDR"];
   return nd.includes(currency) ? Math.round(amount).toLocaleString("ja-JP") : amount.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -185,7 +172,6 @@ const T: any = {
     addItem:"+ Add Item", selectProduct:"Select from Products",
   }
 };
-
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -328,11 +314,9 @@ textarea{resize:vertical;min-height:64px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .fade-in{animation:fadeIn .2s ease}
-.print-only{display:none} /* 画面表示時は非表示、印刷時のみ表示 */
 /* PDF print styles */
 @media print{
   .sidebar,.topbar,.no-print,.step-bar{display:none!important}
-  .print-only{display:inline!important}
   .main{margin-left:0!important}
   .content{padding:0!important}
   body{background:#fff}
@@ -344,15 +328,12 @@ textarea{resize:vertical;min-height:64px}
 }
 `;
 
-// ============================================================
-// SUB COMPONENTS
-// ============================================================
 function Toast({msg,onClose}:any){
   useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t);},[onClose]);
   return <div className="toast">{msg}</div>;
 }
 
-function AcInput({value,onChange,suggestions,placeholder,className="",textOnly}:any){
+function AcInput({value,onChange,suggestions,placeholder,className=""}:any){
   const [open,setOpen]=useState(false);
   const filtered=(suggestions||[]).filter((s:any)=>{
     const v=(value||"").toLowerCase();
@@ -402,16 +383,7 @@ function ImgUpload({label,value,onChange,hint}:any){
 }
 
 function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
-  // 統合7ステップワークフロー
-  // ① Proforma作成・保存
-  // ② Invoice作成・編集（金額調整可）
-  // ③ Commercial Invoice作成・編集（通関用）
-  // ④ Packing List作成・編集
-  // ⑤ PDF出力（4タブ）
-  // ⑥ 承認申請→承認
-  // ⑦ 印刷・送付・出荷管理
   const isProforma=invoiceType==="proforma";
-
   const labels=isProforma
     ?["①Proforma作成","②承認申請"]
     :["①Proforma","②Invoice","③Commercial","④Packing","⑤DELIVERY NOTE","⑥PDF","⑦承認","⑧出荷"];
@@ -419,7 +391,6 @@ function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
     ?["📋","📨"]
     :["📋","📄","🔄","📦","📝","🖨️","✅","🚢"];
   const total=labels.length;
-
   return(
     <div className="step-bar" style={{overflowX:"auto"}}>
       <div style={{display:"flex",alignItems:"center",minWidth:isProforma?240:820,flex:1}}>
@@ -428,7 +399,6 @@ function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
         let dotClass="pending";
         if(step>s)dotClass="done";
         else if(step===s)dotClass="active";
-        // ⑥承認はapprovalStatusに応じて色変え
         if(!isProforma&&s===7){
           if(approvalStatus==="approved")dotClass=step>=7?"done":"active";
           else if(approvalStatus==="pending_approval")dotClass="active";
@@ -474,10 +444,6 @@ function ValidationPanel({invoice,packing,setStep}:any){
     </div>
   );
 }
-
-// ============================================================
-// INVOICE FORM
-// ============================================================
 function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,countryDocs,hideNextButton}:any){
   const t=T[lang||"ja"];
   const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",lotNo:"",expiryDate:""}]}));
@@ -497,7 +463,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
     if(!consigneeCountry||!countryDocs?.length) return null;
     return countryDocs.find((d:any)=>d.country===consigneeCountry)||null;
   },[consigneeCountry,countryDocs]);
-
   const applyCustomer=(c:any)=>{
     setInvoice((v:any)=>({...v,
       consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
@@ -505,7 +470,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
       currency:c.currency||v.currency,
       incoterms:c.incoterms||v.incoterms,
       remarks:c.remarks?((v.remarks?v.remarks+"\n":"")+c.remarks):v.remarks,
-      // 品目は変えない（製品選択時に得意先別価格を反映）
     }));
   };
 
@@ -514,9 +478,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
       shipTo:[c.consignee_name||c.name,c.consignee_address||c.address,c.country].filter(Boolean).join("\n"),
     }));
   };
-
   const applyProduct=(p:any,itemId:number)=>{
-    // 現在の得意先を逆引きして price_list から対象製品の単価を探す
     const matchedCustomer=customers.find((c:any)=>
       invoice.consignee&&invoice.consignee.startsWith(c.name||"__")
     );
@@ -529,7 +491,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
     upd(itemId,"currency",p.currency||cur);
     upd(itemId,"countryOfOrigin",p.country_of_origin||invoice.countryOfOrigin||"");
   };
-
   return(
     <div className="fade-in">
       {countryAlert&&(
@@ -546,7 +507,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
           </div>
         </div>
       )}
-      {/* 書類タイプ */}
       <div className="card">
         <div className="card-header"><div className="card-title">{t.invoiceType}</div>
           <select className="input" style={{width:120}} value={lang} onChange={(e:any)=>setInvoice((v:any)=>({...v,language:e.target.value}))}>
@@ -575,7 +535,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
         )}
       </div>
 
-      {/* 基本情報 */}
       <div className="card">
         <div className="card-header"><div><div className="card-title">{t.basicInfo}</div></div></div>
         <div className="grid-3" style={{marginBottom:13}}>
@@ -673,7 +632,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
         </div>
       </div>
 
-      {/* 貿易条件 */}
       <div className="card">
         <div className="card-header"><div className="card-title">{t.tradeTerms}</div></div>
         <div className="grid-4">
@@ -698,7 +656,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
         </div>
       </div>
 
-      {/* 品目明細 */}
       <div className="card">
         <div className="card-header">
           <div><div className="card-title">{t.items}</div><div className="card-subtitle">HSコードは任意です</div></div>
@@ -770,9 +727,6 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang,coun
   );
 }
 
-// ============================================================
-// PACKING LIST FORM
-// ============================================================
 function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:any){
   const t=T[lang||"ja"];
   const invProducts=(invoice.items||[]).map((i:any)=>i.productName).filter(Boolean);
@@ -792,7 +746,6 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
     const newCartons:any[]=[];
     let cartonNo=1;
     invoice.items.forEach((item:any)=>{
-      // 製品マスタからcartons_per_boxを取得
       const masterProduct=products.find((p:any)=>p.name===item.productName);
       const perBox=masterProduct?.cartons_per_box?Number(masterProduct.cartons_per_box):0;
       const netW=masterProduct?.net_weight_per_unit?Number(masterProduct.net_weight_per_unit):0;
@@ -800,7 +753,6 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
       const totalQty=Number(item.quantity||0);
 
       if(perBox>0){
-        // 割り切れる分のカートンを作成
         const fullCartons=Math.floor(totalQty/perBox);
         const fraction=totalQty%perBox;
         for(let i=0;i<fullCartons;i++){
@@ -814,7 +766,6 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
             isFraction:false,
           });
         }
-        // 端数カートン
         if(fraction>0){
           newCartons.push({
             id:Date.now()+cartonNo,
@@ -827,7 +778,6 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
           });
         }
       } else {
-        // cartons_per_box未設定の場合は1カートンにまとめる
         newCartons.push({
           id:Date.now()+cartonNo,
           cartonNo:cartonNo++,
@@ -854,50 +804,17 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
   const totalQty=packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
 
   const qtyWarnings:string[]=[];
-  const qtyOk:string[]=[];
   (invoice.items||[]).forEach((inv:any)=>{
-    const pq=packing
-      .filter((c:any)=>!c.isFraction) // 端数カートンは除外して比較
-      .reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
-    const pqAll=packing // 端数込みの合計
-      .reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
+    const pq=packing.reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
     const iq=Number(inv.quantity||0);
-    if(iq>0){
-      if(pqAll===0){
-        qtyWarnings.push(`「${inv.productName}」: Packingに未入力（Invoice: ${iq}）`);
-      } else if(pqAll!==iq){
-        const diff=pqAll-iq;
-        qtyWarnings.push(`「${inv.productName}」: Invoice ${iq} / Packing ${pqAll}（${diff>0?"+":""}${diff}）`);
-      } else {
-        qtyOk.push(inv.productName);
-      }
-    }
+    if(iq>0&&pq>0&&iq!==pq)qtyWarnings.push(`「${inv.productName}」: Invoice ${iq} / Packing ${pq}`);
   });
-
   return(
     <div className="fade-in">
-      {(qtyWarnings.length>0||qtyOk.length>0)&&(invoice.items||[]).length>0&&(
-        <div style={{background:"#fff",border:`1px solid ${qtyWarnings.length>0?"var(--red)":"var(--green,#16a34a)"}`,borderRadius:"var(--radius-lg)",padding:"10px 14px",marginBottom:12}}>
-          <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:qtyWarnings.length>0?"var(--red)":"var(--green,#16a34a)"}}>
-            {qtyWarnings.length>0?"⚠️ 数量チェック（不一致あり）":"✅ 数量チェック（すべて一致）"}
-          </div>
-          {(invoice.items||[]).map((inv:any)=>{
-            const pqAll=packing.reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
-            const iq=Number(inv.quantity||0);
-            const ok=iq>0&&pqAll===iq;
-            const missing=iq>0&&pqAll===0;
-            const diff=pqAll-iq;
-            return(
-              <div key={inv.id||inv.productName} style={{display:"flex",alignItems:"center",gap:8,fontSize:12,padding:"3px 0",borderBottom:"1px solid #f0f0f0"}}>
-                <span style={{fontSize:14}}>{ok?"✅":missing?"❌":"⚠️"}</span>
-                <span style={{flex:1,fontWeight:500}}>{inv.productName||"(未入力)"}</span>
-                <span style={{color:"#666"}}>Invoice: <strong>{iq}</strong></span>
-                <span style={{color:"#666"}}>Packing: <strong style={{color:ok?"var(--green,#16a34a)":missing?"var(--red)":"var(--amber,#d97706)"}}>{pqAll}</strong></span>
-                {!ok&&!missing&&<span style={{fontSize:11,color:"var(--amber,#d97706)",fontWeight:600}}>({diff>0?"+":""}{diff})</span>}
-                {missing&&<span style={{fontSize:11,color:"var(--red)",fontWeight:600}}>未入力</span>}
-              </div>
-            );
-          })}
+      {qtyWarnings.length>0&&(
+        <div className="validation-panel HIGH" style={{marginBottom:12}}>
+          <div className="v-title"><span>🚨</span><span>数量不一致</span></div>
+          {qtyWarnings.map((w,i)=><div key={i} className="v-item"><span className="risk-badge HIGH">HIGH</span><span style={{color:"var(--red)"}}>{w}</span></div>)}
         </div>
       )}
       <div className="card">
@@ -993,9 +910,6 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
   );
 }
 
-// ============================================================
-// REVIEW PAGE
-// ============================================================
 function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
   const t=T[lang||"ja"];
   const {errors,riskLevel}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
@@ -1054,10 +968,7 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
   );
 }
 
-// ============================================================
-// PDF OUTPUT
-// ============================================================
-function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,customers}:any){
+function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,countryDocs,customers}:any){
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
   const [activeDoc,setActiveDoc]=useState("proforma");
@@ -1078,9 +989,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
   const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
   const [commercialRemarks,setCommercialRemarks]=useState(invoice.commercial_remarks||invoice.remarks||"");
-  // DELIVERY NOTE品目はReceiptPageで編集済みのinvoice.delivery_itemsを使う
-  const deliveryItems:any[]=invoice.delivery_items||invoice.invoice_items||invoice.items||[];
-  const updDeliveryItem=(_id:any,_k:string,_v:any)=>{}; // OutputPageでは編集不可（ReceiptPageで編集）
+  const [deliveryNoteItems,setDeliveryNoteItems]=useState<any[]>(()=>(invoice.delivery_note_items||invoice.invoice_items||invoice.items||[]).map((it:any)=>({...it,id:it.id||Date.now()+Math.random()})));
+  const [deliveryNoteRemarks,setDeliveryNoteRemarks]=useState(invoice.delivery_note_remarks||invoice.remarks||"");
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
 
@@ -1097,8 +1007,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const updComItem=(id:any,k:string,v:any)=>updItem(commercialItems,setCommercialItems,id,k,v);
   const delComItem=(id:any)=>delItem(commercialItems,setCommercialItems,id);
   const addComItem=()=>addItem(setCommercialItems);
+  const updDnItem=(id:any,k:string,v:any)=>updItem(deliveryNoteItems,setDeliveryNoteItems,id,k,v);
+  const delDnItem=(id:any)=>delItem(deliveryNoteItems,setDeliveryNoteItems,id);
+  const addDnItem=()=>setDeliveryNoteItems((prev:any[])=>[...prev,{id:Date.now(),productName:"",hsCode:"",quantity:0,unitPrice:0,lotNo:"",expiryDate:""}]);
 
-  // カートンを行に展開（1カートン = 複数lines → 複数行、先頭行だけrowSpanデータを持つ）
   const packingRows:any[]=[];
   packing.forEach((carton:any)=>{
     const lines=carton.lines||[{productName:"",quantity:""}];
@@ -1114,19 +1026,17 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
         isFraction:carton.isFraction,
         expiryDate:line.expiryDate||"",
         lotNo:line.lotNo||"",
-        isFirst:li===0,           // このカートンの最初の行か
-        rowSpan:lines.length,     // このカートンの行数（先頭行でのみ使用）
+        isFirst:li===0,
+        rowSpan:lines.length,
       });
     });
   });
-
   const ROWS_PER_PAGE=15;
   const packingPages:any[][]=[];
   for(let i=0;i<packingRows.length;i+=ROWS_PER_PAGE){
     packingPages.push(packingRows.slice(i,i+ROWS_PER_PAGE));
   }
   if(packingPages.length===0)packingPages.push([]);
-
   const printStyle=`
     @page{margin:15mm}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
@@ -1153,10 +1063,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     .bank-section{margin-top:16px;font-size:9px;border:1px solid #ddd;padding:8px;border-radius:4px}
     .bank-title{font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px}
     .no-print{display:none !important}
-    .print-only{display:inline}
   `;
-
-  // 全書類（Proforma/Invoice/Commercial/Packing List）を一括で印刷
   const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
       const showLot=items.some((it:any)=>it.lotNo);
@@ -1183,11 +1090,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           </div>
         </div>`:"";
       const sigSection=`
-        <div style="margin-top:40px;display:flex;justify-content:flex-end">
-          <div style="text-align:center;min-width:200px">
-            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
-            <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
-            <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
+        <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
+          <div style="text-align:center;min-width:200px;page-break-inside:avoid">
+            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+            ${org?.signerName?`<div style="font-weight:700;font-size:12px;margin-top:4px;color:#000">${org.signerName}</div>`:""}
+            ${org?.signerTitle?`<div style="font-size:10px;color:#000">${org.signerTitle}</div>`:""}
           </div>
         </div>`;
       return `
@@ -1238,10 +1145,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   };
 
   const buildDeliveryNoteSection=()=>{
-      const dnItems=deliveryItems;
+      const dnItems=deliveryNoteItems;
       if(dnItems.length===0) return "";
-      const showLot=true; // 常にロット番号列を表示
-      const showExp=true; // 常に使用期限列を表示
+      const showLot=dnItems.some((it:any)=>it.lotNo);
+      const showExp=dnItems.some((it:any)=>it.expiryDate);
       const dnTotal=dnItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
       const rows=dnItems.map((it:any,i:number)=>`
         <tr style="background:${i%2===0?"#fafafa":"#fff"}">
@@ -1249,9 +1156,17 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${Number(it.unitPrice||0).toLocaleString()}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>
+          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
+          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
         </tr>`).join("");
+      const sigSection=`
+        <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
+          <div style="text-align:center;min-width:200px;page-break-inside:avoid">
+            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+            ${org?.signerName?`<div style="font-weight:700;font-size:12px;margin-top:4px;color:#000">${org.signerName}</div>`:""}
+            ${org?.signerTitle?`<div style="font-size:10px;color:#000">${org.signerTitle}</div>`:""}
+          </div>
+        </div>`;
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000;page-break-after:always">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
@@ -1283,28 +1198,23 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           </div>
           <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
             <thead><tr style="background:#222;color:#fff">
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px">${printLang==="ja"?"品名":"Description"}</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:45px">${printLang==="ja"?"数量":"Qty"}</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:80px">${printLang==="ja"?"単価":"Unit Price"}</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:90px">${printLang==="ja"?"金額":"Amount"}</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">${printLang==="ja"?"ロット番号":"Lot No."}</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">${printLang==="ja"?"使用期限":"Expiry"}</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px">Description</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:45px">Qty</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:80px">Unit Price</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:90px">Amount</th>
+              ${showLot?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Lot No.</th>`:""}
+              ${showExp?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Expiry</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;background:#f5f5f5">
-              <td colspan="3" style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000">${printLang==="ja"?"合計":"TOTAL"}</td>
+              <td colspan="3" style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000">TOTAL</td>
               <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-size:13px">${invoice.currency||"JPY"} ${dnTotal.toLocaleString()}</td>
-              <td style="border:1px solid #ddd;border-top:2px solid #000"></td>
-              <td style="border:1px solid #ddd;border-top:2px solid #000"></td>
+              ${showLot?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
+              ${showExp?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
             </tr></tfoot>
           </table>
-          <div style="margin-top:40px;display:flex;justify-content:flex-end">
-            <div style="text-align:center;min-width:200px">
-              ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:""} 
-              <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
-              <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
-            </div>
-          </div>
+          ${deliveryNoteRemarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">Remarks</div><div style="font-size:10px;white-space:pre-wrap">${deliveryNoteRemarks}</div></div>`:""}
+          ${sigSection}
         </div>`;
   };
 
@@ -1312,7 +1222,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       if(packing.length===0) return "";
       const hasLot=packingRows.some((r:any)=>r.lotNo);
       const hasExp=packingRows.some((r:any)=>r.expiryDate);
-      // rowSpanを使って1カートン内の複数linesを正しく結合
       const rows=packingRows.map((row:any)=>{
         const isFirst=row.isFirst;
         const span=row.rowSpan;
@@ -1331,6 +1240,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
       const totNW=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2);
       const totQty=packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
+      const sigSection=`
+        <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
+          <div style="text-align:center;min-width:200px;page-break-inside:avoid">
+            ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto;border-bottom:1px solid #000"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
+            ${org?.signerName?`<div style="font-weight:700;font-size:12px;margin-top:4px;color:#000">${org.signerName}</div>`:""}
+            ${org?.signerTitle?`<div style="font-size:10px;color:#000">${org.signerTitle}</div>`:""}
+          </div>
+        </div>`;
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
@@ -1346,18 +1263,18 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           <div style="height:2px;background:#000;margin-bottom:16px"></div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="ja"?"箱番号":"Carton No"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">Carton No</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"品名":"Description"}</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">${printLang==="ja"?"数量":"Qty"}</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">${printLang==="ja"?"寸法(cm)":"Dimensions(cm)"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
               ${hasLot?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"ロット番号":"Lot No."}</th>`:""}
               ${hasExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="ja"?"使用期限":"Expiry"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
-              <td style="border:1px solid #ccc;padding:4px 6px">${printLang==="ja"?"合計":"TOTAL"}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px">TOTAL</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totQty}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
@@ -1367,13 +1284,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
               ${hasExp?`<td style="border:1px solid #ccc;padding:4px 6px"></td>`:""}
             </tr></tfoot>
           </table>
-          <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
-            <div style="text-align:center;min-width:200px;page-break-inside:avoid">
-              ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px"/>`:`<div style="height:50px;border-bottom:1px solid #000;margin-bottom:4px"></div>`}
-              <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
-              <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
-            </div>
-          </div>
+          ${sigSection}
         </div>`;
   };
 
@@ -1399,7 +1310,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   };
 
   const handlePrint=()=>{
-    // el.innerHTMLではなくbuild関数でクリーンなHTMLを生成（UI要素・ボタンの✕混入を防ぐ）
     let section="";
     let title="Document";
     if(activeDoc==="proforma"){
@@ -1425,7 +1335,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
-
   const InvoiceHeader=({title}:{title:string})=>(
     <>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
@@ -1436,7 +1345,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
           {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
-          {org?.signerName&&<div>{org.signerName}</div>}
           {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
           {org?.tel&&<div>Tel: {org.tel}</div>}
         </div>
@@ -1462,14 +1370,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       </div>
     </>
   );
-
   const MetaRow=({label,value}:any)=>(
     <div style={{display:"flex",padding:"5px 0",borderBottom:"1px solid #eee"}}>
       <div style={{width:120,color:"#555",fontSize:10}}>{label}</div>
       <div style={{flex:1,fontSize:10,fontWeight:500}}>{value||"—"}</div>
     </div>
   );
-
   const PackingHeader=()=>(
     <>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
@@ -1480,7 +1386,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
           {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
-          {org?.signerName&&<div>{org.signerName}</div>}
           {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
           {org?.tel&&<div>Tel: {org.tel}</div>}
         </div>
@@ -1492,10 +1397,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
           {invoice.paymentTerms&&<MetaRow label={printLang==="ja"?"支払い条件：":"Payment Terms:"} value={invoice.paymentTerms}/>}
           {invoice.paymentDue&&<MetaRow label={printLang==="ja"?"支払い期限：":"Payment Due:"} value={invoice.paymentDue}/>}
           {invoice.poNumber&&<MetaRow label={printLang==="ja"?"発注番号：":"P.O. No:"} value={invoice.poNumber}/>}
-          {invoice.shippingMethod&&<MetaRow label={printLang==="ja"?"発送方法：":"Shipping Method:"} value={invoice.shippingMethod}/>}
-          {invoice.incoterms&&<MetaRow label="Incoterms:" value={invoice.incoterms}/>}
-          <MetaRow label={printLang==="ja"?"カートン数：":"Total Cartons:"} value={`${packing.length} CTNS`}/>
-          <MetaRow label={printLang==="ja"?"総重量：":"Total G.W.:"} value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
+          {invoice.shippingMethod&&<MetaRow label="Shipping Method：" value={invoice.shippingMethod}/>}
+          {invoice.incoterms&&<MetaRow label="Incoterms：" value={invoice.incoterms}/>}
+          <MetaRow label="Total Cartons：" value={`${packing.length} CTNS`}/>
+          <MetaRow label="Total G.W.：" value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
         </div>
         <div>
           <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="ja"?"請求先":"CONSIGNEE"}</div>
@@ -1509,17 +1414,15 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       </div>
     </>
   );
-
   const SignatureSection=()=>(
     <div style={{marginTop:40,display:"flex",justifyContent:"flex-end",pageBreakInside:"avoid" as any}}>
       <div style={{textAlign:"center",minWidth:200,pageBreakInside:"avoid" as any}}>
-        {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
-        <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
-        <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
+        {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4,display:"block",margin:"0 auto",borderBottom:"1px solid #000"}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
+        {org?.signerName&&<div style={{fontWeight:700,fontSize:12,marginTop:4,color:"#000"}}>{org.signerName}</div>}
+        {org?.signerTitle&&<div style={{fontSize:10,color:"#000"}}>{org.signerTitle}</div>}
       </div>
     </div>
   );
-
   return(
     <div className="fade-in">
       {countryAlert&&(
@@ -1667,17 +1570,15 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                 )}
                 {activeDoc==="receipt"&&(
                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
-                    {/* 納品書ヘッダー */}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                       <div>
-                        <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>{printLang==="ja"?"DELIVERY NOTE":"DELIVERY NOTE"}</div>
+                        <div style={{fontSize:26,fontWeight:900,letterSpacing:2,marginBottom:4}}>DELIVERY NOTE</div>
                         <div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"番号":"No."} {invoice.invoiceNo}</div>
                         {invoice.trackingDate&&<div style={{fontSize:10,color:"#555"}}>{printLang==="ja"?"出荷日":"Ship Date"}: {invoice.trackingDate}</div>}
                       </div>
                       <div style={{textAlign:"right",fontSize:10}}>
                         {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:55,maxWidth:180,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
                         {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
-                        {org?.signerName&&<div>{org.signerName}</div>}
                         {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
                         {org?.tel&&<div>Tel: {org.tel}</div>}
                       </div>
@@ -1697,63 +1598,71 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                         {invoice.poNumber&&<div style={{fontSize:10}}>{printLang==="ja"?"発注番号":"P.O. No"}: {invoice.poNumber}</div>}
                       </div>
                     </div>
-                    {/* 品目テーブル */}
-                    {(()=>{
-                      const showLotR=deliveryItems.some((it:any)=>it.lotNo);
-                      const showExpR=deliveryItems.some((it:any)=>it.expiryDate);
-                      const recTotal=deliveryItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
-                      return(
-                        <table style={{width:"100%",borderCollapse:"collapse",marginBottom:16}}>
-                          <thead><tr style={{background:"#222",color:"#fff"}}>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:60,textAlign:"right"}}>{printLang==="ja"?"数量":"Qty"}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80,textAlign:"right"}}>{printLang==="ja"?"単価":"Unit Price"}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90,textAlign:"right"}}>{printLang==="ja"?"金額":"Amount"}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>{printLang==="ja"?"使用期限":"Expiry"}</th>
-                          </tr></thead>
-                          <tbody>
-                            {deliveryItems.map((it:any,i:number)=>(
-                              <tr key={it.id||i} style={{background:i%2===0?"#fafafa":"#fff"}}>
-                                <td style={{border:"1px solid #ddd",padding:"4px 6px"}}>{it.productName}</td>
-                                <td style={{border:"1px solid #ddd",padding:"4px 6px",textAlign:"right"}}>{it.quantity}</td>
-                                <td style={{border:"1px solid #ddd",padding:"4px 6px",textAlign:"right"}}>{cur} {Number(it.unitPrice||0).toLocaleString()}</td>
-                                <td style={{border:"1px solid #ddd",padding:"4px 6px",textAlign:"right"}}>{cur} {(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
-                                <td style={{border:"1px solid #ddd",padding:"4px 6px"}}>{it.lotNo||""}</td>
-                                <td style={{border:"1px solid #ddd",padding:"4px 6px"}}>{it.expiryDate||""}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                          <tfoot>
-                            <tr style={{fontWeight:700}}>
-                              <td colSpan={3} style={{border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",borderTop:"2px solid #000"}}>{printLang==="ja"?"合計":"TOTAL"}</td>
-                              <td style={{border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",borderTop:"2px solid #000",fontSize:13}}>{cur} {recTotal.toLocaleString()}</td>
-                              <td style={{border:"1px solid #ddd",borderTop:"2px solid #000"}}></td>
-                              <td style={{border:"1px solid #ddd",borderTop:"2px solid #000"}}></td>
+                    {/* DELIVERY NOTE 品目編集テーブル（Proformaと同形式、ロット番号・使用期限入力あり） */}
+                    <div className="no-print" style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-muted)"}}>📦 品目明細（編集可）</div>
+                      <button onClick={addDnItem} style={{fontSize:11,border:"1px dashed var(--border-strong)",background:"var(--blue-light)",color:"var(--blue)",padding:"4px 10px",borderRadius:4,cursor:"pointer",fontWeight:600}}>＋ 品目追加</button>
+                    </div>
+                    <div style={{overflowX:"auto"}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:6}}>
+                        <thead><tr style={{background:"#222",color:"#fff"}}>
+                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>{printLang==="ja"?"品名":"Description"}</th>
+                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:55}}>Qty</th>
+                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>Unit Price</th>
+                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Amount</th>
+                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>
+                          <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>{printLang==="ja"?"使用期限":"Expiry"}</th>
+                          <th style={{border:"1px solid #444",padding:"4px",width:28}} className="no-print"></th>
+                        </tr></thead>
+                        <tbody>
+                          {deliveryNoteItems.map((it:any,i:number)=>(
+                            <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
+                              <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updDnItem(it.id,"productName",e.target.value)}/></td>
+                              <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updDnItem(it.id,"quantity",e.target.value)}/></td>
+                              <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:68,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updDnItem(it.id,"unitPrice",e.target.value)}/></td>
+                              <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
+                              <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} placeholder="LOT-001" onChange={(e:any)=>updDnItem(it.id,"lotNo",e.target.value)}/></td>
+                              <td style={{border:"1px solid #ddd",padding:"3px 4px"}}><input type="date" style={{width:"100%",border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updDnItem(it.id,"expiryDate",e.target.value)}/></td>
+                              <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delDnItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                             </tr>
-                          </tfoot>
-                        </table>
-                      );
-                    })()}
-                    {invoice.remarks&&<div style={{marginTop:8,fontSize:10}}><span style={{fontWeight:700}}>{printLang==="ja"?"備考":"Remarks"}: </span>{invoice.remarks}</div>}
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr><td colSpan={3} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>{printLang==="ja"?"合計":"TOTAL"}: {cur} {fmt(deliveryNoteItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
+                            <td style={{borderTop:"2px solid #000"}}></td>
+                            <td style={{borderTop:"2px solid #000"}}></td>
+                            <td style={{borderTop:"2px solid #000"}}></td>
+                            <td style={{borderTop:"2px solid #000"}} className="no-print"></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div className="no-print" style={{marginTop:4,marginBottom:10}}>
+                      <button onClick={addDnItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
+                    </div>
+                    <div style={{marginTop:10}}>
+                      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>Remarks</div>
+                      <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical",minHeight:36}} value={deliveryNoteRemarks} onChange={(e:any)=>setDeliveryNoteRemarks(e.target.value)}/>
+                      <div className="print-only" style={{fontSize:10,whiteSpace:"pre-wrap"}}>{deliveryNoteRemarks}</div>
+                    </div>
                     <SignatureSection/>
                   </div>
                 )}
                 {activeDoc==="packing"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
+                   <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
                     {packingPages.map((pageRows:any[],pi:number)=>(
                       <div key={pi} className={pi<packingPages.length-1?"pdf-page":""}>
                         <PackingHeader/>
                         <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                           <thead><tr style={{background:"#222",color:"#fff"}}>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{printLang==="ja"?"箱番号":"Carton No"}</th>
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Carton No</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"品名":"Description"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>{printLang==="ja"?"数量":"Qty"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
-                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>{printLang==="ja"?"寸法(cm)":"Dimensions(cm)"}</th>
-                            {packingRows.some((r:any)=>r.lotNo)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Lot No.</th>}
-                            {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Expiry</th>}
+                            <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>Dimensions</th>
+                            {packingRows.some((r:any)=>r.lotNo)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
+                            {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
                           </tr></thead>
                           <tbody>
                             {pageRows.map((row:any,i:number)=>(
@@ -1772,7 +1681,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
                           {pi===packingPages.length-1&&(
                             <tfoot>
                               <tr style={{fontWeight:700,borderTop:"2px solid #000"}}>
-                                <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{printLang==="ja"?"合計":"TOTAL"}</td>
+                                <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>TOTAL</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0)}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
@@ -1798,8 +1707,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
         <button className="btn btn-secondary" onClick={onBack}>← ④ Packing List に戻る</button>
         <div style={{display:"flex",gap:8}}>
-          <button className="btn btn-amber btn-sm" onClick={()=>onSave("in_progress")}>💾 保存</button>
-          <button className="btn btn-primary" onClick={onNext}>⑥ 承認申請へ →</button>
+          <button className="btn btn-amber btn-sm" onClick={()=>{if(setInvoice){setInvoice((v:any)=>({...v,delivery_note_items:deliveryNoteItems,delivery_note_remarks:deliveryNoteRemarks}));}onSave("in_progress");}}>💾 保存</button>
+          <button className="btn btn-primary" onClick={()=>{if(setInvoice){setInvoice((v:any)=>({...v,delivery_note_items:deliveryNoteItems,delivery_note_remarks:deliveryNoteRemarks}));}onNext();}}>⑥ 承認申請へ →</button>
         </div>
       </div>
     </div>
@@ -1815,14 +1724,12 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
   const [search,setSearch]=useState("");
   const [filterStatus,setFilterStatus]=useState("all");
   const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
-
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{const d=await sb("invoices?order=created_at.desc");setItems(d||[]);}
     catch(e){console.error(e);}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const del=async(id:string,e:any)=>{
@@ -1831,14 +1738,12 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
     await sb(`invoices?id=eq.${id}`,{method:"DELETE"});
     fetch();
   };
-
   const filtered=items.filter(h=>{
     const q=search.toLowerCase();
     const mq=!q||(h.invoice_no||"").toLowerCase().includes(q)||(h.consignee||"").toLowerCase().includes(q)||(h.country_of_origin||"").toLowerCase().includes(q);
     const ms=filterStatus==="all"||h.status===filterStatus||h.approval_status===filterStatus;
     return mq&&ms;
   });
-
   return(
     <div className="fade-in">
       <div className="card">
@@ -1870,7 +1775,7 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
                 {h.invoice_type!=="proforma"&&(
                   <button className="btn btn-secondary btn-xs" onClick={(e)=>{e.stopPropagation();onEdit(h);}}>✏️ 編集</button>
                 )}
-                <button className="btn btn-secondary btn-xs" onClick={()=>onCopy(h)}>📋 コピー</button>
+                <button className="btn btn-secondary btn-xs" onClick={(e)=>{e.stopPropagation();onCopy(h);}}>📋 コピー</button>
                 <button className="btn btn-danger btn-xs" onClick={(e)=>del(h.id,e)}>削除</button>
               </div>
             </div>
@@ -1898,14 +1803,12 @@ function CustomerPage({onCustomersChange,products}:any){
   const [editId,setEditId]=useState<string|null>(null);
   const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:"",price_list:[]};
   const [form,setForm]=useState<any>(empty);
-
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{const d=await sb("customers?order=created_at.desc");setItems(d||[]);onCustomersChange(d||[]);}
     catch(e){}
     setLoading(false);
   },[onCustomersChange]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const save=async()=>{
@@ -1927,7 +1830,6 @@ function CustomerPage({onCustomersChange,products}:any){
     if(!confirm("削除しますか？"))return;
     await sb(`customers?id=eq.${id}`,{method:"DELETE"});fetch();
   };
-
   return(
     <div className="fade-in">
       <div className="card">
@@ -1974,57 +1876,28 @@ function CustomerPage({onCustomersChange,products}:any){
               <textarea className="input" rows={2} value={form.remarks} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,remarks:e.target.value}))}/>
             </div>
 
-            {/* 💰 製品別価格リスト */}
             <div style={{borderTop:"1px solid var(--border)",paddingTop:12,marginBottom:10}}>
               <div style={{fontSize:13,fontWeight:600,color:"#166534",marginBottom:8}}>💰 製品別価格リスト（この得意先専用の価格）</div>
               {(form.price_list||[]).map((p:any,i:number)=>(
                 <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-                  {/* 製品マスタから選択 */}
                   <select
-                    className="input"
-                    style={{flex:2}}
-                    value={p.productName||""}
+                    className="input" style={{flex:2}} value={p.productName||""}
                     onChange={(e:any)=>{
                       const selected=products.find((pr:any)=>pr.name===e.target.value);
                       setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{
-                        ...pl,
-                        productName:e.target.value,
-                        hsCode:selected?.hs_code||pl.hsCode||"",
-                        unitPrice:pl.unitPrice||selected?.unit_price||"",
+                        ...pl, productName:e.target.value, hsCode:selected?.hs_code||pl.hsCode||"", unitPrice:pl.unitPrice||selected?.unit_price||"",
                       }:pl)}));
                     }}
                   >
                     <option value="">― 製品を選択 ―</option>
                     {(products||[]).map((pr:any)=><option key={pr.id} value={pr.name}>{pr.name}</option>)}
                   </select>
-                  {/* HSコード（自動入力・手修正可） */}
-                  <input
-                    className="input"
-                    style={{flex:1}}
-                    placeholder="HSコード"
-                    value={p.hsCode||""}
-                    onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,hsCode:e.target.value}:pl)}))}
-                  />
-                  {/* この得意先の単価 */}
-                  <input
-                    className="input"
-                    style={{flex:1}}
-                    placeholder="単価"
-                    type="number"
-                    value={p.unitPrice||""}
-                    onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,unitPrice:e.target.value}:pl)}))}
-                  />
+                  <input className="input" style={{flex:1}} placeholder="HSコード" value={p.hsCode||""} onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,hsCode:e.target.value}:pl)}))}/>
+                  <input className="input" style={{flex:1}} placeholder="単価" type="number" value={p.unitPrice||""} onChange={(e:any)=>setForm((v:any)=>({...v,price_list:v.price_list.map((pl:any,j:number)=>j===i?{...pl,unitPrice:e.target.value}:pl)}))}/>
                   <button className="btn btn-danger btn-xs" onClick={()=>setForm((v:any)=>({...v,price_list:v.price_list.filter((_:any,j:number)=>j!==i)}))}>✕</button>
                 </div>
               ))}
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{marginTop:4}}
-                onClick={()=>setForm((v:any)=>({...v,price_list:[...(v.price_list||[]),{productName:"",hsCode:"",unitPrice:""}]}))}
-              >+ 製品を追加</button>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:6}}>
-                ※ 製品を選ぶとHSコードが自動入力されます。単価だけこの得意先専用に設定してください。
-              </div>
+              <button className="btn btn-secondary btn-sm" style={{marginTop:4}} onClick={()=>setForm((v:any)=>({...v,price_list:[...(v.price_list||[]),{productName:"",hsCode:"",unitPrice:""}]}))}>+ 製品を追加</button>
             </div>
 
             <div style={{display:"flex",gap:7}}>
@@ -2084,14 +1957,12 @@ function ProductPage(){
   const [editId,setEditId]=useState<string|null>(null);
   const empty={name:"",hs_code:"",unit:"pcs",unit_price:"",currency:"JPY",weight:"",net_weight_per_unit:"",cartons_per_box:"",country_of_origin:"Japan"};
   const [form,setForm]=useState<any>(empty);
-
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{const d=await sb("products?order=created_at.desc");setItems(d||[]);}
     catch(e){}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const save=async()=>{
@@ -2187,135 +2058,233 @@ function ProductPage(){
     </div>
   );
 }
+// ============================================================
+// INVOICE EDIT STEP (② Invoice / ③ Commercial)
+// ============================================================
+function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,lang,stepNum,title,itemsKey,remarksKey,nextLabel,hint,syncFrom,showToast}:any){
+  const t=T[lang||"ja"];
+  const cur=invoice.currency||"JPY";
 
-// ============================================================
-// ORG SETTINGS
-// ============================================================
-function OrgPage({org,setOrg}:any){
-  const [localToast,setLocalToast]=useState("");
-  const [saving,setSaving]=useState(false);
-  const save=async()=>{
-    setSaving(true);
-    // localStorageにも保存（fallback）
-    localStorage.setItem("tradeOrg",JSON.stringify(org));
-    // Supabaseに保存（upsert: id=1 固定行）
-    try{
-      // まず既存レコードを確認
-      const existing=await sb("organization?limit=1").catch(()=>null);
-      if(existing&&existing.length>0){
-        await sb(`organization?id=eq.${existing[0].id}`,{
-          method:"PATCH",
-          headers:{"Prefer":"return=representation"},
-          body:JSON.stringify({
-            company_name:org.companyName||"",address:org.address||"",
-            tel:org.tel||"",email:org.email||"",website:org.website||"",
-            bank_name:org.bankName||"",bank_branch:org.bankBranch||"",
-            bank_address:org.bankAddress||"",account_type:org.accountType||"普通",
-            account_no:org.accountNo||"",account_name:org.accountName||"",
-            swift_code:org.swiftCode||"",
-            signer_name:org.signerName||"",signer_title:org.signerTitle||"",
-            logo_base64:org.logoBase64||"",signature_base64:org.signatureBase64||"",
-            ship_locations:org.shipLocations||[],
-            updated_at:new Date().toISOString(),
-          })
-        });
-      }else{
-        await sb("organization",{
-          method:"POST",
-          headers:{"Prefer":"return=representation"},
-          body:JSON.stringify({
-            company_name:org.companyName||"",address:org.address||"",
-            tel:org.tel||"",email:org.email||"",website:org.website||"",
-            bank_name:org.bankName||"",bank_branch:org.bankBranch||"",
-            bank_address:org.bankAddress||"",account_type:org.accountType||"普通",
-            account_no:org.accountNo||"",account_name:org.accountName||"",
-            swift_code:org.swiftCode||"",
-            signer_name:org.signerName||"",signer_title:org.signerTitle||"",
-            logo_base64:org.logoBase64||"",signature_base64:org.signatureBase64||"",
-            ship_locations:org.shipLocations||[],
-          })
-        });
-      }
-    }catch(e){console.warn("Supabase org save failed, using localStorage only",e);}
-    setSaving(false);setLocalToast("✅ 設定を保存しました");setTimeout(()=>setLocalToast(""),3000);
+  // Initialize items from syncFrom key if empty
+  useEffect(()=>{
+    if(!(invoice[itemsKey]?.length)){
+      setInvoice((v:any)=>({...v,[itemsKey]:(v[syncFrom]||v.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()}))}));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  const items:any[]=invoice[itemsKey]||[];
+  const setItems=(fn:any)=>setInvoice((v:any)=>({...v,[itemsKey]:typeof fn==="function"?fn(v[itemsKey]||[]):fn}));
+  const remarks:string=invoice[remarksKey]||"";
+  const setRemarks=(val:string)=>setInvoice((v:any)=>({...v,[remarksKey]:val}));
+
+  const addItem=()=>setItems((v:any[])=>[...v,{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:cur,hsCode:"",countryOfOrigin:"",lotNo:"",expiryDate:""}]);
+  const upd=(id:number,f:string,val:any)=>setItems((v:any[])=>v.map((it:any)=>it.id===id?{...it,[f]:val}:it));
+  const del=(id:number)=>setItems((v:any[])=>v.filter((it:any)=>it.id!==id));
+  const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
+
+  const syncFromParent=()=>{
+    setInvoice((v:any)=>({...v,[itemsKey]:(v[syncFrom]||v.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()}))}));
+    showToast&&showToast("🔄 元データから再同期しました");
   };
-  const f=(key:string,val:any)=>setOrg((v:any)=>({...v,[key]:val}));
 
   return(
     <div className="fade-in">
-      {localToast&&<Toast msg={localToast} onClose={()=>setLocalToast("")}/> }
       <div className="card">
-        <div className="card-header"><div className="card-title">⚙️ 組織設定</div><button className="btn btn-primary btn-sm" disabled={saving} onClick={save}>{saving?<span className="spinner"/>:"💾"} 保存</button></div>
-
-        <div className="org-section-title">ロゴ設定</div>
-        <ImgUpload label="会社ロゴ（PDF左上に表示）" value={org.logoBase64||""} onChange={(v:string)=>f("logoBase64",v)} hint="推奨: 横長PNG 300x80px"/>
-
-        <div className="org-section-title">会社情報</div>
-        <div className="grid-2" style={{marginBottom:10}}>
-          <div className="field"><label className="label">会社名</label>
-            <input className="input" value={org.companyName||""} onChange={(e:any)=>f("companyName",e.target.value)}/></div>
-          <div className="field"><label className="label">電話番号</label>
-            <input className="input" value={org.tel||""} onChange={(e:any)=>f("tel",e.target.value)}/></div>
+        <div className="card-header">
+          <div><div className="card-title">{title}</div>{hint&&<div className="card-subtitle">{hint}</div>}</div>
+          <button className="btn btn-secondary btn-sm" onClick={syncFromParent}>🔄 元データから再同期</button>
         </div>
-        <div className="field" style={{marginBottom:10}}>
-          <label className="label">住所</label>
-          <textarea className="input" rows={2} value={org.address||""} onChange={(e:any)=>f("address",e.target.value)}/>
+        <div className="field" style={{marginBottom:12}}>
+          <label className="label">備考 (Remarks)</label>
+          <textarea className="input" rows={2} value={remarks} onChange={(e:any)=>setRemarks(e.target.value)}/>
         </div>
-        <div className="grid-2" style={{marginBottom:10}}>
-          <div className="field"><label className="label">メール</label>
-            <input className="input" value={org.email||""} onChange={(e:any)=>f("email",e.target.value)}/></div>
-          <div className="field"><label className="label">ウェブサイト</label>
-            <input className="input" value={org.website||""} onChange={(e:any)=>f("website",e.target.value)}/></div>
+        <div style={{overflowX:"auto"}}>
+          <table className="items-table">
+            <thead>
+              <tr>
+                <th style={{minWidth:160}}>製品名</th>
+                <th style={{width:70}}>数量</th>
+                <th style={{width:90}}>単価</th>
+                <th style={{width:70}}>通貨</th>
+                <th style={{width:100}}>HSコード</th>
+                <th style={{width:90}}>小計</th>
+                <th style={{width:32}}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item:any)=>{
+                const sub=Number(item.quantity||0)*Number(item.unitPrice||0);
+                const ic=item.currency||cur;
+                return(
+                  <tr key={item.id}>
+                    <td><input className="input" value={item.productName||""} onChange={(e:any)=>upd(item.id,"productName",e.target.value)}/></td>
+                    <td><input className="input" type="number" value={item.quantity||""} onChange={(e:any)=>upd(item.id,"quantity",e.target.value)}/></td>
+                    <td><input className="input" type="number" value={item.unitPrice||""} onChange={(e:any)=>upd(item.id,"unitPrice",e.target.value)}/></td>
+                    <td>
+                      <select className="input" value={item.currency||cur} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
+                        {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}
+                      </select>
+                    </td>
+                    <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
+                    <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
+                    <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-
-        <div className="org-section-title">銀行口座情報（Invoiceに印刷）</div>
-        <div className="grid-3" style={{marginBottom:10}}>
-          <div className="field"><label className="label">銀行名</label>
-            <input className="input" value={org.bankName||""} onChange={(e:any)=>f("bankName",e.target.value)}/></div>
-          <div className="field"><label className="label">支店名</label>
-            <input className="input" value={org.bankBranch||""} onChange={(e:any)=>f("bankBranch",e.target.value)}/></div>
-          <div className="field"><label className="label">口座種別</label>
-            <select className="input" value={org.accountType||"普通"} onChange={(e:any)=>f("accountType",e.target.value)}>
-              <option>普通</option><option>当座</option><option>Savings</option><option>Current</option>
-            </select></div>
-        </div>
-        <div className="field" style={{marginBottom:10}}>
-          <label className="label">銀行住所</label>
-          <textarea className="input" rows={2} value={org.bankAddress||""} placeholder="銀行の住所（海外送金時に必要な場合あり）" onChange={(e:any)=>f("bankAddress",e.target.value)}/>
-        </div>
-        <div className="grid-3" style={{marginBottom:10}}>
-          <div className="field"><label className="label">口座番号</label>
-            <input className="input" value={org.accountNo||""} onChange={(e:any)=>f("accountNo",e.target.value)}/></div>
-          <div className="field"><label className="label">口座名義</label>
-            <input className="input" value={org.accountName||""} onChange={(e:any)=>f("accountName",e.target.value)}/></div>
-          <div className="field"><label className="label">SWIFTコード</label>
-            <input className="input" value={org.swiftCode||""} onChange={(e:any)=>f("swiftCode",e.target.value)}/></div>
-        </div>
-
-        <div className="org-section-title">署名・担当者設定（書類右下に表示）</div>
-        <div className="grid-2" style={{marginBottom:10}}>
-          <div className="field"><label className="label">署名者名</label>
-            <input className="input" value={org.signerName||""} onChange={(e:any)=>f("signerName",e.target.value)}/></div>
-          <div className="field"><label className="label">役職</label>
-            <input className="input" value={org.signerTitle||""} onChange={(e:any)=>f("signerTitle",e.target.value)}/></div>
-        </div>
-        <ImgUpload label="署名画像（書類右下に表示）" value={org.signatureBase64||""} onChange={(v:string)=>f("signatureBase64",v)} hint="署名をスキャンしてPNG/JPEGで保存してください"/>
-
-        <div className="org-section-title" style={{marginTop:20}}>📍 出荷場所（複数登録可）</div>
-        <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:8}}>本社以外の出荷場所を登録できます。Invoice作成時にボタンで選択できます。</div>
-        {(org.shipLocations||[]).map((loc:any,i:number)=>(
-          <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 2fr 1fr auto",gap:6,marginBottom:6,alignItems:"center"}}>
-            <input className="input input-sm" placeholder="場所名（例：大阪倉庫）" value={loc.name||""} onChange={(e:any)=>f("shipLocations",(org.shipLocations||[]).map((l:any,j:number)=>j===i?{...l,name:e.target.value}:l))}/>
-            <input className="input input-sm" placeholder="住所" value={loc.address||""} onChange={(e:any)=>f("shipLocations",(org.shipLocations||[]).map((l:any,j:number)=>j===i?{...l,address:e.target.value}:l))}/>
-            <input className="input input-sm" placeholder="電話番号" value={loc.tel||""} onChange={(e:any)=>f("shipLocations",(org.shipLocations||[]).map((l:any,j:number)=>j===i?{...l,tel:e.target.value}:l))}/>
-            <button className="btn btn-danger btn-xs" onClick={()=>f("shipLocations",(org.shipLocations||[]).filter((_:any,j:number)=>j!==i))}>削除</button>
+        <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={addItem}>+ 品目追加</button>
+        {items.length>0&&(
+          <div className="total-row" style={{marginTop:8}}>
+            <div><div className="total-label">{t.totalAmount}</div><div className="total-value">{cur} {fmt(total,cur)}</div></div>
           </div>
-        ))}
-        <button className="btn btn-secondary btn-sm" style={{marginBottom:16}} onClick={()=>f("shipLocations",[...(org.shipLocations||[]),{name:"",address:"",tel:""}])}>＋ 出荷場所を追加</button>
-
-        <div style={{marginTop:8}}>
-          <button className="btn btn-primary" disabled={saving} onClick={save}>{saving?<span className="spinner"/>:"💾"} 設定を保存（Supabase）</button>
+        )}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button className="btn btn-secondary" onClick={onBack}>← 戻る</button>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn btn-amber btn-sm" onClick={()=>onSave("in_progress")}>💾 保存</button>
+          <button className="btn btn-primary" onClick={onNext}>{nextLabel||"次へ →"}</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// APPROVAL STEP (⑥ 承認申請)
+// ============================================================
+function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
+  const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
+  const statusColor:any={draft:"var(--text-muted)",in_progress:"var(--blue)",pending_approval:"var(--amber)",approved:"var(--green)",rejected:"var(--red)",completed:"var(--green)"};
+  const approvalStatus=invoice.approvalStatus||"draft";
+
+  const requestApproval=async()=>{
+    setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
+    await onSave("draft");
+    showToast&&showToast("📨 承認依頼を送信しました");
+  };
+
+  const markApproved=async()=>{
+    setInvoice((v:any)=>({...v,approvalStatus:"approved"}));
+    await onSave("draft");
+    showToast&&showToast("✅ 承認しました");
+  };
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">⑥ 承認管理</div><div className="card-subtitle">書類の承認フローを管理します</div></div>
+        </div>
+        <div style={{textAlign:"center",padding:"24px 0"}}>
+          <div style={{fontSize:48,marginBottom:12}}>
+            {approvalStatus==="approved"?"✅":approvalStatus==="pending_approval"?"⏳":approvalStatus==="rejected"?"❌":"📋"}
+          </div>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>承認ステータス</div>
+          <div style={{fontSize:22,fontWeight:800,color:statusColor[approvalStatus]||"var(--text)",marginBottom:20}}>
+            {statusLabel[approvalStatus]||approvalStatus}
+          </div>
+          <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+            {approvalStatus==="draft"||approvalStatus==="in_progress"||approvalStatus==="rejected"?(
+              <button className="btn btn-purple" onClick={requestApproval}>📨 承認依頼を送る</button>
+            ):null}
+            {approvalStatus==="pending_approval"?(
+              <>
+                <button className="btn btn-green" onClick={markApproved}>✅ 承認する</button>
+                <button className="btn btn-danger" onClick={async()=>{
+                  setInvoice((v:any)=>({...v,approvalStatus:"rejected"}));
+                  await onSave("draft");
+                  showToast&&showToast("🔄 差戻しました");
+                }}>🔄 差戻す</button>
+              </>
+            ):null}
+            {approvalStatus==="approved"?(
+              <div style={{background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",padding:"12px 20px",fontSize:13,color:"#166534"}}>
+                ✅ 承認済みです。出荷ステップへ進めます。
+              </div>
+            ):null}
+          </div>
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button className="btn btn-secondary" onClick={onBack}>← ⑤ PDFに戻る</button>
+        <button className="btn btn-primary" onClick={onNext} disabled={approvalStatus!=="approved"} style={{opacity:approvalStatus!=="approved"?0.5:1}}>
+          ⑦ 出荷管理へ →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// TRACKING PAGE (⑦ 出荷管理)
+// ============================================================
+function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
+  const t=T[lang||"ja"];
+  const upd=(k:string,v:any)=>setInvoice((inv:any)=>({...inv,[k]:v}));
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">🚢 ⑦ 出荷管理</div><div className="card-subtitle">追跡番号・入金確認・出荷完了を記録します</div></div>
+        </div>
+
+        <div className="grid-2" style={{marginBottom:14}}>
+          <div className="field">
+            <label className="label">追跡番号 (Tracking No.)</label>
+            <input className="input" value={invoice.trackingNumber||""} placeholder="例: 1234567890" onChange={(e:any)=>upd("trackingNumber",e.target.value)}/>
+          </div>
+          <div className="field">
+            <label className="label">出荷日</label>
+            <input className="input" type="date" value={invoice.trackingDate||""} onChange={(e:any)=>upd("trackingDate",e.target.value)}/>
+          </div>
+        </div>
+
+        <div className="field" style={{marginBottom:14}}>
+          <label className="label">配送業者</label>
+          <select className="input" value={invoice.shippingMethod||""} onChange={(e:any)=>upd("shippingMethod",e.target.value)}>
+            <option value="">選択...</option>
+            {SHIPPING_METHODS.map((m:string)=><option key={m}>{m}</option>)}
+          </select>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column" as any,gap:10,marginBottom:14}}>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"12px 16px",background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)"}}>
+            <input type="checkbox" checked={!!invoice.paymentConfirmed} onChange={(e:any)=>upd("paymentConfirmed",e.target.checked)} style={{width:18,height:18}}/>
+            <div>
+              <div style={{fontSize:13,fontWeight:600,color:"#166534"}}>💰 入金確認済み</div>
+              <div style={{fontSize:11,color:"#166534",opacity:0.8}}>お支払いを確認した場合にチェック</div>
+            </div>
+          </label>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"12px 16px",background:"var(--blue-light)",border:"1px solid var(--blue-mid)",borderRadius:"var(--radius-lg)"}}>
+            <input type="checkbox" checked={invoice.status==="completed"} onChange={(e:any)=>setInvoice((v:any)=>({...v,status:e.target.checked?"completed":"in_progress"}))} style={{width:18,height:18}}/>
+            <div>
+              <div style={{fontSize:13,fontWeight:600,color:"var(--blue)"}}>🚢 出荷完了</div>
+              <div style={{fontSize:11,color:"var(--blue)",opacity:0.8}}>出荷が完了した場合にチェック</div>
+            </div>
+          </label>
+        </div>
+
+        <div className="field" style={{marginBottom:14}}>
+          <label className="label">備考・メモ</label>
+          <textarea className="input" rows={3} value={invoice.trackingNotes||""} placeholder="特記事項など" onChange={(e:any)=>upd("trackingNotes",e.target.value)}/>
+        </div>
+
+        {invoice.status==="completed"&&(
+          <div style={{background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",padding:"16px",textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:6}}>🎉</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#166534"}}>出荷完了！</div>
+            <div style={{fontSize:12,color:"#166534",marginTop:4}}>この案件のすべてのステップが完了しました</div>
+          </div>
+        )}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}}>
+        <button className="btn btn-secondary" onClick={onBack}>← ⑥ 承認に戻る</button>
+        <button className="btn btn-green" onClick={()=>onSave(invoice.status==="completed"?"completed":"in_progress")}>💾 保存する</button>
       </div>
     </div>
   );
@@ -2327,58 +2296,58 @@ function OrgPage({org,setOrg}:any){
 function ApprovalPage({showToast}:any){
   const [items,setItems]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
-  const [comment,setComment]=useState<{[id:string]:string}>({});
+  const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
 
   const fetch=useCallback(async()=>{
     setLoading(true);
     try{
-      const d=await sb("invoices?approval_status=neq.draft&order=created_at.desc");
+      const d=await sb("invoices?approval_status=in.(pending_approval,approved,rejected)&order=created_at.desc");
       setItems(d||[]);
-    }catch(e){}
+    }catch(e){console.error(e);}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
-  const updateStatus=async(id:string,status:string)=>{
-    await sb(`invoices?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({approval_status:status,approver_comment:comment[id]||""})});
-    showToast(status==="approved"?"✅ 承認しました":"❌ 差し戻しました");
-    fetch();
+  const updateApproval=async(id:string,status:string,comment?:string)=>{
+    try{
+      await sb(`invoices?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({approval_status:status,approval_comment:comment||""})});
+      showToast(status==="approved"?"✅ 承認しました":"🔄 差戻しました");
+      fetch();
+    }catch(e){showToast("❌ 更新に失敗しました");}
   };
-
-  const statusLabel:any={draft:"下書き",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",in_progress:"作業中",completed:"完了"};
 
   return(
     <div className="fade-in">
       <div className="card">
-        <div className="card-header"><div className="card-title">✅ 承認管理</div></div>
+        <div className="card-header">
+          <div><div className="card-title">✅ 承認管理</div><div className="card-subtitle">承認待ちの案件を確認・承認・差戻しできます</div></div>
+          <button className="btn btn-secondary btn-sm" onClick={fetch}>🔄 更新</button>
+        </div>
         {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
         :items.length===0?<div className="empty-state"><div className="empty-icon">✅</div><div style={{fontSize:13}}>承認待ちの案件はありません</div></div>
         :items.map((h:any)=>(
-          <div key={h.id} style={{padding:"12px 14px",border:"1px solid var(--border)",borderRadius:"var(--radius-lg)",marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <div key={h.id} className="history-item">
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
               <div>
                 <strong style={{fontSize:13}}>{h.invoice_no||"No Invoice No"}</strong>
-                <span className={`status-badge status-${h.approval_status||"draft"}`} style={{marginLeft:8}}>
-                  {statusLabel[h.approval_status||"draft"]}
-                </span>
+                <span className={`status-badge status-${h.approval_status||"draft"}`} style={{marginLeft:8}}>● {statusLabel[h.approval_status||"draft"]}</span>
               </div>
-              <div style={{fontSize:11,color:"var(--text-muted)"}}>{new Date(h.created_at).toLocaleDateString("ja-JP")}</div>
+              {h.approval_status==="pending_approval"&&(
+                <div style={{display:"flex",gap:6}}>
+                  <button className="btn btn-green btn-sm" onClick={()=>updateApproval(h.id,"approved")}>✅ 承認</button>
+                  <button className="btn btn-danger btn-sm" onClick={()=>{
+                    const c=window.prompt("差戻しコメントを入力してください（任意）");
+                    if(c!==null)updateApproval(h.id,"rejected",c);
+                  }}>🔄 差戻し</button>
+                </div>
+              )}
             </div>
-            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:8}}>{h.consignee?.split("\n")[0]||"—"} / {h.currency}</div>
-            {h.approval_status==="pending_approval"&&(
-              <div>
-                <div className="field" style={{marginBottom:8}}>
-                  <label className="label">コメント（任意）</label>
-                  <textarea className="input" rows={2} value={comment[h.id]||""} onChange={(e:any)=>setComment(v=>({...v,[h.id]:e.target.value}))}/>
-                </div>
-                <div style={{display:"flex",gap:7}}>
-                  <button className="btn btn-green btn-sm" onClick={()=>updateStatus(h.id,"approved")}>✅ 承認</button>
-                  <button className="btn btn-danger btn-sm" onClick={()=>updateStatus(h.id,"rejected")}>❌ 差し戻し</button>
-                </div>
-              </div>
-            )}
-            {h.approver_comment&&<div style={{marginTop:6,fontSize:11,color:"var(--text-muted)"}}>コメント: {h.approver_comment}</div>}
+            <div className="history-meta">
+              {h.consignee&&<span className="tag tag-blue">{h.consignee.split("\n")[0]}</span>}
+              {h.date&&<span className="tag tag-gray">{h.date}</span>}
+              {h.currency&&<span className="tag tag-green">{h.currency}</span>}
+              {h.approval_comment&&<div style={{fontSize:12,color:"var(--red)",marginTop:4}}>💬 {h.approval_comment}</div>}
+            </div>
           </div>
         ))}
       </div>
@@ -2394,10 +2363,8 @@ function CountryDocsPage(){
   const [loading,setLoading]=useState(true);
   const [showForm,setShowForm]=useState(false);
   const [editId,setEditId]=useState<string|null>(null);
-  const empty={country:"",documents:["Commercial Invoice","Packing List"],notes:""};
-  const [form,setForm]=useState<any>({...empty,documents:[...empty.documents]});
-  const [newDoc,setNewDoc]=useState("");
-  const [checks,setChecks]=useState<{[k:string]:{[d:string]:boolean}}>({});
+  const empty={country:"",required_docs:"",notes:""};
+  const [form,setForm]=useState<any>(empty);
 
   const fetch=useCallback(async()=>{
     setLoading(true);
@@ -2405,22 +2372,20 @@ function CountryDocsPage(){
     catch(e){}
     setLoading(false);
   },[]);
-
   useEffect(()=>{fetch();},[fetch]);
 
   const save=async()=>{
     if(!form.country.trim())return alert("国名を入力してください");
-    const payload={country:form.country,documents:form.documents,notes:form.notes};
     if(editId){
-      await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(payload)});
+      await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(form)});
     }else{
-      await sb("country_documents",{method:"POST",body:JSON.stringify(payload)});
+      await sb("country_documents",{method:"POST",body:JSON.stringify(form)});
     }
-    setForm({...empty,documents:[...empty.documents]});setShowForm(false);setEditId(null);fetch();
+    setForm(empty);setShowForm(false);setEditId(null);fetch();
   };
 
   const startEdit=(item:any)=>{
-    setForm({country:item.country,documents:[...(item.documents||[])],notes:item.notes||""});
+    setForm({country:item.country||"",required_docs:item.required_docs||"",notes:item.notes||""});
     setEditId(item.id);setShowForm(true);
   };
 
@@ -2429,68 +2394,55 @@ function CountryDocsPage(){
     await sb(`country_documents?id=eq.${id}`,{method:"DELETE"});fetch();
   };
 
-  const toggleCheck=(country:string,doc:string)=>{
-    setChecks(v=>({...v,[country]:{...(v[country]||{}),[doc]:!(v[country]||{})[doc]}}));
-  };
-
   return(
     <div className="fade-in">
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">🌏 国別必要書類</div><div className="card-subtitle">国ごとに必要書類を登録。輸出前のチェックリストとして使用。</div></div>
-          <button className="btn btn-primary btn-sm" onClick={()=>{setForm({...empty,documents:[...empty.documents]});setEditId(null);setShowForm(v=>!v);}}>+ 追加</button>
+          <div><div className="card-title">🌏 国別必要書類</div><div className="card-subtitle">輸出先国ごとに必要な書類・注意事項を登録。Invoice作成時に自動アラート。</div></div>
+          <button className="btn btn-primary btn-sm" onClick={()=>{setForm(empty);setEditId(null);setShowForm(v=>!v);}}>+ 国を追加</button>
         </div>
         {showForm&&(
           <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:14}}>
-            <div className="grid-2" style={{marginBottom:10}}>
-              <div className="field"><label className="label"><span className="req">*</span>国名</label>
-                <AcInput value={form.country} suggestions={COUNTRIES} placeholder="South Korea" onChange={(val:string)=>setForm((v:any)=>({...v,country:val}))}/></div>
-              <div className="field"><label className="label">備考</label>
-                <input className="input" value={form.notes} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,notes:e.target.value}))}/></div>
+            <div style={{fontSize:13,fontWeight:600,marginBottom:10}}>{editId?"✏️ 編集":"+ 新規追加"}</div>
+            <div className="field" style={{marginBottom:10}}>
+              <label className="label"><span className="req">*</span>国名</label>
+              <AcInput value={form.country} suggestions={COUNTRIES} placeholder="Japan" onChange={(val:string)=>setForm((v:any)=>({...v,country:val}))}/>
             </div>
             <div className="field" style={{marginBottom:10}}>
-              <label className="label">必要書類リスト</label>
-              {(form.documents||[]).map((doc:string,i:number)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                  <input className="input" value={doc} onChange={(e:any)=>setForm((v:any)=>({...v,documents:v.documents.map((d:string,j:number)=>j===i?e.target.value:d)}))}/>
-                  <button className="btn btn-danger btn-xs" onClick={()=>setForm((v:any)=>({...v,documents:v.documents.filter((_:any,j:number)=>j!==i)}))}>✕</button>
-                </div>
-              ))}
-              <div style={{display:"flex",gap:7,marginTop:6}}>
-                <input className="input" value={newDoc} placeholder="書類名を入力" onChange={(e:any)=>setNewDoc(e.target.value)}
-                  onKeyDown={(e:any)=>{if(e.key==="Enter"&&newDoc.trim()){setForm((v:any)=>({...v,documents:[...v.documents,newDoc.trim()]}));setNewDoc("");}}}/>
-                <button className="btn btn-secondary btn-sm" onClick={()=>{if(newDoc.trim()){setForm((v:any)=>({...v,documents:[...v.documents,newDoc.trim()]}));setNewDoc("");}}}>追加</button>
-              </div>
+              <label className="label">必要書類（改行区切りで複数入力可）</label>
+              <textarea className="input" rows={4} value={form.required_docs} placeholder="例：&#10;Certificate of Origin&#10;Phytosanitary Certificate&#10;商業送り状（3部）" onChange={(e:any)=>setForm((v:any)=>({...v,required_docs:e.target.value}))}/>
+            </div>
+            <div className="field" style={{marginBottom:10}}>
+              <label className="label">注意事項・備考</label>
+              <textarea className="input" rows={2} value={form.notes} placeholder="例：原産地証明書はJETRO発行のもの" onChange={(e:any)=>setForm((v:any)=>({...v,notes:e.target.value}))}/>
             </div>
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
-              <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);}}>キャンセル</button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
             </div>
           </div>
         )}
         {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
-        :items.length===0?<div className="empty-state"><div className="empty-icon">🌏</div><div style={{fontSize:13}}>国別書類を登録してください</div></div>
+        :items.length===0?<div className="empty-state"><div className="empty-icon">🌏</div><div style={{fontSize:13}}>国別必要書類を登録してください</div></div>
         :items.map((item:any)=>(
-          <div key={item.id} style={{border:"1px solid var(--border)",borderRadius:"var(--radius-lg)",marginBottom:10,overflow:"hidden"}}>
-            <div style={{background:"#FAFAF8",padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid var(--border)"}}>
-              <div style={{fontWeight:600,fontSize:14}}>🌏 {item.country}</div>
+          <div key={item.id} className="history-item">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <strong style={{fontSize:13}}>🌐 {item.country}</strong>
               <div style={{display:"flex",gap:5}}>
                 <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(item)}>✏️ 編集</button>
                 <button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>削除</button>
               </div>
             </div>
-            <div style={{padding:"10px 14px"}}>
-              {item.notes&&<div style={{fontSize:11,color:"var(--amber)",marginBottom:8}}>ℹ️ {item.notes}</div>}
-              <div style={{fontSize:11,fontWeight:600,color:"var(--text-muted)",marginBottom:6}}>チェックリスト</div>
-              {(item.documents||[]).map((doc:string,i:number)=>(
-                <div key={i} className="checklist-item" style={{cursor:"pointer"}} onClick={()=>toggleCheck(item.country,doc)}>
-                  <div className={`check-icon ${(checks[item.country]||{})[doc]?"check-ok":"check-todo"}`}>
-                    {(checks[item.country]||{})[doc]?"✓":""}
+            {item.required_docs&&(
+              <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:3}}>
+                {item.required_docs.split("\n").filter(Boolean).map((doc:string,i:number)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:4}}>
+                    <span style={{color:"var(--blue)"}}>•</span>{doc}
                   </div>
-                  <span style={{fontSize:12,color:(checks[item.country]||{})[doc]?"var(--green)":"var(--text)"}}>{doc}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+            {item.notes&&<div style={{fontSize:11,color:"var(--amber)",marginTop:3}}>📌 {item.notes}</div>}
           </div>
         ))}
       </div>
@@ -2499,450 +2451,128 @@ function CountryDocsPage(){
 }
 
 // ============================================================
-// INVOICE EDIT STEP (② Invoice編集 / ③ Commercial Invoice編集)
+// ORG PAGE (組織設定)
 // ============================================================
-function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,lang,stepNum,title,itemsKey,remarksKey,nextLabel,hint,syncFrom,showToast}:any){
-  const t=T[lang||"ja"];
-  const cur=invoice.currency||"JPY";
+function OrgPage({org,setOrg}:any){
+  const [form,setForm]=useState<any>(org||{});
+  const [saving,setSaving]=useState(false);
+  const [saved,setSaved]=useState(false);
 
-  // itemsKeyが未初期化の場合はitemsから自動引用
-  const [localItems,setLocalItems]=useState<any[]>(()=>{
-    const existing=invoice[itemsKey];
-    if(existing&&existing.length>0)return existing;
-    // syncFromがあればそこから引用、なければitemsから引用
-    const source=syncFrom&&invoice[syncFrom]&&invoice[syncFrom].length>0
-      ?invoice[syncFrom]
-      :invoice.items||[];
-    return source.map((it:any)=>({...it,id:Date.now()+Math.random()}));
-  });
-  const [localRemarks,setLocalRemarks]=useState<string>(invoice[remarksKey]||invoice.remarks||"");
+  useEffect(()=>{setForm(org||{});},[org]);
 
-  // ローカル変更をinvoiceに反映
-  useEffect(()=>{
-    setInvoice((v:any)=>({...v,[itemsKey]:localItems,[remarksKey]:localRemarks}));
-  },[localItems,localRemarks]);
-
-  const addItem=()=>setLocalItems(v=>[...v,{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:cur,hsCode:""}]);
-  const upd=(id:any,f:string,val:any)=>setLocalItems(v=>v.map((it:any)=>it.id===id?{...it,[f]:val}:it));
-  const del=(id:any)=>setLocalItems(v=>v.filter((it:any)=>it.id!==id));
-  const total=localItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
-
-  const syncFromSource=()=>{
-    const source=syncFrom&&invoice[syncFrom]&&invoice[syncFrom].length>0
-      ?invoice[syncFrom]
-      :invoice.items||[];
-    setLocalItems(source.map((it:any)=>({...it,id:Date.now()+Math.random()})));
-    setLocalRemarks(invoice[syncFrom==="invoice_items"?"invoice_remarks":"remarks"]||invoice.remarks||"");
+  const save=async()=>{
+    setSaving(true);
+    try{
+      const payload={
+        company_name:form.companyName||"",address:form.address||"",
+        tel:form.tel||"",email:form.email||"",website:form.website||"",
+        bank_name:form.bankName||"",bank_branch:form.bankBranch||"",
+        bank_address:form.bankAddress||"",account_type:form.accountType||"普通",
+        account_no:form.accountNo||"",account_name:form.accountName||"",
+        swift_code:form.swiftCode||"",
+        signer_name:form.signerName||"",signer_title:form.signerTitle||"",
+        logo_base64:form.logoBase64||"",signature_base64:form.signatureBase64||"",
+        ship_locations:form.shipLocations||[],
+      };
+      const existing=await sb("organization?limit=1").catch(()=>null);
+      if(existing&&existing.length>0){
+        await sb(`organization?id=eq.${existing[0].id}`,{method:"PATCH",body:JSON.stringify(payload)});
+      }else{
+        await sb("organization",{method:"POST",body:JSON.stringify(payload)});
+      }
+      setOrg(form);
+      localStorage.setItem("tradeOrg",JSON.stringify(form));
+      setSaved(true);
+      setTimeout(()=>setSaved(false),2500);
+    }catch(e){alert("保存に失敗しました");}
+    setSaving(false);
   };
 
-  const handleNext=()=>{
-    setInvoice((v:any)=>({...v,[itemsKey]:localItems,[remarksKey]:localRemarks}));
-    onNext();
-  };
+  const upd=(key:string,val:any)=>setForm((v:any)=>({...v,[key]:val}));
 
   return(
     <div className="fade-in">
-      <div className="card" style={{background:"var(--blue-light)",border:"1px solid var(--blue-mid)",padding:"12px 18px",marginBottom:14}}>
-        <div style={{fontSize:13,fontWeight:700,color:"var(--blue)",marginBottom:4}}>{title}</div>
-        <div style={{fontSize:12,color:"var(--blue)"}}>ℹ️ {hint}</div>
-        {syncFrom&&(
-          <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={syncFromSource}>
-            🔄 {stepNum===3?"②Invoice":"Proforma"}から再引用
-          </button>
-        )}
-      </div>
-
+      {saved&&<div style={{background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius)",padding:"10px 16px",marginBottom:12,fontSize:13,color:"#166534",fontWeight:600}}>✅ 保存しました</div>}
       <div className="card">
         <div className="card-header">
-          <div><div className="card-title">品目明細</div><div className="card-subtitle">この書類用に金額・品名を調整できます</div></div>
-          <button className="btn btn-primary btn-sm" onClick={addItem}>＋ 品目追加</button>
-        </div>
-        {localItems.length===0?(
-          <div className="empty-state"><div className="empty-icon">📦</div><div style={{fontSize:13}}>品目を追加してください</div></div>
-        ):(
-          <div style={{overflowX:"auto"}}>
-            <table className="items-table">
-              <thead><tr>
-                <th style={{width:180}}>{t.productName}</th>
-                <th style={{width:65}}>{t.qty}</th>
-                <th style={{width:90}}>{t.unitPrice}</th>
-                <th style={{width:60}}>通貨</th>
-                <th style={{width:100}}>{t.hsCode}(任意)</th>
-                <th style={{width:90,textAlign:"right"}}>{t.subtotal}</th>
-                <th style={{width:32}}></th>
-              </tr></thead>
-              <tbody>
-                {localItems.map((item:any)=>{
-                  const ic=item.currency||cur;
-                  const sub=Number(item.quantity||0)*Number(item.unitPrice||0);
-                  return(
-                    <tr key={item.id}>
-                      <td><input className="input" value={item.productName||""} onChange={(e:any)=>upd(item.id,"productName",e.target.value)}/></td>
-                      <td><input className="input" type="number" value={item.quantity||""} onChange={(e:any)=>upd(item.id,"quantity",e.target.value)}/></td>
-                      <td><input className="input" type="number" value={item.unitPrice||""} onChange={(e:any)=>upd(item.id,"unitPrice",e.target.value)}/></td>
-                      <td><select className="input" value={ic} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
-                        {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
-                      <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
-                      <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
-                      <td className="no-print"><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {localItems.length>0&&(
-          <div className="total-row">
-            <div><div className="total-label">{t.totalAmount}</div><div className="total-value">{cur} {fmt(total,cur)}</div></div>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <div className="card-header"><div className="card-title">{t.remarks}</div></div>
-        <textarea className="input" value={localRemarks} rows={3} onChange={(e:any)=>setLocalRemarks(e.target.value)}/>
-      </div>
-
-      <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
-        <button className="btn btn-secondary" onClick={onBack}>← 前のステップへ</button>
-        <div style={{display:"flex",gap:8}}>
-          <button className="btn btn-amber btn-sm" onClick={()=>{setInvoice((v:any)=>({...v,[itemsKey]:localItems,[remarksKey]:localRemarks}));onSave("draft");showToast&&showToast("💾 保存しました");}}>💾 保存</button>
-          <button className="btn btn-primary" onClick={handleNext}>{nextLabel}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// APPROVAL STEP (⑥ 承認申請→承認)
-// ============================================================
-
-function ReceiptPage({invoice,setInvoice,packing,org,lang,onSave,onBack,onNext,showToast}:any){
-  const t=T[lang]||T["ja"];
-  const cur=invoice.currency||"JPY";
-  const [shipDate,setShipDate]=useState(invoice.trackingDate||invoice.date||"");
-  const [printLang,setPrintLang]=useState(lang||"ja");
-
-  // DELIVERY NOTE専用の品目state（ロット番号・使用期限をここで管理）
-  const [dnItems,setDnItems]=useState<any[]>(()=>{
-    const base=invoice.delivery_items||invoice.invoice_items||invoice.items||[];
-    return base.map((it:any)=>({
-      ...it,
-      id:it.id||String(Date.now()+Math.random()),
-      lotNo:it.lotNo||"",
-      expiryDate:it.expiryDate||"",
-    }));
-  });
-  const updDn=(id:any,k:string,v:any)=>setDnItems(prev=>prev.map((it:any)=>it.id===id?{...it,[k]:v}:it));
-
-  const dnTotal=dnItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
-
-  const handleSave=()=>{
-    setInvoice((v:any)=>({...v,trackingDate:shipDate,delivery_items:dnItems}));
-    setTimeout(()=>{onSave("in_progress");showToast("💾 保存しました");},100);
-  };
-
-  const handlePrint=()=>{
-    setInvoice((v:any)=>({...v,trackingDate:shipDate,delivery_items:dnItems}));
-    setTimeout(()=>{
-      const w=window.open("","_blank","width=1000,height=1200");
-      if(!w)return;
-      const pLang=printLang;
-      const lbl=(ja:string,en:string)=>pLang==="ja"?ja:en;
-      const rows=dnItems.map((it:any,i:number)=>`
-        <tr style="background:${i%2===0?"#fafafa":"#fff"}">
-          <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px">${it.productName||""}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px;text-align:right">${it.quantity||0}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px;text-align:right">${cur} ${Number(it.unitPrice||0).toLocaleString()}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px;text-align:right">${cur} ${(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px">${it.lotNo||""}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px">${it.expiryDate||""}</td>
-        </tr>`).join("");
-      const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>DELIVERY NOTE</title>
-      <style>@page{margin:15mm}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-      body{font-family:sans-serif;font-size:11px;color:#000;margin:0;padding:24px 32px}
-      table{width:100%;border-collapse:collapse}th{background:#222!important;color:#fff!important;padding:6px 8px;font-size:10px}
-      </style></head><body>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div>
-          <div style="font-size:28px;font-weight:900;letter-spacing:3px;margin-bottom:4px">DELIVERY NOTE</div>
-          <div style="font-size:10px;color:#444">${lbl("番号","No.")} <strong>${invoice.invoiceNo||""}</strong></div>
-          ${shipDate?`<div style="font-size:10px;color:#444">${lbl("出荷日","Ship Date")}: <strong>${shipDate}</strong></div>`:""}
-        </div>
-        <div style="text-align:right;font-size:10px">
-          ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:55px;max-width:170px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto"/>`:""}
-          ${org?.companyName?`<div style="font-weight:700;font-size:12px">${org.companyName}</div>`:""}
-          ${org?.signerName?`<div>${org.signerName}</div>`:""}
-          ${org?.address?`<div style="white-space:pre-wrap">${org.address}</div>`:""}
-          ${org?.tel?`<div>Tel: ${org.tel}</div>`:""}
-        </div>
-      </div>
-      <div style="height:2px;background:#000;margin-bottom:14px"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-bottom:16px">
-        <div>
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:4px">${lbl("納品先","CONSIGNEE")}</div>
-          <div style="font-weight:700;font-size:12px">${(invoice.consignee||"").split("\n")[0]}</div>
-          <div style="font-size:10px;white-space:pre-wrap;color:#333">${(invoice.consignee||"").split("\n").slice(1).join("\n")}</div>
-        </div>
-        <div>
-          ${invoice.poNumber?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">${lbl("発注番号","P.O. No")}: </span><span style="font-size:10px">${invoice.poNumber}</span></div>`:""}
-          ${invoice.paymentTerms?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">${lbl("支払条件","Payment Terms")}: </span><span style="font-size:10px">${invoice.paymentTerms}</span></div>`:""}
-          ${invoice.incoterms?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">Incoterms: </span><span style="font-size:10px">${invoice.incoterms}</span></div>`:""}
-        </div>
-      </div>
-      <table>
-        <thead><tr>
-          <th style="text-align:left">${lbl("品名","Description")}</th>
-          <th style="text-align:right;width:50px">${lbl("数量","Qty")}</th>
-          <th style="text-align:right;width:90px">${lbl("単価","Unit Price")}</th>
-          <th style="text-align:right;width:100px">${lbl("金額","Amount")}</th>
-          <th style="width:85px">${lbl("ロット番号","Lot No.")}</th>
-          <th style="width:85px">${lbl("使用期限","Expiry")}</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-        <tfoot><tr style="font-weight:700;background:#f5f5f5">
-          <td colspan="3" style="border:1px solid #ddd;padding:7px 8px;text-align:right;border-top:2px solid #000">${lbl("合　計","TOTAL")}</td>
-          <td style="border:1px solid #ddd;padding:7px 8px;text-align:right;border-top:2px solid #000;font-size:13px">${cur} ${dnTotal.toLocaleString()}</td>
-          <td style="border:1px solid #ddd;border-top:2px solid #000"></td>
-          <td style="border:1px solid #ddd;border-top:2px solid #000"></td>
-        </tr></tfoot>
-      </table>
-      ${invoice.remarks?`<div style="margin-top:10px;font-size:10px"><span style="font-weight:700">${lbl("備考","Remarks")}: </span>${invoice.remarks}</div>`:""}
-      <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
-        <div style="text-align:center;min-width:200px">
-          ${org?.signatureBase64?`<img src="${org.signatureBase64}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin:0 auto"/>`:``}
-          <div style="font-size:10px;font-weight:600">${org?.signerName||""}</div>
-          <div style="font-size:9px;color:#666">${org?.signerTitle||""}</div>
-        </div>
-      </div>
-      </body></html>`;
-      w.document.write(html);
-      w.document.close();
-      setTimeout(()=>w.print(),500);
-    },150);
-  };
-
-  return(
-    <div className="fade-in">
-      {/* ツールバー */}
-      <div className="card" style={{marginBottom:14,padding:"12px 16px"}}>
-        <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <label style={{fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>{printLang==="ja"?"出荷日":"Ship Date"}：</label>
-            <input type="date" className="input" style={{width:160}} value={shipDate}
-              onChange={(e:any)=>{setShipDate(e.target.value);}}/>
-          </div>
-          <div style={{display:"flex",background:"#F0EEE9",borderRadius:"var(--radius)",padding:3,gap:2}}>
-            <button className={`btn btn-sm ${printLang==="ja"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("ja")}>🇯🇵 日本語</button>
-            <button className={`btn btn-sm ${printLang==="en"?"btn-primary":"btn-secondary"}`} style={{padding:"4px 12px",fontSize:12}} onClick={()=>setPrintLang("en")}>🇺🇸 English</button>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ DELIVERY NOTE 印刷</button>
-          <button className="btn btn-amber btn-sm" onClick={handleSave} style={{marginLeft:"auto"}}>💾 保存</button>
-        </div>
-      </div>
-
-      {/* 品目編集カード */}
-      <div className="card" style={{marginBottom:14}}>
-        <div className="card-header">
-          <div>
-            <div className="card-title">📦 DELIVERY NOTE — 品目・ロット番号・使用期限</div>
-            <div className="card-subtitle">ロット番号・使用期限はここで入力してください。品名・数量・単価はProformaから引き継がれています。</div>
-          </div>
-        </div>
-        <div style={{overflowX:"auto"}}>
-          <table className="items-table">
-            <thead><tr>
-              <th style={{minWidth:160}}>品名</th>
-              <th style={{width:60,textAlign:"right"}}>数量</th>
-              <th style={{width:90,textAlign:"right"}}>単価</th>
-              <th style={{width:100,textAlign:"right"}}>金額</th>
-              <th style={{width:120}}>ロット番号 <span style={{fontWeight:400,color:"var(--text-muted)"}}>(任意)</span></th>
-              <th style={{width:130}}>使用期限 <span style={{fontWeight:400,color:"var(--text-muted)"}}>(任意)</span></th>
-            </tr></thead>
-            <tbody>
-              {dnItems.map((it:any)=>{
-                const amt=Number(it.quantity||0)*Number(it.unitPrice||0);
-                return(
-                  <tr key={it.id}>
-                    <td style={{fontWeight:500}}>{it.productName||"—"}</td>
-                    <td style={{textAlign:"right"}}>{it.quantity}</td>
-                    <td style={{textAlign:"right"}}>{cur} {Number(it.unitPrice||0).toLocaleString()}</td>
-                    <td style={{textAlign:"right",fontWeight:600}}>{cur} {amt.toLocaleString()}</td>
-                    <td><input className="input" value={it.lotNo||""} placeholder="例: LOT-2025-001"
-                      onChange={(e:any)=>updDn(it.id,"lotNo",e.target.value)}/></td>
-                    <td><input className="input" type="month" value={it.expiryDate||""}
-                      onChange={(e:any)=>updDn(it.id,"expiryDate",e.target.value)}/></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="total-row">
-          <div><div className="total-label">合計</div><div className="total-value">{cur} {dnTotal.toLocaleString()}</div></div>
-        </div>
-      </div>
-
-      {/* ナビボタン */}
-      <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
-        <button className="btn btn-secondary" onClick={onBack}>← ④ Packing List</button>
-        <button className="btn btn-primary" onClick={()=>{
-          setInvoice((v:any)=>({...v,trackingDate:shipDate,delivery_items:dnItems}));
-          setTimeout(()=>{onSave("in_progress");onNext();},100);
-        }}>⑥ PDF出力へ →</button>
-      </div>
-    </div>
-  );
-}
-
-function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
-  const [comment,setComment]=useState("");
-  const approvalStatusLabel:any={draft:"未申請",pending_approval:"承認待ち",approved:"承認済み ✅",rejected:"差し戻し ❌"};
-  const st=invoice.approvalStatus||"draft";
-
-  const requestApproval=async()=>{
-    if(!invoice.invoiceNo){showToast("Invoice Noを入力してください");return;}
-    setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
-    await onSave("draft");
-    showToast("📨 承認依頼を送信しました");
-  };
-
-  const selfApprove=async()=>{
-    setInvoice((v:any)=>({...v,approvalStatus:"approved"}));
-    await onSave("in_progress");
-    showToast("✅ 承認しました");
-  };
-
-  const reject=async()=>{
-    setInvoice((v:any)=>({...v,approvalStatus:"rejected"}));
-    await onSave("draft");
-    showToast("❌ 差し戻しました");
-  };
-
-  return(
-    <div className="fade-in">
-      <div className="card">
-        <div className="card-header"><div className="card-title">⑥ 承認申請・承認管理</div></div>
-
-        {/* 現在のステータス */}
-        <div style={{padding:"14px 18px",background:st==="approved"?"var(--green-light)":st==="rejected"?"var(--red-light)":st==="pending_approval"?"var(--amber-light)":"#F7F7F5",border:`1px solid ${st==="approved"?"var(--green-mid)":st==="rejected"?"var(--red-mid)":st==="pending_approval"?"var(--amber-mid)":"var(--border)"}`,borderRadius:"var(--radius-lg)",marginBottom:16}}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:4}}>承認ステータス</div>
-          <div style={{fontSize:20,fontWeight:800}}>{approvalStatusLabel[st]}</div>
-          {invoice.invoiceNo&&<div style={{fontSize:12,color:"var(--text-muted)",marginTop:4}}>案件: {invoice.invoiceNo}</div>}
+          <div><div className="card-title">⚙️ 組織設定</div><div className="card-subtitle">会社情報・銀行口座・署名者をInvoiceに反映</div></div>
+          <button className="btn btn-primary btn-sm" disabled={saving} onClick={save}>{saving?"保存中...":"💾 保存"}</button>
         </div>
 
-        {/* 承認フロー表示 */}
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20,padding:"10px 14px",background:"#FAFAF8",borderRadius:"var(--radius-lg)"}}>
-          {[{label:"申請",icon:"📨",status:"pending_approval"},{label:"承認管理ページで承認",icon:"✅",status:"approved"},{label:"⑦出荷へ",icon:"🚢",status:"done"}].map((s,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:20}}>{s.icon}</div>
-                <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>{s.label}</div>
-              </div>
-              {i<2&&<div style={{color:"var(--text-light)"}}>→</div>}
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10}}>🏢 会社基本情報</div>
+        <div className="grid-2" style={{marginBottom:12}}>
+          <div className="field"><label className="label">会社名</label>
+            <input className="input" value={form.companyName||""} placeholder="株式会社〇〇" onChange={(e:any)=>upd("companyName",e.target.value)}/></div>
+          <div className="field"><label className="label">電話番号</label>
+            <input className="input" value={form.tel||""} placeholder="+81-xx-xxxx-xxxx" onChange={(e:any)=>upd("tel",e.target.value)}/></div>
+        </div>
+        <div className="field" style={{marginBottom:12}}>
+          <label className="label">住所</label>
+          <textarea className="input" rows={2} value={form.address||""} placeholder="〒xxx-xxxx 東京都..." onChange={(e:any)=>upd("address",e.target.value)}/>
+        </div>
+        <div className="grid-2" style={{marginBottom:16}}>
+          <div className="field"><label className="label">メールアドレス</label>
+            <input className="input" value={form.email||""} placeholder="info@example.com" onChange={(e:any)=>upd("email",e.target.value)}/></div>
+          <div className="field"><label className="label">ウェブサイト</label>
+            <input className="input" value={form.website||""} placeholder="https://example.com" onChange={(e:any)=>upd("website",e.target.value)}/></div>
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:14}}>🏦 銀行口座情報</div>
+        <div className="grid-2" style={{marginBottom:10}}>
+          <div className="field"><label className="label">銀行名</label>
+            <input className="input" value={form.bankName||""} placeholder="〇〇銀行" onChange={(e:any)=>upd("bankName",e.target.value)}/></div>
+          <div className="field"><label className="label">支店名</label>
+            <input className="input" value={form.bankBranch||""} placeholder="〇〇支店" onChange={(e:any)=>upd("bankBranch",e.target.value)}/></div>
+        </div>
+        <div className="field" style={{marginBottom:10}}>
+          <label className="label">銀行住所</label>
+          <input className="input" value={form.bankAddress||""} placeholder="東京都〇〇区..." onChange={(e:any)=>upd("bankAddress",e.target.value)}/>
+        </div>
+        <div className="grid-4" style={{marginBottom:16}}>
+          <div className="field"><label className="label">口座種別</label>
+            <select className="input" value={form.accountType||"普通"} onChange={(e:any)=>upd("accountType",e.target.value)}>
+              <option>普通</option><option>当座</option></select></div>
+          <div className="field"><label className="label">口座番号</label>
+            <input className="input" value={form.accountNo||""} placeholder="1234567" onChange={(e:any)=>upd("accountNo",e.target.value)}/></div>
+          <div className="field"><label className="label">口座名義</label>
+            <input className="input" value={form.accountName||""} onChange={(e:any)=>upd("accountName",e.target.value)}/></div>
+          <div className="field"><label className="label">SWIFTコード</label>
+            <input className="input" value={form.swiftCode||""} placeholder="XXXXXXJPXXX" onChange={(e:any)=>upd("swiftCode",e.target.value)}/></div>
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:14}}>✍️ 署名者情報</div>
+        <div className="grid-2" style={{marginBottom:16}}>
+          <div className="field"><label className="label">署名者氏名</label>
+            <input className="input" value={form.signerName||""} placeholder="山田 太郎" onChange={(e:any)=>upd("signerName",e.target.value)}/></div>
+          <div className="field"><label className="label">役職</label>
+            <input className="input" value={form.signerTitle||""} placeholder="Export Manager" onChange={(e:any)=>upd("signerTitle",e.target.value)}/></div>
+        </div>
+
+        <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:14}}>🖼️ ロゴ・署名画像</div>
+        <div className="grid-2" style={{marginBottom:16}}>
+          <ImageUpload label="会社ロゴ" value={form.logoBase64||""} onChange={(v:string)=>upd("logoBase64",v)} hint="PNG/JPG推奨 横長ロゴ"/>
+          <ImageUpload label="署名画像" value={form.signatureBase64||""} onChange={(v:string)=>upd("signatureBase64",v)} hint="白背景または透過PNG"/>
+        </div>
+
+        <div style={{borderTop:"1px solid var(--border)",paddingTop:14}}>
+          <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10}}>🚢 出荷元ロケーション（Port of Loading 候補）</div>
+          {(form.shipLocations||[]).map((loc:string,i:number)=>(
+            <div key={i} style={{display:"flex",gap:6,marginBottom:6}}>
+              <input className="input" value={loc} onChange={(e:any)=>upd("shipLocations",(form.shipLocations||[]).map((l:string,j:number)=>j===i?e.target.value:l))}/>
+              <button className="btn btn-danger btn-xs" onClick={()=>upd("shipLocations",(form.shipLocations||[]).filter((_:string,j:number)=>j!==i))}>✕</button>
             </div>
           ))}
+          <button className="btn btn-secondary btn-sm" onClick={()=>upd("shipLocations",[...(form.shipLocations||[]),""])}>+ ロケーション追加</button>
         </div>
 
-        {st==="draft"&&(
-          <div>
-            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:12}}>
-              📌 「承認依頼を送信」すると、承認管理ページで上長が承認できます。<br/>
-              承認者自身が承認する場合は「自己承認」を使用してください。
-            </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              <button className="btn btn-purple" onClick={requestApproval}>📨 承認依頼を送信</button>
-              <button className="btn btn-green" onClick={selfApprove}>✅ 自己承認（テスト用）</button>
-            </div>
-          </div>
-        )}
-
-        {st==="pending_approval"&&(
-          <div>
-            <div style={{fontSize:13,color:"var(--amber)",marginBottom:12}}>⏳ 承認待ち中です。承認管理ページで承認してください。</div>
-            <div style={{display:"flex",gap:8}}>
-              <button className="btn btn-green btn-sm" onClick={selfApprove}>✅ この場で承認</button>
-              <button className="btn btn-danger btn-sm" onClick={reject}>❌ 差し戻し</button>
-            </div>
-          </div>
-        )}
-
-        {st==="approved"&&(
-          <div>
-            <div style={{fontSize:13,color:"var(--green)",marginBottom:16,fontWeight:500}}>✅ 承認済みです。⑦出荷管理へ進んでください。</div>
-            <button className="btn btn-green" onClick={onNext}>🚢 ⑦ 出荷管理へ →</button>
-          </div>
-        )}
-
-        {st==="rejected"&&(
-          <div>
-            <div style={{fontSize:13,color:"var(--red)",marginBottom:12}}>❌ 差し戻されました。内容を修正して再申請してください。</div>
-            <div style={{display:"flex",gap:8}}>
-              <button className="btn btn-secondary" onClick={()=>setInvoice((v:any)=>({...v,approvalStatus:"draft"}))}>修正して再申請</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
-        <button className="btn btn-secondary" onClick={onBack}>← ⑤ PDF出力に戻る</button>
-        {(st==="approved")&&(
-          <button className="btn btn-primary" onClick={onNext}>⑦ 出荷管理へ →</button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// TRACKING & PAYMENT PAGE
-// ============================================================
-function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
-  const t=T[lang||"ja"];
-  return(
-    <div className="fade-in">
-      <div className="card">
-        <div className="card-header"><div className="card-title">🚚 出荷追跡・入金確認</div></div>
-        <div className="grid-2" style={{marginBottom:14}}>
-          <div className="field"><label className="label">追跡番号（Tracking Number）</label>
-            <input className="input" value={invoice.trackingNumber||""} placeholder="1234567890"
-              onChange={(e:any)=>setInvoice((v:any)=>({...v,trackingNumber:e.target.value}))}/></div>
-          <div className="field"><label className="label">輸送業者</label>
-            <select className="input" value={invoice.shippingMethod||""}
-              onChange={(e:any)=>setInvoice((v:any)=>({...v,shippingMethod:e.target.value}))}>
-              <option value="">選択</option>
-              {SHIPPING_METHODS.map((m:string)=><option key={m}>{m}</option>)}
-            </select></div>
-        </div>
-        <div style={{padding:"12px 16px",background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",marginBottom:14}}>
-          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:14,fontWeight:500}}>
-            <input type="checkbox" checked={invoice.paymentConfirmed||false}
-              onChange={(e:any)=>setInvoice((v:any)=>({...v,paymentConfirmed:e.target.checked}))}
-              style={{width:18,height:18}}/>
-            💰 入金確認済み
-          </label>
-        </div>
-        <div style={{display:"flex",gap:8,justifyContent:"space-between"}}>
-          {onBack&&<button className="btn btn-secondary" onClick={onBack}>← ⑥ 承認に戻る</button>}
-          <div style={{display:"flex",gap:8}}>
-            <button className="btn btn-green" onClick={()=>{setInvoice((v:any)=>({...v,status:"completed"}));onSave("completed");}}>
-              🚢 出荷完了としてマーク
-            </button>
-            <button className="btn btn-primary" onClick={()=>onSave(invoice.status||"in_progress")}>
-              💾 保存
-            </button>
-          </div>
+        <div style={{marginTop:20,display:"flex",justifyContent:"flex-end"}}>
+          <button className="btn btn-primary" disabled={saving} onClick={save}>{saving?"保存中...":"💾 保存する"}</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ============================================================
-// MAIN APP
-// ============================================================
 export default function App(){
   const [page,setPage]=useState("new");
   const [step,setStep]=useState(1);
@@ -2959,12 +2589,10 @@ export default function App(){
   const [authToken,setAuthToken]=useState<string|null>(null);
   const [authUser,setAuthUser]=useState<any>(null);
   const [authLoading,setAuthLoading]=useState(true);
-
   const lang=invoice.language||"ja";
   const t=T[lang];
 
   useEffect(()=>{
-    // 起動時にトークンを確認
     const checkAuth=async()=>{
       const token=localStorage.getItem("trade_token");
       if(token){
@@ -2976,10 +2604,8 @@ export default function App(){
     };
     checkAuth();
   },[]);
-
   useEffect(()=>{
     if(!authToken) return;
-    // 組織設定をSupabaseから読み込み（localStorageをfallbackに）
     const loadOrg=async()=>{
       try{
         const d=await sb("organization?limit=1");
@@ -3001,7 +2627,6 @@ export default function App(){
           return;
         }
       }catch(e){}
-      // Supabase失敗時はlocalStorageから
       const saved=localStorage.getItem("tradeOrg");
       if(saved)try{setOrg(JSON.parse(saved));}catch(e){}
     };
@@ -3012,7 +2637,6 @@ export default function App(){
   },[authToken]);
 
   const showToast=(msg:string)=>setToast(msg);
-
   const isDirty=useMemo(()=>{
     if(!invoice.invoiceNo) return false;
     if(!savedSnapshot) return true;
@@ -3022,12 +2646,10 @@ export default function App(){
       return keys.some(k=>JSON.stringify(invoice[k])!==JSON.stringify(snap[k]));
     }catch{return false;}
   },[invoice,savedSnapshot]);
-
   const guardedNavigate=(action:()=>void)=>{
     if(isDirty){setPendingAction(()=>action);}
     else{action();}
   };
-
   useEffect(()=>{
     const handler=(e:BeforeUnloadEvent)=>{
       if(isDirty){e.preventDefault();e.returnValue="";}
@@ -3035,7 +2657,6 @@ export default function App(){
     window.addEventListener("beforeunload",handler);
     return ()=>window.removeEventListener("beforeunload",handler);
   },[isDirty]);
-
   const {errors}=useMemo(()=>validate(invoice,packing),[invoice,packing]);
 
   const reset=useCallback(()=>{
@@ -3046,7 +2667,6 @@ export default function App(){
     });
     setPacking([]);setStep(1);setPage("new");
   },[]);
-
   const saveInvoice=async(status="draft")=>{
     setSaving(true);
     try{
@@ -3064,9 +2684,10 @@ export default function App(){
         items:invoice.items,packing_items:packing,
         invoice_items:invoice.invoice_items||[],
         commercial_items:invoice.commercial_items||[],
+        delivery_note_items:invoice.delivery_note_items||[],
         invoice_remarks:invoice.invoice_remarks||"",
         commercial_remarks:invoice.commercial_remarks||"",
-        delivery_items:invoice.delivery_items||[],
+        delivery_note_remarks:invoice.delivery_note_remarks||"",
       };
       if(invoice.dbId){
         await sb(`invoices?id=eq.${invoice.dbId}`,{method:"PATCH",body:JSON.stringify({...payload,updated_at:new Date().toISOString()})});
@@ -3079,7 +2700,6 @@ export default function App(){
     }catch(e){showToast("❌ 保存に失敗しました");}
     setSaving(false);
   };
-
   const requestApproval=async()=>{
     if(!invoice.invoiceNo)return showToast("Invoice Noを入力してください");
     setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
@@ -3087,7 +2707,6 @@ export default function App(){
     setStep(6);
     showToast("📨 承認依頼を送信しました");
   };
-
   const loadInvoice=(h:any)=>{
     setInvoice({...INIT_INVOICE,
       dbId:h.id,invoiceNo:h.invoice_no||"",invoiceType:h.invoice_type||"proforma",
@@ -3102,8 +2721,10 @@ export default function App(){
       items:h.items||[],
       invoice_items:h.invoice_items||[],
       commercial_items:h.commercial_items||[],
+      delivery_note_items:h.delivery_note_items||[],
       invoice_remarks:h.invoice_remarks||"",
       commercial_remarks:h.commercial_remarks||"",
+      delivery_note_remarks:h.delivery_note_remarks||"",
     });
     setPacking((h.packing_items||[]).map((c:any)=>({...c,id:c.id||Date.now()+Math.random()})));
     setStep(1);setPage("new");
@@ -3111,7 +2732,6 @@ export default function App(){
   };
 
   const convertToCommercial=(h:any)=>{
-    // Proforma → Commercial変換：invoice_itemsをcommercial_itemsの初期値に自動引用
     const baseItems=(h.invoice_items&&h.invoice_items.length>0?h.invoice_items:h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()}));
     const newInv={...INIT_INVOICE,
       invoiceNo:h.invoice_no||"",
@@ -3126,20 +2746,21 @@ export default function App(){
       items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
       invoice_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       commercial_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
+      delivery_note_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       invoice_remarks:h.invoice_remarks||h.remarks||"",
       commercial_remarks:h.commercial_remarks||h.remarks||"",
+      delivery_note_remarks:h.delivery_note_remarks||h.remarks||"",
       proformaRef:h.invoice_no||"",
     };
     setInvoice(newInv);
     setPacking((h.packing_items||[]).map((c:any)=>({...c,id:Date.now()+Math.random()})));
-    setStep(2);setPage("new"); // ②Invoice編集ステップへ
+    setStep(2);setPage("new");
     showToast("🔄 Commercialに変換しました。② Invoice編集から進めてください。");
   };
 
   const editInvoice=(h:any)=>{
     loadInvoice(h);
   };
-
   const copyInvoice=(h:any)=>{
     const newInv={...INIT_INVOICE,
       invoiceNo:"",invoiceType:h.invoice_type||"proforma",
@@ -3167,17 +2788,13 @@ export default function App(){
     {id:"countryDocs",label:t.countryDocs,icon:"🌏"},
     {id:"org",label:t.org,icon:"⚙️"},
   ];
-
   const titles:any={new:t.newDoc,history:t.history,customers:t.customers,products:t.products,approval:t.approval,countryDocs:t.countryDocs,org:t.org};
 
-  // ローディング中
   if(authLoading) return(
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#1a1a2e"}}>
       <div style={{color:"#fff",fontSize:18}}>🌏 読み込み中...</div>
     </div>
   );
-
-  // 未ログイン
   if(!authToken)return <LoginPage onLogin={(token,user)=>{setAuthToken(token);setAuthUser(user);}}/>;
 
   return(
@@ -3301,79 +2918,36 @@ export default function App(){
                     </div>}
                   </>
                 ):(
-                  <>
-                    {/* ① Proforma引用確認 */}
+                <>
                     {step===1&&(
                       <div className="fade-in">
                         <div className="card" style={{padding:20,marginBottom:14,background:"var(--amber-light)",border:"1px solid var(--amber-mid)"}}>
                           <div style={{fontSize:14,fontWeight:700,marginBottom:8,color:"#92400E"}}>① Proforma Invoice 引用元確認</div>
                           {invoice.proformaRef
-                            ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong> から自動引用済みです</div>
-                            :<div style={{fontSize:13,color:"#92400E"}}>⚠️ Proformaからの変換でない場合は②へ進んでください</div>}
+                            ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong> から引用してCommercial Invoiceを作成します</div>
+                            :<div style={{fontSize:13,color:"#92400E"}}>⚠️ 引用元のProforma情報がありません</div>
+                          }
                         </div>
-                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs} hideNextButton={true}/>
-                        <div style={{display:"flex",justifyContent:"flex-end",marginTop:8,gap:8}}>
-                          <button className="btn btn-amber" onClick={()=>{saveInvoice("draft");showToast("💾 保存しました");}}>💾 下書き保存</button>
-                          <button className="btn btn-primary" onClick={()=>setStep(2)}>② Invoice編集へ →</button>
-                        </div>
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("in_progress");setStep(2);}} customers={customers} products={products} org={org} lang={lang} countryDocs={countryDocs}/>
                       </div>
                     )}
 
-                    {/* ② Invoice編集（金額調整可） */}
-                    {step===2&&(
-                      <InvoiceEditStep
-                        invoice={invoice} setInvoice={setInvoice} packing={packing}
-                        onBack={()=>setStep(1)} onNext={()=>setStep(3)}
-                        onSave={saveInvoice} org={org} lang={lang} stepNum={2}
-                        showToast={showToast}
-                        title="② Invoice 作成・編集（金額・品目を調整）"
-                        itemsKey="invoice_items" remarksKey="invoice_remarks"
-                        nextLabel="③ Commercial Invoice編集へ →"
-                        hint="Proformaから自動引用されています。金額・品目を調整してください。"
-                      />
-                    )}
-
-                    {/* ③ Commercial Invoice編集（通関用） */}
-                    {step===3&&(
-                      <InvoiceEditStep
-                        invoice={invoice} setInvoice={setInvoice} packing={packing}
-                        onBack={()=>setStep(2)} onNext={()=>setStep(4)}
-                        onSave={saveInvoice} org={org} lang={lang} stepNum={3}
-                        showToast={showToast}
-                        title="③ Commercial Invoice 編集（通関用・Invoice②から自動引用）"
-                        itemsKey="commercial_items" remarksKey="commercial_remarks"
-                        nextLabel="④ Packing List作成へ →"
-                        hint="Invoice②の内容から自動引用しています。通関用に品名・金額を変更できます。"
-                        syncFrom="invoice_items"
-                      />
-                    )}
-
-                    {/* ④ Packing List */}
+                    {step===2&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(1)} onNext={()=>setStep(3)} onSave={saveInvoice} org={org} lang={lang} stepNum={2} title="② Invoice (金額調整)" itemsKey="invoice_items" remarksKey="invoice_remarks" nextLabel="③ Commercial Invoiceへ →" hint="この書類専用の品目・金額・備考を調整できます" syncFrom="items" showToast={showToast}/>}
+                    {step===3&&<InvoiceEditStep invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(2)} onNext={()=>setStep(4)} onSave={saveInvoice} org={org} lang={lang} stepNum={3} title="③ Commercial Invoice (通関用)" itemsKey="commercial_items" remarksKey="commercial_remarks" nextLabel="④ Packing Listへ →" hint="通関用に無償サンプルの単価を入れる等の調整が可能です" syncFrom="invoice_items" showToast={showToast}/>}
                     {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
-
-                    {/* ⑤ 納品書 */}
-                    {step===5&&<ReceiptPage invoice={invoice} setInvoice={setInvoice} packing={packing} org={org} lang={lang} onSave={saveInvoice} onBack={()=>setStep(4)} onNext={()=>setStep(6)} showToast={showToast}/>}
-
-                    {/* ⑥ PDF出力 */}
-                    {step===6&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(5)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(7)} countryDocs={countryDocs} customers={customers}/>}
-
-                    {/* ⑦ 承認申請→承認 */}
-                    {step===7&&(
-                      <ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(6)} onNext={()=>setStep(8)} showToast={showToast}/>
-                    )}
-
-                    {/* ⑧ 出荷管理 */}
-                    {step===8&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(7)}/>}
+                    {step===5&&<OutputPage invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(4)} onNext={()=>setStep(6)} onSave={saveInvoice} org={org} lang={lang} countryDocs={countryDocs} customers={customers}/>}
+                    {step===6&&<ApprovalStep invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} onBack={()=>setStep(5)} onNext={()=>{saveInvoice("in_progress");setStep(7);}} showToast={showToast}/>}
+                    {step===7&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(6)}/>}
                   </>
                 )}
               </>
             )}
-            {page==="history"&&<HistoryPage onLoad={loadInvoice} onCopy={copyInvoice} onConvert={convertToCommercial} onEdit={editInvoice}/>}
+            {page==="history"&&<HistoryPage onLoad={loadInvoice} onConvert={convertToCommercial} onEdit={editInvoice} onCopy={copyInvoice}/>}
             {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
             {page==="products"&&<ProductPage/>}
+            {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
             {page==="approval"&&<ApprovalPage showToast={showToast}/>}
             {page==="countryDocs"&&<CountryDocsPage/>}
-            {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
           </div>
         </main>
       </div>
