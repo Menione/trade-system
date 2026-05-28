@@ -1246,8 +1246,10 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;background:#f5f5f5">
-              <td colspan="3" style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000">TOTAL</td>
-              <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-size:13px">${invoice.currency||"JPY"} ${dnTotal.toLocaleString()}</td>
+              <td style="border:1px solid #ddd;padding:6px 8px;border-top:2px solid #000"></td>
+              <td style="border:1px solid #ddd;padding:6px 8px;border-top:2px solid #000"></td>
+              <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-weight:700">TOTAL</td>
+              <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-size:13px;font-weight:700">${invoice.currency||"JPY"} ${dnTotal.toLocaleString()}</td>
               ${showLot?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
               ${showExp?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
             </tr></tfoot>
@@ -1675,10 +1677,13 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr><td colSpan={3} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>{printLang==="ja"?"合計":"TOTAL"}: {cur} {fmt(deliveryNoteItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
-                            <td style={{borderTop:"2px solid #000"}}></td>
-                            <td style={{borderTop:"2px solid #000"}}></td>
-                            <td style={{borderTop:"2px solid #000"}}></td>
+                          <tr>
+                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"6px 8px"}}></td>
+                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"6px 8px"}}></td>
+                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:12}}>{printLang==="ja"?"合計":"TOTAL"}</td>
+                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{cur} {fmt(deliveryNoteItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
+                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"4px"}}></td>
+                            <td style={{borderTop:"2px solid #000",border:"1px solid #ddd",padding:"4px"}}></td>
                             <td style={{borderTop:"2px solid #000"}} className="no-print"></td>
                           </tr>
                         </tfoot>
