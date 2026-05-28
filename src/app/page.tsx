@@ -858,18 +858,50 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
   const totalQty=packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
 
   const qtyWarnings:string[]=[];
+  const qtyOk:string[]=[];
   (invoice.items||[]).forEach((inv:any)=>{
-    const pq=packing.reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
+    const pq=packing
+      .filter((c:any)=>!c.isFraction) // 端数カートンは除外して比較
+      .reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
+    const pqAll=packing // 端数込みの合計
+      .reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
     const iq=Number(inv.quantity||0);
-    if(iq>0&&pq>0&&iq!==pq)qtyWarnings.push(`「${inv.productName}」: Invoice ${iq} / Packing ${pq}`);
+    if(iq>0){
+      if(pqAll===0){
+        qtyWarnings.push(`「${inv.productName}」: Packingに未入力（Invoice: ${iq}）`);
+      } else if(pqAll!==iq){
+        const diff=pqAll-iq;
+        qtyWarnings.push(`「${inv.productName}」: Invoice ${iq} / Packing ${pqAll}（${diff>0?"+":""}${diff}）`);
+      } else {
+        qtyOk.push(inv.productName);
+      }
+    }
   });
 
   return(
     <div className="fade-in">
-      {qtyWarnings.length>0&&(
-        <div className="validation-panel HIGH" style={{marginBottom:12}}>
-          <div className="v-title"><span>🚨</span><span>数量不一致</span></div>
-          {qtyWarnings.map((w,i)=><div key={i} className="v-item"><span className="risk-badge HIGH">HIGH</span><span style={{color:"var(--red)"}}>{w}</span></div>)}
+      {(qtyWarnings.length>0||qtyOk.length>0)&&(invoice.items||[]).length>0&&(
+        <div style={{background:"#fff",border:`1px solid ${qtyWarnings.length>0?"var(--red)":"var(--green,#16a34a)"}`,borderRadius:"var(--radius-lg)",padding:"10px 14px",marginBottom:12}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:qtyWarnings.length>0?"var(--red)":"var(--green,#16a34a)"}}>
+            {qtyWarnings.length>0?"⚠️ 数量チェック（不一致あり）":"✅ 数量チェック（すべて一致）"}
+          </div>
+          {(invoice.items||[]).map((inv:any)=>{
+            const pqAll=packing.reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
+            const iq=Number(inv.quantity||0);
+            const ok=iq>0&&pqAll===iq;
+            const missing=iq>0&&pqAll===0;
+            const diff=pqAll-iq;
+            return(
+              <div key={inv.id||inv.productName} style={{display:"flex",alignItems:"center",gap:8,fontSize:12,padding:"3px 0",borderBottom:"1px solid #f0f0f0"}}>
+                <span style={{fontSize:14}}>{ok?"✅":missing?"❌":"⚠️"}</span>
+                <span style={{flex:1,fontWeight:500}}>{inv.productName||"(未入力)"}</span>
+                <span style={{color:"#666"}}>Invoice: <strong>{iq}</strong></span>
+                <span style={{color:"#666"}}>Packing: <strong style={{color:ok?"var(--green,#16a34a)":missing?"var(--red)":"var(--amber,#d97706)"}}>{pqAll}</strong></span>
+                {!ok&&!missing&&<span style={{fontSize:11,color:"var(--amber,#d97706)",fontWeight:600}}>({diff>0?"+":""}{diff})</span>}
+                {missing&&<span style={{fontSize:11,color:"var(--red)",fontWeight:600}}>未入力</span>}
+              </div>
+            );
+          })}
         </div>
       )}
       <div className="card">
@@ -1050,10 +1082,21 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,countryDocs,c
   const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
   const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
   const [commercialRemarks,setCommercialRemarks]=useState(invoice.commercial_remarks||invoice.remarks||"");
-  // DELIVERY NOTE 専用の品目（ロット番号・使用期限をここで編集）
-  const [deliveryItems,setDeliveryItems]=useState<any[]>(
-    (invoice.delivery_items||invoice.invoice_items||invoice.items||[]).map((it:any)=>({...it,id:it.id||Date.now()+Math.random()}))
-  );
+  // DELIVERY NOTE 専用の品目（ロット番号・使用期限をDELIVERY NOTEで編集）
+  // invoice.items（Proforma入力の元データ）のlotNo/expiryDateを優先して引き継ぐ
+  const [deliveryItems,setDeliveryItems]=useState<any[]>(()=>{
+    const baseItems=invoice.delivery_items||invoice.invoice_items||invoice.items||[];
+    return baseItems.map((it:any)=>{
+      // invoice.itemsから同製品のlotNo/expiryDateを取得して補完
+      const src=(invoice.items||[]).find((s:any)=>s.productName===it.productName);
+      return {
+        ...it,
+        id:it.id||Date.now()+Math.random(),
+        lotNo:it.lotNo||src?.lotNo||"",
+        expiryDate:it.expiryDate||src?.expiryDate||"",
+      };
+    });
+  });
   const updDeliveryItem=(id:any,k:string,v:any)=>setDeliveryItems((prev:any[])=>prev.map((it:any)=>it.id===id?{...it,[k]:v}:it));
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
