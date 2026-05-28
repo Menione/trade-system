@@ -1080,6 +1080,8 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
     packingPages.push(packingRows.slice(i,i+ROWS_PER_PAGE));
   }
   if(packingPages.length===0)packingPages.push([]);
+  const packingHasLot=packingRows.some((r:any)=>r.lotNo);
+  const packingHasExp=packingRows.some((r:any)=>r.expiryDate);
   const printStyle=`
     @page{margin:15mm}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
@@ -1191,12 +1193,12 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
       const dnTotal=dnItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
       const rows=dnItems.map((it:any,i:number)=>`
         <tr style="background:${i%2===0?"#fafafa":"#fff"}">
-          <td style="border:1px solid #ddd;padding:4px 6px">${it.productName}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${invoice.currency||"JPY"} ${Number(it.unitPrice||0).toLocaleString()}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;overflow:hidden;text-overflow:ellipsis">${it.productName}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;white-space:nowrap">${it.quantity}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;white-space:nowrap">${invoice.currency||"JPY"} ${Number(it.unitPrice||0).toLocaleString()}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;white-space:nowrap">${invoice.currency||"JPY"} ${(Number(it.quantity||0)*Number(it.unitPrice||0)).toLocaleString()}</td>
-          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px">${it.lotNo||""}</td>`:""}
-          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate?it.expiryDate.substring(0,7).replace('-','/'):""}` + `</td>`:""}
+          ${showLot?`<td style="border:1px solid #ddd;padding:4px 6px;white-space:nowrap">${it.lotNo||""}</td>`:""}
+          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px;white-space:nowrap">${it.expiryDate?it.expiryDate.substring(0,7).replace('-','/'):""}` + `</td>`:""}
         </tr>`).join("");
       const sigSection=`
         <div style="margin-top:40px;display:flex;justify-content:flex-end;page-break-inside:avoid">
@@ -1235,18 +1237,26 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
               ${invoice.shippingMethod?`<div style="margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:#555">Shipping: </span><span style="font-size:10px">${invoice.shippingMethod}</span></div>`:""}
             </div>
           </div>
-          <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:16px;table-layout:fixed">
+            <colgroup>
+              <col style="width:auto"/>
+              <col style="width:42px"/>
+              <col style="width:90px"/>
+              <col style="width:110px"/>
+              ${showLot?`<col style="width:72px"/>`:""}
+              ${showExp?`<col style="width:72px"/>`:""}
+            </colgroup>
             <thead><tr style="background:#222;color:#fff">
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px">Description</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:45px">Qty</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:80px">Unit Price</th>
-              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;width:120px">Amount</th>
-              ${showLot?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Lot No.</th>`:""}
-              ${showExp?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;width:75px">Expiry</th>`:""}
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Description</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;white-space:nowrap">Qty</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;white-space:nowrap">Unit Price</th>
+              <th style="border:1px solid #444;padding:5px 6px;font-size:9px;text-align:right;white-space:nowrap">Amount</th>
+              ${showLot?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;white-space:nowrap">Lot No.</th>`:""}
+              ${showExp?`<th style="border:1px solid #444;padding:5px 6px;font-size:9px;white-space:nowrap">Expiry</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;background:#f5f5f5">
-              <td colspan="3" style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-weight:700">TOTAL</td>
+              <td colspan="3" style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-weight:700;white-space:nowrap">TOTAL</td>
               <td style="border:1px solid #ddd;padding:6px 8px;text-align:right;border-top:2px solid #000;font-size:13px;font-weight:700;white-space:nowrap">${invoice.currency||"JPY"} ${dnTotal.toLocaleString()}</td>
               ${showLot?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
               ${showExp?`<td style="border:1px solid #ddd;border-top:2px solid #000"></td>`:""}
@@ -1709,8 +1719,8 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"総重量(kg)":"G.W.(kg)"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="ja"?"正味重量(kg)":"N.W.(kg)"}</th>
                             <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:110}}>{printLang==="ja"?"寸法(cm)":"Dimensions(cm)"}</th>
-                            {packingRows.some((r:any)=>r.lotNo)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
-                            {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
+                            {packingHasLot&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"ロット番号":"Lot No."}</th>}
+                            {packingHasExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="ja"?"使用期限":"Expiry"}</th>}
                           </tr></thead>
                           <tbody>
                             {pageRows.map((row:any,i:number)=>(
@@ -1721,8 +1731,8 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                                 {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right",verticalAlign:"middle"}}>{row.grossWeight}</td>}
                                 {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",textAlign:"right",verticalAlign:"middle"}}>{row.netWeight}</td>}
                                 {row.isFirst&&<td rowSpan={row.rowSpan} style={{border:"1px solid #ccc",padding:"4px 8px",verticalAlign:"middle"}}>{row.dimensions}</td>}
-                                {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.lotNo||""}</td>}
-                                {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.expiryDate?(row.expiryDate.substring(0,7).replace("-","/")):""}</td>}
+                                {packingHasLot&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.lotNo||""}</td>}
+                                {packingHasExp&&<td style={{border:"1px solid #ccc",padding:"4px 8px"}}>{row.expiryDate?(row.expiryDate.substring(0,7).replace("-","/")):""}</td>}
                               </tr>
                             ))}
                           </tbody>
@@ -1735,8 +1745,8 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,co
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2)}</td>
                                 <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
-                                {packingRows.some((r:any)=>r.lotNo)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
-                                {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
+                                {packingHasLot&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
+                                {packingHasExp&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
                               </tr>
                             </tfoot>
                           )}
