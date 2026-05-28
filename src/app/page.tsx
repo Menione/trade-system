@@ -2722,6 +2722,16 @@ export default function App(){
   const saveInvoice=async(status="draft")=>{
     setSaving(true);
     try{
+      // Extra sub-document fields are nested inside items JSONB to avoid missing-column errors
+      const itemsPayload={
+        lines:invoice.items||[],
+        invoice_items:invoice.invoice_items||[],
+        commercial_items:invoice.commercial_items||[],
+        delivery_note_items:invoice.delivery_note_items||[],
+        invoice_remarks:invoice.invoice_remarks||"",
+        commercial_remarks:invoice.commercial_remarks||"",
+        delivery_note_remarks:invoice.delivery_note_remarks||"",
+      };
       const payload={
         invoice_no:invoice.invoiceNo,invoice_type:invoice.invoiceType||"proforma",
         date:invoice.date,po_number:invoice.poNumber,payment_due:invoice.paymentDue,
@@ -2733,13 +2743,8 @@ export default function App(){
         approval_status:invoice.approvalStatus||"draft",
         tracking_number:invoice.trackingNumber||"",
         payment_confirmed:invoice.paymentConfirmed||false,
-        items:invoice.items,packing_items:packing,
-        invoice_items:invoice.invoice_items||[],
-        commercial_items:invoice.commercial_items||[],
-        delivery_note_items:invoice.delivery_note_items||[],
-        invoice_remarks:invoice.invoice_remarks||"",
-        commercial_remarks:invoice.commercial_remarks||"",
-        delivery_note_remarks:invoice.delivery_note_remarks||"",
+        items:itemsPayload,
+        packing_items:packing,
       };
       if(invoice.dbId){
         await sb(`invoices?id=eq.${invoice.dbId}`,{method:"PATCH",body:JSON.stringify({...payload,updated_at:new Date().toISOString()})});
@@ -2760,6 +2765,15 @@ export default function App(){
     showToast("📨 承認依頼を送信しました");
   };
   const loadInvoice=(h:any)=>{
+    // items may be stored as {lines, invoice_items, ...} (new format) or as array (old format)
+    const itData=h.items||{};
+    const itLines=Array.isArray(itData)?itData:(itData.lines||[]);
+    const itInvItems=Array.isArray(itData)?[]:(itData.invoice_items||[]);
+    const itComItems=Array.isArray(itData)?[]:(itData.commercial_items||[]);
+    const itDnItems=Array.isArray(itData)?[]:(itData.delivery_note_items||[]);
+    const itInvRem=Array.isArray(itData)?"":(itData.invoice_remarks||"");
+    const itComRem=Array.isArray(itData)?"":(itData.commercial_remarks||"");
+    const itDnRem=Array.isArray(itData)?"":(itData.delivery_note_remarks||"");
     setInvoice({...INIT_INVOICE,
       dbId:h.id,invoiceNo:h.invoice_no||"",invoiceType:h.invoice_type||"proforma",
       date:h.date||"",poNumber:h.po_number||"",paymentDue:h.payment_due||"",
@@ -2770,13 +2784,13 @@ export default function App(){
       expiryDate:h.expiry_date||"",status:h.status||"draft",
       language:h.language||"ja",approvalStatus:h.approval_status||"draft",
       trackingNumber:h.tracking_number||"",paymentConfirmed:h.payment_confirmed||false,
-      items:h.items||[],
-      invoice_items:h.invoice_items||[],
-      commercial_items:h.commercial_items||[],
-      delivery_note_items:h.delivery_note_items||[],
-      invoice_remarks:h.invoice_remarks||"",
-      commercial_remarks:h.commercial_remarks||"",
-      delivery_note_remarks:h.delivery_note_remarks||"",
+      items:itLines,
+      invoice_items:itInvItems,
+      commercial_items:itComItems,
+      delivery_note_items:itDnItems,
+      invoice_remarks:itInvRem,
+      commercial_remarks:itComRem,
+      delivery_note_remarks:itDnRem,
     });
     setPacking((h.packing_items||[]).map((c:any)=>({...c,id:c.id||Date.now()+Math.random()})));
     setStep(1);setPage("new");
@@ -2784,7 +2798,13 @@ export default function App(){
   };
 
   const convertToCommercial=(h:any)=>{
-    const baseItems=(h.invoice_items&&h.invoice_items.length>0?h.invoice_items:h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()}));
+    const itData=h.items||{};
+    const itLines=Array.isArray(itData)?itData:(itData.lines||[]);
+    const itInvItems=Array.isArray(itData)?[]:(itData.invoice_items||[]);
+    const itInvRem=Array.isArray(itData)?"":(itData.invoice_remarks||"");
+    const itComRem=Array.isArray(itData)?"":(itData.commercial_remarks||"");
+    const itDnRem=Array.isArray(itData)?"":(itData.delivery_note_remarks||"");
+    const baseItems=(itInvItems.length>0?itInvItems:itLines).map((it:any)=>({...it,id:Date.now()+Math.random()}));
     const newInv={...INIT_INVOICE,
       invoiceNo:h.invoice_no||"",
       invoiceType:"commercial",
@@ -2795,13 +2815,13 @@ export default function App(){
       countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
       portOfLoading:h.port_of_loading||"",remarks:h.remarks||"",
       language:h.language||"ja",approvalStatus:"draft",status:"draft",
-      items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
+      items:itLines.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       invoice_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       commercial_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       delivery_note_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
-      invoice_remarks:h.invoice_remarks||h.remarks||"",
-      commercial_remarks:h.commercial_remarks||h.remarks||"",
-      delivery_note_remarks:h.delivery_note_remarks||h.remarks||"",
+      invoice_remarks:itInvRem||h.remarks||"",
+      commercial_remarks:itComRem||h.remarks||"",
+      delivery_note_remarks:itDnRem||h.remarks||"",
       proformaRef:h.invoice_no||"",
     };
     setInvoice(newInv);
@@ -2823,7 +2843,7 @@ export default function App(){
       countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
       portOfLoading:h.port_of_loading||"",remarks:h.remarks||"",
       language:h.language||"ja",approvalStatus:"draft",status:"draft",
-      items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
+      items:(Array.isArray(h.items)?h.items:(h.items?.lines||[])).map((it:any)=>({...it,id:Date.now()+Math.random()})),
     };
     setInvoice(newInv);
     setPacking((h.packing_items||[]).map((c:any)=>({...c,id:Date.now()+Math.random()})));
