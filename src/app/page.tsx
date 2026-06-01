@@ -2451,7 +2451,13 @@ function CountryDocsPage(){
     }
   };
   const startEdit=(item:any)=>{
-    setForm({country:item.country||"",required_docs:item.required_docs||"",notes:item.notes||""});
+    setForm({
+      country:item.country||"",
+      required_docs:Array.isArray(item.documents)
+        ?item.documents.join("\n")
+        :(item.required_docs||""),
+      notes:item.notes||"",
+    });
     setEditId(item.id);setShowForm(true);
   };
 
