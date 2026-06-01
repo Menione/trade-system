@@ -2435,12 +2435,21 @@ function CountryDocsPage(){
   const save=async()=>{
     if(!form.country.trim())return alert("国名を入力してください");
     try{
+      const payload={
+        country:form.country,
+        documents:(form.required_docs||"").split("\n").map((s:string)=>s.trim()).filter(Boolean),
+        notes:form.notes||"",
+      };
       if(editId){
-        await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(form)});
+        await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(payload)});
       }else{
-        await sb("country_documents",{method:"POST",body:JSON.stringify(form)});
+        await sb("country_documents",{method:"POST",body:JSON.stringify(payload)});
       }
       setForm(empty);setShowForm(false);setEditId(null);fetch();
+    }catch(e:any){
+      alert("保存エラー: "+(e?.message||JSON.stringify(e)));
+    }
+  };
     }catch(e:any){
       alert("保存エラー: "+(e?.message||JSON.stringify(e)));
     }
