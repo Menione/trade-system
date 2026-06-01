@@ -2434,12 +2434,16 @@ function CountryDocsPage(){
 
   const save=async()=>{
     if(!form.country.trim())return alert("国名を入力してください");
-    if(editId){
-      await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(form)});
-    }else{
-      await sb("country_documents",{method:"POST",body:JSON.stringify(form)});
+    try{
+      if(editId){
+        await sb(`country_documents?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(form)});
+      }else{
+        await sb("country_documents",{method:"POST",body:JSON.stringify(form)});
+      }
+      setForm(empty);setShowForm(false);setEditId(null);fetch();
+    }catch(e:any){
+      alert("保存エラー: "+(e?.message||JSON.stringify(e)));
     }
-    setForm(empty);setShowForm(false);setEditId(null);fetch();
   };
 
   const startEdit=(item:any)=>{
