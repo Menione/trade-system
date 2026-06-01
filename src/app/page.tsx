@@ -2450,11 +2450,6 @@ function CountryDocsPage(){
       alert("保存エラー: "+(e?.message||JSON.stringify(e)));
     }
   };
-    }catch(e:any){
-      alert("保存エラー: "+(e?.message||JSON.stringify(e)));
-    }
-  };
-
   const startEdit=(item:any)=>{
     setForm({country:item.country||"",required_docs:item.required_docs||"",notes:item.notes||""});
     setEditId(item.id);setShowForm(true);
