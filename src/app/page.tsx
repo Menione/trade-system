@@ -2501,14 +2501,7 @@ function CountryDocsPage(){
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <strong style={{fontSize:13}}>🌐 {item.country}</strong>
       <div style={{display:"flex",gap:5}}>
-        <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(item)}>✏️ 編集</button>
-        <button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>削除</button>
-      </div>
-    </div>
-    {(Array.isArray(item.documents)&&item.documents.length>0)&&(
-      <div style={{marginTop:6,display:"flex",flexWrap:"wrap",gap:5}}>
-        {item.documents.map((doc:string,i:num
-}
+        <button className="btn btn-secondar
 
 // ============================================================
 // ORG PAGE (組織設定)
