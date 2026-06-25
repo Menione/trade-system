@@ -1370,8 +1370,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
                       {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>Expiry</th>}
-                      <th style={{border:"1px solid #444",padding:"4px",width:28}} className="no-print"></th>
-                    </tr></thead>
+                      <th style={{border:"none",padding:"4px",width:28,display:"none"}} className="no-print"></th>
                     <tbody>
                       {items.map((it:any,i:number)=>(
                         <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
@@ -1381,7 +1380,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
                           {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="date" style={{border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
-                          <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
+                          <td style={{border:"none",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -1404,7 +1403,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             return(
               <>
                 {activeDoc==="proforma"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="PROFORMA INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
@@ -1423,7 +1422,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                   </div>
                 )}
                 {activeDoc==="invoice"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
@@ -1442,7 +1441,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                   </div>
                 )}
                 {activeDoc==="commercial"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="COMMERCIAL INVOICE"/>
                     {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur)}
                 {org?.bankName&&(
@@ -1461,7 +1460,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                   </div>
                 )}
                 {activeDoc==="packing"&&(
-                              <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",minHeight:1123,boxSizing:"border-box" as any}}>
+                              <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
               {packingPages.map((pageRows,pi)=>(
                 <div key={pi} className={pi<packingPages.length-1?"pdf-page":""}>
                   <PackingHeader/>
