@@ -1519,6 +1519,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
         {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
         {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
         {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
+        {org?.remarks&&<div style={{whiteSpace:"pre-wrap",marginTop:4,textAlign:"right"}}>{org.remarks}</div>}
         {org?.tel&&<div>Tel: {org.tel}</div>}
       </div>
     </div>
@@ -1526,23 +1527,65 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
       <div>
         <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>CONSIGNEE</div>
-        <div style={{whiteSpace:"pre-wrap",fontSize:11}}>{invoice.consignee||"—"}</div>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{invoice.consignee?.split("\n")[0]||""}</div>
+        <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
       </div>
       <div style={{fontSize:11}}>
         {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>P.O. No: </span><strong>{invoice.poNumber}</strong></div>}
         {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Due: </span>{invoice.paymentDue}</div>}
         {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Incoterms: </span>{invoice.incoterms}</div>}
         {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Shipping: </span>{invoice.shippingMethod}</div>}
-        </div>
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
-        <button className="btn btn-secondary" onClick={onBack}>← ④ Packing List に戻る</button>
-        <div style={{display:"flex",gap:8}}>
-          <button className="btn btn-amber btn-sm" onClick={()=>onSave("in_progress")}>💾 保存</button>
-          <button className="btn btn-primary" onClick={onNext}>⑥ 承認申請へ →</button>
-        </div>
       </div>
     </div>
+    {/* 品目テーブル（編集可） */}
+    <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
+      <thead><tr style={{background:"#222",color:"#fff"}}>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:50}}>Qty</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Lot No.</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Expiry</th>
+        <th style={{border:"none",width:28}} className="no-print"></th>
+      </tr></thead>
+      <tbody>
+        {invoiceItems.map((it:any,i:number)=>(
+          <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updInvItem(it.id,"unitPrice",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.expiryDate||""} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr><td colSpan={3} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>TOTAL</td>
+        <td style={{padding:"8px",fontWeight:700,fontSize:12,borderTop:"2px solid #000",textAlign:"right"}}>{cur} {fmt(invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
+        <td colSpan={3} style={{borderTop:"2px solid #000"}}></td></tr>
+      </tfoot>
+    </table>
+    <div className="no-print" style={{marginTop:6}}>
+      <button onClick={addInvItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
+    </div>
+    {invoiceRemarks&&<div style={{marginTop:12}}>
+      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>REMARKS</div>
+      <div style={{fontSize:10,whiteSpace:"pre-wrap"}} className="print-only">{invoiceRemarks}</div>
+      <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
+    </div>}
+    {!invoiceRemarks&&<div className="no-print" style={{marginTop:12}}>
+      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>REMARKS</div>
+      <textarea style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
+    </div>}
+    <div style={{marginTop:40,display:"flex",justifyContent:"flex-end"}}>
+      <div style={{textAlign:"center",minWidth:200}}>
+        {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain" as any,marginBottom:4}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
+        <div style={{fontSize:10,fontWeight:600}}>{org?.signerName?`Authorized by ${org.signerName}, ${org.companyName||""}`:""}</div>
+      </div>
+    </div>
+  </div>
 )}
               </>
             );
