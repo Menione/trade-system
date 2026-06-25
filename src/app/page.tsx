@@ -2501,11 +2501,6 @@ function CountryDocsPage(){
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <strong style={{fontSize:13}}>🌐 {item.country}</strong>
       <div style={{display:"flex",gap:5}}>
-        <button className="btn btn-secondar:items.map((item:any)=>(
-  <div key={item.id} className="history-item">
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-      <strong style={{fontSize:13}}>🌐 {item.country}</strong>
-      <div style={{display:"flex",gap:5}}>
         <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(item)}>✏️ 編集</button>
         <button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>削除</button>
       </div>
@@ -2519,7 +2514,13 @@ function CountryDocsPage(){
     )}
     {item.notes&&<div style={{fontSize:11,color:"var(--amber)",marginTop:5}}>📌 {item.notes}</div>}
   </div>
-))}// ============================================================
+))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // ORG PAGE (組織設定)
 // ============================================================
 function OrgPage({org,setOrg}:any){
@@ -2619,8 +2620,8 @@ function OrgPage({org,setOrg}:any){
 
         <div style={{fontSize:13,fontWeight:600,color:"var(--blue)",marginBottom:10,borderTop:"1px solid var(--border)",paddingTop:14}}>🖼️ ロゴ・署名画像</div>
         <div className="grid-2" style={{marginBottom:16}}>
-          <ImageUpload label="会社ロゴ" value={form.logoBase64||""} onChange={(v:string)=>upd("logoBase64",v)} hint="PNG/JPG推奨 横長ロゴ"/>
-          <ImageUpload label="署名画像" value={form.signatureBase64||""} onChange={(v:string)=>upd("signatureBase64",v)} hint="白背景または透過PNG"/>
+          <ImgUpload label="会社ロゴ" value={form.logoBase64||""} onChange={(v:string)=>upd("logoBase64",v)} hint="PNG/JPG推奨 横長ロゴ"/>
+          <ImgUpload label="署名画像" value={form.signatureBase64||""} onChange={(v:string)=>upd("signatureBase64",v)} hint="白背景または透過PNG"/>
         </div>
 
         <div style={{borderTop:"1px solid var(--border)",paddingTop:14}}>
