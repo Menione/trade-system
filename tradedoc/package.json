@@ -22,3 +22,13 @@
     "typescript": "^5"
   }
 }
+"devDependencies": {
+  "@types/node": "^20",
+  "@types/react": "^19",
+  "@types/react-dom": "^19",
+  "eslint": "^9",
+  "eslint-config-next": "16.2.6",
+  "typescript": "^5",
+  "tailwindcss": "^4",
+  "@tailwindcss/postcss": "^4"
+}
