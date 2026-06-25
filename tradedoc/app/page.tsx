@@ -1370,7 +1370,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
                       {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>Expiry</th>}
-                      <th className="no-print" style={{display:"none"}}></th>
+                      <th className="no-print" style={{display:"none"}}></th></tr></thead>
                     <tbody>
                       {items.map((it:any,i:number)=>(
                         <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
