@@ -1076,9 +1076,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     .no-break{page-break-inside:avoid}
     thead{display:table-header-group}
     tfoot{display:table-footer-group}
-    .fraction-row{background:#FFFBEB}
+    .no-print{display:none !important}
     .bank-section{margin-top:16px;font-size:9px;border:1px solid #ddd;padding:8px;border-radius:4px}
-    .bank-title{font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px}
+    .bank-title{font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px}.no-print{display:none !important}
   `;
 
   const handlePrint=()=>{
@@ -1370,7 +1370,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
                       {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>Expiry</th>}
-                      <th className="no-print" style={{display:"none"}}></th></tr></thead>
+                      <th className="no-print" style={{display:"none"}}></th>
                     <tbody>
                       {items.map((it:any,i:number)=>(
                         <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
