@@ -134,6 +134,14 @@ function fmt(amount: number, currency: string) {
   return nd.includes(currency) ? Math.round(amount).toLocaleString("ja-JP") : amount.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
+// 賞味期限を YYYY-MM（年月のみ）にフォーマット
+function fmtExpiry(val: string): string {
+  if (!val) return "";
+  // YYYY-MM-DD → YYYY-MM
+  const m = val.match(/^(\d{4}[-/]\d{2})/);
+  return m ? m[1].replace("/","-") : val;
+}
+
 function validate(invoice: any, packing: any[]) {
   const errors: any[] = [], warnings: any[] = [];
   if (!invoice.incoterms) errors.push({step:1,msg:"Incotermsが未選択です"});
@@ -1103,7 +1111,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${it.expiryDate||""}</td>`:""}
+          ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${fmtExpiry(it.expiryDate||"")}</td>`:""}
         </tr>`).join("");
       const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
       const bankSection=showBank&&org?.bankName?`
@@ -1160,7 +1168,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
-              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">Expiry</th>`:""}
+              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr><td colspan="${showExp?6:5}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">TOTAL: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
@@ -1180,7 +1188,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <td style="text-align:right">${row.grossWeight}</td>
           <td style="text-align:right">${row.netWeight}</td>
           <td>${row.dimensions}</td>
-          ${packingRows.some((r:any)=>r.expiryDate)?`<td>${row.expiryDate||""}</td>`:""}
+          ${packingRows.some((r:any)=>r.expiryDate)?`<td>${fmtExpiry(row.expiryDate||"")}</td>`:""}
         </tr>`).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
       const totNW=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2);
@@ -1205,7 +1213,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
-              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">Expiry</th>`:""}
+              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
@@ -1251,7 +1259,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div style={{flex:1}}>
           <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>{title}</div>
-          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>請求書番号 <strong>{invoice.invoiceNo}</strong></div>}
+          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>{printLang==="en"?"Invoice No.":"請求書番号"} <strong>{invoice.invoiceNo}</strong></div>}
         </div>
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
@@ -1295,7 +1303,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div style={{flex:1}}>
           <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>PACKING LIST</div>
-          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>請求書番号 <strong>{invoice.invoiceNo}</strong></div>}
+          {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>{printLang==="en"?"Invoice No.":"請求書番号"} <strong>{invoice.invoiceNo}</strong></div>}
         </div>
         <div style={{textAlign:"right",fontSize:10}}>
           {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
@@ -1308,17 +1316,17 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div style={{height:2,background:"#000",marginBottom:16}}></div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px",marginBottom:16}}>
         <div>
-          <MetaRow label="請求日：" value={invoice.date}/>
-          {invoice.paymentTerms&&<MetaRow label="支払い条件：" value={invoice.paymentTerms}/>}
-          {invoice.paymentDue&&<MetaRow label="支払い期限：" value={invoice.paymentDue}/>}
-          {invoice.poNumber&&<MetaRow label="発注番号：" value={invoice.poNumber}/>}
+          <MetaRow label={printLang==="en"?"Date:":"請求日："} value={invoice.date}/>
+          {invoice.paymentTerms&&<MetaRow label={printLang==="en"?"Payment Terms:":"支払い条件："} value={invoice.paymentTerms}/>}
+          {invoice.paymentDue&&<MetaRow label={printLang==="en"?"Payment Due:":"支払い期限："} value={invoice.paymentDue}/>}
+          {invoice.poNumber&&<MetaRow label={printLang==="en"?"P.O. No:":"発注番号："} value={invoice.poNumber}/>}
           {invoice.shippingMethod&&<MetaRow label="Shipping Method：" value={invoice.shippingMethod}/>}
           {invoice.incoterms&&<MetaRow label="Incoterms：" value={invoice.incoterms}/>}
           <MetaRow label="Total Cartons：" value={`${packing.length} CTNS`}/>
           <MetaRow label="Total G.W.：" value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
         </div>
         <div>
-          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>請求先</div>
+          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="en"?"CONSIGNEE":"請求先"}</div>
           {invoice.consignee&&<div style={{fontWeight:700,fontSize:11,marginBottom:2}}>{invoice.consignee.split("\n")[0]}</div>}
           <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
           {invoice.shipTo&&<>
@@ -1389,7 +1397,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:50,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
-                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:72,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
+                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:72,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
                           <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                         </tr>
                       ))}
@@ -1476,13 +1484,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                   <PackingHeader/>
                   <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                     <thead><tr style={{background:"#222",color:"#fff"}}>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>番号</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>商品 &amp; 詳細</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{printLang==="en"?"Carton No":"番号"}</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="en"?"Description":"商品 & 詳細"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>Qty</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{t.grossWeight}</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{t.netWeight}</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="en"?"G.W.(kg)":"総重量(kg)"}</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="en"?"N.W.(kg)":"正味重量(kg)"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>Dimensions(cm)</th>
-                      {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>Expiry</th>}
+                      {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="en"?"Expiry":"賞味/使用期限"}</th>}
                     </tr></thead>
                     <tbody>
                       {pageRows.map((row:any,i:number)=>(
@@ -1493,7 +1501,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
-                          {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.expiryDate||""}</td>}
+                          {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{fmtExpiry(row.expiryDate||"")}</td>}
                         </tr>
                       ))}
                     </tbody>
@@ -1565,7 +1573,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updInvItem(it.id,"unitPrice",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.expiryDate||""} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
           </tr>
         ))}
