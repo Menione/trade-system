@@ -1347,6 +1347,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <button className={`tab ${activeDoc==="invoice"?"active":""}`} onClick={()=>setActiveDoc("invoice")}>📄 Invoice</button>
           <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
+          <button className={`tab ${activeDoc==="delivery"?"active":""}`} onClick={()=>setActiveDoc("delivery")}>🚚 Delivery Note</button>
         </div>
         <button className="btn btn-green btn-sm no-print" onClick={handlePrintAll} title="Proforma/Invoice/Commercial/Packing Listを全て一括印刷">
           🖨️ 全書類一括印刷
@@ -1506,7 +1507,25 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 </div>
               ))}
             </div>
-                )}
+                )}{activeDoc==="delivery"&&(
+  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+      <div>
+        <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>DELIVERY NOTE</div>
+        {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>No. <strong>{invoice.invoiceNo}</strong></div>}
+        {invoice.date&&<div style={{fontSize:11,color:"#444"}}>Ship Date: <strong>{invoice.date}</strong></div>}
+      </div>
+      <div style={{textAlign:"right",fontSize:10}}>
+        {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
+        {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
+        {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
+        {org?.tel&&<div>Tel: {org.tel}</div>}
+      </div>
+    </div>
+    <div style={{height:2,background:"#000",marginBottom:16}}></div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+      <div>
+        <div style={{fontSize:9,fontWeight:700,textTr
               </>
             );
           })()}
