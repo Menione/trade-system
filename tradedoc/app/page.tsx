@@ -1381,12 +1381,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
                           {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="date" style={{border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
-                          <td style={{border:"none",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
+                          <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr><td colSpan={showExp?7:6} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
+                      <tr><td colSpan={showExp?6:5} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
                         TOTAL: {docCur} {fmt(items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
                       </td></tr>
                     </tfoot>
@@ -1533,6 +1533,20 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
         {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Due: </span>{invoice.paymentDue}</div>}
         {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Incoterms: </span>{invoice.incoterms}</div>}
         {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Shipping: </span>{invoice.shippingMethod}</div>}
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
+        <button className="btn btn-secondary" onClick={onBack}>← ④ Packing List に戻る</button>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn btn-amber btn-sm" onClick={()=>onSave("in_progress")}>💾 保存</button>
+          <button className="btn btn-primary" onClick={onNext}>⑥ 承認申請へ →</button>
+        </div>
+      </div>
+    </div>
+)}
+              </>
+            );
+          })()}
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
