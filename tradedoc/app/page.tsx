@@ -1525,10 +1525,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     <div style={{height:2,background:"#000",marginBottom:16}}></div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
       <div>
-        <div style={{fontSize:9,fontWeight:700,textTr
-              </>
-            );
-          })()}
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>CONSIGNEE</div>
+        <div style={{whiteSpace:"pre-wrap",fontSize:11}}>{invoice.consignee||"—"}</div>
+      </div>
+      <div style={{fontSize:11}}>
+        {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>P.O. No: </span><strong>{invoice.poNumber}</strong></div>}
+        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Due: </span>{invoice.paymentDue}</div>}
+        {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Incoterms: </span>{invoice.incoterms}</div>}
+        {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Shipping: </span>{invoice.shippingMethod}</div>}
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
