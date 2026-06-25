@@ -691,7 +691,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
                       <td><select className="input" value={item.currency||cur} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
                         {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
                       <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
-                      <td><input className="input" type="date" value={item.expiryDate||""} onChange={(e:any)=>upd(item.id,"expiryDate",e.target.value)}/></td>
+                      <td><input className="input" type="text" placeholder="YYYY/MM" value={item.expiryDate||""} onChange={(e:any)=>upd(item.id,"expiryDate",e.target.value)}/></td>
                       <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
                       <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
                     </tr>
@@ -989,6 +989,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   const addItem=(setList:any)=>
     setList((prev:any[])=>[...prev,{id:Date.now(),productName:"",hsCode:"",quantity:0,unitPrice:0}]);
 
+  const [printLang,setPrintLang]=useState(invoice.language||"ja");
   const updInvItem=(id:any,k:string,v:any)=>updItem(invoiceItems,setInvoiceItems,id,k,v);
   const delInvItem=(id:any)=>delItem(invoiceItems,setInvoiceItems,id);
   const addInvItem=()=>addItem(setInvoiceItems);
@@ -1349,9 +1350,17 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
           <button className={`tab ${activeDoc==="delivery"?"active":""}`} onClick={()=>setActiveDoc("delivery")}>🚚 Delivery Note</button>
         </div>
-        <button className="btn btn-green btn-sm no-print" onClick={handlePrintAll} title="Proforma/Invoice/Commercial/Packing Listを全て一括印刷">
-          🖨️ 全書類一括印刷
-        </button>
+        <div style={{display:"flex",gap:6,alignItems:"center"}} className="no-print">
+          <div style={{display:"flex",background:"#F0EEE9",borderRadius:8,padding:3,gap:2}}>
+            <button className={`btn btn-xs ${printLang==="ja"?"btn-primary":"btn-secondary"}`}
+              onClick={()=>setPrintLang("ja")} style={{padding:"3px 10px",fontSize:11}}>日本語</button>
+            <button className={`btn btn-xs ${printLang==="en"?"btn-primary":"btn-secondary"}`}
+              onClick={()=>setPrintLang("en")} style={{padding:"3px 10px",fontSize:11}}>EN</button>
+          </div>
+          <button className="btn btn-green btn-sm" onClick={handlePrintAll} title="全書類一括印刷">
+            🖨️ 全書類一括印刷
+          </button>
+        </div>
       </div>
       <div className="card">
         <div className="card-header no-print">
@@ -1380,7 +1389,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:50,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
-                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="date" style={{border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
+                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:72,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={it.expiryDate||""} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
                           <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                         </tr>
                       ))}
