@@ -1084,7 +1084,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   const handlePrint=()=>{
     const el=document.getElementById("print-area");
     if(!el)return;
-    <div style={{background:"#fff",padding:"0"}}>
+    const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
@@ -1357,8 +1357,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <div className="card-title">{activeDoc==="invoice"?(isProforma?"Proforma Invoice プレビュー":"Invoice プレビュー"):"Packing List プレビュー"}</div>
           <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ {t.print}</button>
         </div>
-        <div id="print-area" style={{background:"#e8e8e8",padding:"24px 0"}}>
-<div id="print-area" style={{background:"#fff",padding:"0"}}>
+        <div id="print-area" style={{background:"#fff",padding:"0"}}>
           {(()=>{
             const showExp=(invoiceItems||[]).some((it:any)=>it.expiryDate)||(commercialItems||[]).some((it:any)=>it.expiryDate);
             const editTable=(items:any[],updFn:any,delFn:any,addFn:any,showExp:boolean,remarks:string,setRemarks:any,docCur:string)=>(
