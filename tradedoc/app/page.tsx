@@ -1358,6 +1358,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ {t.print}</button>
         </div>
         <div id="print-area" style={{background:"#e8e8e8",padding:"24px 0"}}>
+<div id="print-area" style={{background:"#fff",padding:"0"}}>
           {(()=>{
             const showExp=(invoiceItems||[]).some((it:any)=>it.expiryDate)||(commercialItems||[]).some((it:any)=>it.expiryDate);
             const editTable=(items:any[],updFn:any,delFn:any,addFn:any,showExp:boolean,remarks:string,setRemarks:any,docCur:string)=>(
