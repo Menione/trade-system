@@ -1065,7 +1065,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   if(packingPages.length===0)packingPages.push([]);
 
   const printStyle=`
-    @page{margin:15mm}
+    @page{margin:15mm;size:A4;margin-top:10mm;margin-bottom:10mm}
+    @page{-webkit-margin-before:0;-webkit-margin-after:0}
+    html{-webkit-print-color-adjust:exact}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
     body{font-family:sans-serif;font-size:10px;color:#000}
     table{width:100%;border-collapse:collapse}
@@ -1095,7 +1097,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     if(!el)return;
     const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>@page{margin:10mm;size:A4}@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
@@ -1243,7 +1245,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const commercialSection=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
     const packingSection=buildPackingSection();
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
-    <style>*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
+    <style>@page{margin:10mm;size:A4}@media print{html,body{margin:0 !important;padding:0 !important}} *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
     <body><div class="doc-wrapper">
       ${proformaSection}
       ${invoiceSection}
