@@ -1074,9 +1074,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     body{font-family:sans-serif;font-size:10px;color:#000}
     table{width:100%;border-collapse:collapse}
     th,td{border:1px solid #ccc;padding:4px 6px}
-    th{border:1px solid #444 !important;font-size:10px;font-weight:700;padding:8px 10px;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+    th{border:1px solid #444 !important;font-size:10px;font-weight:700;padding:8px 10px;background:#444 !important;color:#fff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
     td{background:#fff !important;color:#000 !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
     tr:nth-child(even) td{background:#fff !important}
+    tbody tr td{background:#fff !important;}
     .pdf-header{margin-bottom:12px}
     .pdf-title{font-size:26px;font-weight:800;letter-spacing:3px;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:16px}
     .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
@@ -1176,13 +1177,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             </div>
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
-            <thead><tr style="background:#222;color:#fff">
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:left">Description</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:left">HS Code</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:60px">Qty</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:90px">Unit Price</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:100px">Amount</th>
-              ${showExp?`<th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;width:90px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
+            <thead><tr style="background:#444;color:#fff">
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:left">Description</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:left">HS Code</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:60px">Qty</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:90px">Unit Price</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:100px">Amount</th>
+              ${showExp?`<th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;width:90px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr><td colspan="${showExp?6:5}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">TOTAL: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
@@ -1209,22 +1210,22 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       });
       const rows=flatRows.map(({row,line,li,rs})=>{
         if(!line)return `<tr>
-          <td style="border:1px solid #ccc;padding:5px 8px;text-align:center;vertical-align:middle">${row.cartonNo}</td>
-          <td style="border:1px solid #ccc;padding:5px 8px"></td>
-          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right"></td>
-          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right">${row.grossWeight}</td>
-          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right">${row.netWeight}</td>
-          <td style="border:1px solid #ccc;padding:5px 8px">${row.dimensions}</td>
-          ${hasExpiryPrint?`<td style="border:1px solid #ccc;padding:5px 8px"></td>`:""}
+          <td style="border:1px solid #ccc;padding:5px 8px;text-align:center;vertical-align:middle;background:#fff">${row.cartonNo}</td>
+          <td style="border:1px solid #ccc;padding:5px 8px;background:#fff"></td>
+          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right;background:#fff"></td>
+          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right;background:#fff">${row.grossWeight}</td>
+          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right;background:#fff">${row.netWeight}</td>
+          <td style="border:1px solid #ccc;padding:5px 8px;background:#fff">${row.dimensions}</td>
+          ${hasExpiryPrint?`<td style="border:1px solid #ccc;padding:5px 8px;background:#fff"></td>`:""}
         </tr>`;
         return `<tr>
-          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;text-align:center;vertical-align:middle;font-weight:600">${row.cartonNo}</td>`:""}
-          <td style="border:1px solid #ccc;padding:5px 8px">${line.productName}</td>
-          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right">${line.quantity}</td>
-          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;text-align:right;vertical-align:middle">${row.grossWeight}</td>`:""}
-          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;text-align:right;vertical-align:middle">${row.netWeight}</td>`:""}
-          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;vertical-align:middle">${row.dimensions}</td>`:""}
-          ${hasExpiryPrint?`<td style="border:1px solid #ccc;padding:5px 8px">${fmtExpiry(line.expiryDate||"")}</td>`:""}
+          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;text-align:center;vertical-align:middle;font-weight:600;background:#fff">${row.cartonNo}</td>`:""}
+          <td style="border:1px solid #ccc;padding:5px 8px;background:#fff">${line.productName}</td>
+          <td style="border:1px solid #ccc;padding:5px 8px;text-align:right;background:#fff">${line.quantity}</td>
+          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;text-align:right;vertical-align:middle;background:#fff">${row.grossWeight}</td>`:""}
+          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;text-align:right;vertical-align:middle;background:#fff">${row.netWeight}</td>`:""}
+          ${li===0?`<td rowspan="${rs}" style="border:1px solid #ccc;padding:5px 8px;vertical-align:middle;background:#fff">${row.dimensions}</td>`:""}
+          ${hasExpiryPrint?`<td style="border:1px solid #ccc;padding:5px 8px;background:#fff">${fmtExpiry(line.expiryDate||"")}</td>`:""}
         </tr>`;
       }).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
@@ -1245,14 +1246,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           </div>
           <div style="height:2px;background:#000;margin-bottom:20px"></div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
-            <thead><tr style="background:#222;color:#fff">
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;width:80px;text-align:center">Carton No</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700">Description</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:60px">Qty</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:80px">G.W.(kg)</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:80px">N.W.(kg)</th>
-              <th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700;width:100px">Dimensions</th>
-              ${packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate))?`<th style="background:#222;color:#fff;border:1px solid #444;padding:8px 10px;font-size:10px;font-weight:700">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
+            <thead><tr style="background:#444;color:#fff">
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;width:80px;text-align:center">Carton No</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700">Description</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:60px">Qty</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:80px">G.W.(kg)</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;text-align:right;width:80px">N.W.(kg)</th>
+              <th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700;width:100px">Dimensions</th>
+              ${packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate))?`<th style="background:#444;color:#fff;border:1px solid #666;padding:8px 10px;font-size:10px;font-weight:700">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
@@ -1422,13 +1423,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             const editTable=(items:any[],updFn:any,delFn:any,addFn:any,showExp:boolean,remarks:string,setRemarks:any,docCur:string)=>(
                 <>
                   <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
-                    <thead><tr style={{borderBottom:"2px solid #000"}}>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"left"}}>Description of Goods</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"left"}}>HS Code</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:60}}>Qty</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:90}}>Unit Price</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:100}}>Amount</th>
-                      {showExp&&<th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:90}}>Expiry</th>}
+                    <thead><tr style={{background:"#444",color:"#fff"}}>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"left",background:"#444",color:"#fff"}}>Description of Goods</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"left",background:"#444",color:"#fff"}}>HS Code</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:60,background:"#444",color:"#fff"}}>Qty</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:90,background:"#444",color:"#fff"}}>Unit Price</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:100,background:"#444",color:"#fff"}}>Amount</th>
+                      {showExp&&<th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:90,background:"#444",color:"#fff"}}>Expiry</th>}
                       </tr></thead>
                     <tbody>
                       {items.map((it:any,i:number)=>(
@@ -1524,14 +1525,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 <div key={pi} className={pi<packingPages.length-1?"pdf-page":""}>
                   <PackingHeader/>
                   <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
-                    <thead><tr style={{borderBottom:"2px solid #000"}}>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80,textAlign:"center"}}>{printLang==="en"?"Carton No":"番号"}</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700}}>{printLang==="en"?"Description":"商品 & 詳細"}</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:60}}>Qty</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:80}}>{printLang==="en"?"G.W.(kg)":"総重量(kg)"}</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:80}}>{printLang==="en"?"N.W.(kg)":"正味重量(kg)"}</th>
-                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:100}}>Dimensions(cm)</th>
-                      {packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate))&&<th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700}}>{printLang==="en"?"Expiry":"賞味/使用期限"}</th>}
+                    <thead><tr style={{background:"#444",color:"#fff"}}>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80,textAlign:"center",background:"#444",color:"#fff"}}>{printLang==="en"?"Carton No":"番号"}</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,background:"#444",color:"#fff"}}>{printLang==="en"?"Description":"商品 & 詳細"}</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:60,background:"#444",color:"#fff"}}>Qty</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:80,background:"#444",color:"#fff"}}>{printLang==="en"?"G.W.(kg)":"総重量(kg)"}</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:80,background:"#444",color:"#fff"}}>{printLang==="en"?"N.W.(kg)":"正味重量(kg)"}</th>
+                      <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:100,background:"#444",color:"#fff"}}>Dimensions(cm)</th>
+                      {packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate))&&<th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,background:"#444",color:"#fff"}}>{printLang==="en"?"Expiry":"賞味/使用期限"}</th>}
                     </tr></thead>
                     <tbody>
                       {pageRows.map((row:any,i:number)=>{
@@ -1539,22 +1540,28 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               const rowspan=lines.length||1;
               const hasExpiry=packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate));
               if(lines.length===0) return(
-                <tr key={i}>
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{row.cartonNo}</td>
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}></td>
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
-                  {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
+                <tr key={i} style={{background:"#fff"}}>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",background:"#fff"}}>{row.cartonNo}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",background:"#fff"}}></td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",background:"#fff"}}></td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",background:"#fff"}}>{row.grossWeight}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",background:"#fff"}}>{row.netWeight}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",background:"#fff"}}>{row.dimensions}</td>
+                  {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px",background:"#fff"}}></td>}
                 </tr>
               );
               return lines.map((line:any,li:number)=>(
-                <tr key={`${i}-${li}`}>
-                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{line.productName}</td>
-                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{line.quantity}</td>
-                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"mi
+                <tr key={`${i}-${li}`} style={{background:"#fff"}}>
+                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle",background:"#fff",fontWeight:600}}>{row.cartonNo}</td>}
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",background:"#fff"}}>{line.productName}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",background:"#fff"}}>{line.quantity}</td>
+                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle",background:"#fff"}}>{row.grossWeight}</td>}
+                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle",background:"#fff"}}>{row.netWeight}</td>}
+                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",verticalAlign:"middle",background:"#fff"}}>{row.dimensions}</td>}
+                  {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px",background:"#fff"}}>{fmtExpiry(line.expiryDate||"")}</td>}
+                </tr>
+              ));
+            })}
                     </tbody>
                     {pi===packingPages.length-1&&(
                       <tfoot>
@@ -1607,13 +1614,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     </div>
     {/* 品目テーブル（編集可） */}
     <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
-      <thead><tr style={{borderBottom:"2px solid #000"}}>
-        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"left"}}>Description</th>
-        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:50}}>Qty</th>
-        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:90}}>Unit Price</th>
-        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:100}}>Amount</th>
-        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80}}>Lot No.</th>
-        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80}}>Expiry</th>
+      <thead><tr style={{background:"#444",color:"#fff"}}>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"left",background:"#444",color:"#fff"}}>Description</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:50,background:"#444",color:"#fff"}}>Qty</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:90,background:"#444",color:"#fff"}}>Unit Price</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:100,background:"#444",color:"#fff"}}>Amount</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80,background:"#444",color:"#fff"}}>Lot No.</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80,background:"#444",color:"#fff"}}>Expiry</th>
         <th style={{border:"none",width:28}} className="no-print"></th>
       </tr></thead>
       <tbody>
