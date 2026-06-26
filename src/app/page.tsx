@@ -765,54 +765,71 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
     if(!invoice.items?.length)return;
     const newCartons:any[]=[];
     let cartonNo=1;
+
+    // cartons_per_box設定済みの品目：品目ごとにカートン分割
+    // cartons_per_box未設定の品目：全品目をまとめて1カートン（混載）
+    const itemsWithBox:any[]=[];
+    const itemsNoBox:any[]=[];
     invoice.items.forEach((item:any)=>{
-      // 製品マスタからcartons_per_boxを取得
       const masterProduct=products.find((p:any)=>p.name===item.productName);
       const perBox=masterProduct?.cartons_per_box?Number(masterProduct.cartons_per_box):0;
+      if(perBox>0){itemsWithBox.push({item,masterProduct,perBox});}
+      else{itemsNoBox.push({item,masterProduct});}
+    });
+
+    // cartons_per_box設定済み品目：品目ごとにカートン作成
+    itemsWithBox.forEach(({item,masterProduct,perBox})=>{
       const netW=masterProduct?.net_weight_per_unit?Number(masterProduct.net_weight_per_unit):0;
       const grossW=masterProduct?.weight?Number(masterProduct.weight):0;
       const totalQty=Number(item.quantity||0);
-
-      if(perBox>0){
-        // 割り切れる分のカートンを作成
-        const fullCartons=Math.floor(totalQty/perBox);
-        const fraction=totalQty%perBox;
-        for(let i=0;i<fullCartons;i++){
-          newCartons.push({
-            id:Date.now()+cartonNo,
-            cartonNo:cartonNo++,
-            grossWeight:perBox>0&&grossW>0?(perBox*grossW).toFixed(3):"",
-            netWeight:perBox>0&&netW>0?(perBox*netW).toFixed(3):"",
-            dimL:"",dimW:"",dimH:"",
-            lines:[{id:Date.now()+cartonNo+100,productName:item.productName,quantity:perBox}],
-            isFraction:false,
-          });
-        }
-        // 端数カートン
-        if(fraction>0){
-          newCartons.push({
-            id:Date.now()+cartonNo,
-            cartonNo:cartonNo++,
-            grossWeight:grossW>0?(fraction*grossW).toFixed(3):"",
-            netWeight:netW>0?(fraction*netW).toFixed(3):"",
-            dimL:"",dimW:"",dimH:"",
-            lines:[{id:Date.now()+cartonNo+100,productName:item.productName,quantity:fraction}],
-            isFraction:true,
-          });
-        }
-      } else {
-        // cartons_per_box未設定の場合は1カートンにまとめる
+      const fullCartons=Math.floor(totalQty/perBox);
+      const fraction=totalQty%perBox;
+      for(let i=0;i<fullCartons;i++){
         newCartons.push({
-          id:Date.now()+cartonNo,
-          cartonNo:cartonNo++,
-          grossWeight:grossW>0?(totalQty*grossW).toFixed(3):"",
-          netWeight:netW>0?(totalQty*netW).toFixed(3):"",
+          id:Date.now()+cartonNo,cartonNo:cartonNo++,
+          grossWeight:grossW>0?(perBox*grossW).toFixed(3):"",
+          netWeight:netW>0?(perBox*netW).toFixed(3):"",
           dimL:"",dimW:"",dimH:"",
-          lines:[{id:Date.now()+cartonNo+100,productName:item.productName,quantity:totalQty}],
+          lines:[{id:Date.now()+cartonNo+100,productName:item.productName,quantity:perBox}],
           isFraction:false,
         });
       }
+      if(fraction>0){
+        newCartons.push({
+          id:Date.now()+cartonNo,cartonNo:cartonNo++,
+          grossWeight:grossW>0?(fraction*grossW).toFixed(3):"",
+          netWeight:netW>0?(fraction*netW).toFixed(3):"",
+          dimL:"",dimW:"",dimH:"",
+          lines:[{id:Date.now()+cartonNo+100,productName:item.productName,quantity:fraction}],
+          isFraction:true,
+        });
+      }
     });
+
+    // cartons_per_box未設定品目：全品目を1カートンにまとめる（混載）
+    if(itemsNoBox.length>0){
+      const totalGrossW=itemsNoBox.reduce((s:number,{item,masterProduct}:any)=>{
+        const grossW=masterProduct?.weight?Number(masterProduct.weight):0;
+        return s+grossW*Number(item.quantity||0);
+      },0);
+      const totalNetW=itemsNoBox.reduce((s:number,{item,masterProduct}:any)=>{
+        const netW=masterProduct?.net_weight_per_unit?Number(masterProduct.net_weight_per_unit):0;
+        return s+netW*Number(item.quantity||0);
+      },0);
+      newCartons.push({
+        id:Date.now()+cartonNo,cartonNo:cartonNo++,
+        grossWeight:totalGrossW>0?totalGrossW.toFixed(3):"",
+        netWeight:totalNetW>0?totalNetW.toFixed(3):"",
+        dimL:"",dimW:"",dimH:"",
+        lines:itemsNoBox.map(({item}:any,li:number)=>({
+          id:Date.now()+cartonNo+200+li,
+          productName:item.productName,
+          quantity:Number(item.quantity||0),
+        })),
+        isFraction:false,
+      });
+    }
+
     setPacking(newCartons);
   };
 
@@ -1021,18 +1038,26 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
 
   // カートンを行に展開（rowspan用：カートン単位でグループ化）
   // packingRows = カートン1つ＝1グループ、各グループにlines[]を持つ
-  const packingRows:any[]=packing.map((carton:any)=>({
-    cartonNo:carton.cartonNo,
-    grossWeight:Number(carton.grossWeight||0).toFixed(2),
-    netWeight:Number(carton.netWeight||0).toFixed(2),
-    dimensions:[carton.dimL,carton.dimW,carton.dimH].every(Boolean)?`${carton.dimL}x${carton.dimW}x${carton.dimH}`:"—",
-    isFraction:carton.isFraction,
-    lines:(carton.lines||[]).map((l:any)=>({
+  // 旧データ互換：linesがない場合はcartonのproductName/quantityをlinesに変換
+  const packingRows:any[]=packing.map((carton:any)=>{
+    let lines=(carton.lines||[]).map((l:any)=>({
       productName:l.productName||"",
       quantity:l.quantity||0,
       expiryDate:l.expiryDate||"",
-    })),
-  }));
+    }));
+    // 旧データ互換：linesが空でcarton直接にproductNameがある場合
+    if(lines.length===0&&carton.productName){
+      lines=[{productName:carton.productName,quantity:carton.quantity||0,expiryDate:carton.expiryDate||""}];
+    }
+    return {
+      cartonNo:carton.cartonNo,
+      grossWeight:Number(carton.grossWeight||0).toFixed(2),
+      netWeight:Number(carton.netWeight||0).toFixed(2),
+      dimensions:[carton.dimL,carton.dimW,carton.dimH].every(Boolean)?`${carton.dimL}x${carton.dimW}x${carton.dimH}`:"—",
+      isFraction:carton.isFraction,
+      lines,
+    };
+  });
 
   const ROWS_PER_PAGE=15;
   const packingPages:any[][]=[];
