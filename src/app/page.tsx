@@ -1109,7 +1109,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
       const rows=items.map((it:any,i:number)=>`
-        <tr style="background:${i%2===0?"#ffffff":"#f5f5f5"}">
+        <tr>
           <td style="border:1px solid #ddd;padding:4px 6px">${it.productName||""}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;font-family:monospace">${it.hsCode||""}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
@@ -1578,18 +1578,18 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     </div>
     {/* 品目テーブル（編集可） */}
     <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
-      <thead><tr style={{background:"#222",color:"#fff"}}>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:50}}>Qty</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Lot No.</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Expiry</th>
+      <thead><tr style={{borderBottom:"2px solid #000"}}>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"left"}}>Description</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:50}}>Qty</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:90}}>Unit Price</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,textAlign:"right",width:100}}>Amount</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80}}>Lot No.</th>
+        <th style={{border:"1px solid #666",padding:"6px 8px",fontSize:10,fontWeight:700,width:80}}>Expiry</th>
         <th style={{border:"none",width:28}} className="no-print"></th>
       </tr></thead>
       <tbody>
         {invoiceItems.map((it:any,i:number)=>(
-          <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
+          <tr key={it.id||i}>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updInvItem(it.id,"unitPrice",e.target.value)}/></td>
