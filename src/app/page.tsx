@@ -1506,31 +1506,26 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     </tr></thead>
                     <tbody>
                       {pageRows.map((row:any,i:number)=>{
-                        const lines=row.lines||[];
-                        const rowspan=lines.length||1;
-                        const hasExpiry=packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate));
-                        return lines.length===0?(
-                          <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{row.cartonNo}</td>
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}></td>
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
-                            {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
-                          </tr>
-                        ):lines.map((line:any,li:number)=>(
-                          <tr key={`${i}-${li}`} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
-                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{line.productName}</td>
-                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{line.quantity}</td>
-                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{row.grossWeight}</td>}
-                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{row.netWeight}</td>}
-                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",verticalAlign:"middle"}}>{row.dimensions}</td>}
-                            {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{fmtExpiry(line.expiryDate||"")}</td>}
-                          </tr>
-                        ));
-                      })}
+              const lines=row.lines||[];
+              const rowspan=lines.length||1;
+              const hasExpiry=packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate));
+              if(lines.length===0) return(
+                <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{row.cartonNo}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}></td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
+                  {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
+                </tr>
+              );
+              return lines.map((line:any,li:number)=>(
+                <tr key={`${i}-${li}`} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
+                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{line.productName}</td>
+                  <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{line.quantity}</td>
+                  {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"mi
                     </tbody>
                     {pi===packingPages.length-1&&(
                       <tfoot>
