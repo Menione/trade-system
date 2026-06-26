@@ -493,13 +493,24 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
   const cur=invoice.currency||"JPY";
 
   const applyCustomer=(c:any)=>{
-    setInvoice((v:any)=>({...v,
-      consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
-      shipTo:c.consignee_name?[c.consignee_name,c.consignee_address].filter(Boolean).join("\n"):v.shipTo,
-      currency:c.currency||v.currency,
-      incoterms:c.incoterms||v.incoterms,
-      remarks:c.remarks?((v.remarks?v.remarks+"\n":"")+c.remarks):v.remarks,
-    }));
+    setInvoice((v:any)=>{
+      // 特別価格を既存品目に反映
+      const specialPrices:any[]=(c.special_prices||[]);
+      const updatedItems=(v.items||[]).map((it:any)=>{
+        if(!it.productName)return it;
+        const sp=specialPrices.find((s:any)=>s.productName&&it.productName&&s.productName.trim()===it.productName.trim());
+        return sp?{...it,unitPrice:sp.unitPrice,currency:sp.currency||c.currency||it.currency}:it;
+      });
+      return{...v,
+        consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
+        shipTo:c.consignee_name?[c.consignee_name,c.consignee_address].filter(Boolean).join("\n"):v.shipTo,
+        currency:c.currency||v.currency,
+        incoterms:c.incoterms||v.incoterms,
+        remarks:c.remarks?((v.remarks?v.remarks+"\n":"")+c.remarks):v.remarks,
+        items:updatedItems,
+        _selectedCustomer:c,
+      };
+    });
   };
 
   const applyShipTo=(c:any)=>{
@@ -509,10 +520,13 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
   };
 
   const applyProduct=(p:any,itemId:number)=>{
+    // 選択中の得意先に特別価格があれば優先
+    const customer=invoice._selectedCustomer;
+    const sp=(customer?.special_prices||[]).find((s:any)=>s.productName&&s.productName.trim()===p.name.trim());
     upd(itemId,"productName",p.name);
     upd(itemId,"hsCode",p.hs_code||"");
-    upd(itemId,"unitPrice",p.unit_price||"");
-    upd(itemId,"currency",p.currency||cur);
+    upd(itemId,"unitPrice",sp?sp.unitPrice:p.unit_price||"");
+    upd(itemId,"currency",sp?sp.currency||cur:p.currency||cur);
     upd(itemId,"countryOfOrigin",p.country_of_origin||invoice.countryOfOrigin||"");
   };
 
@@ -1712,7 +1726,7 @@ function CustomerPage({onCustomersChange}:any){
   const [loading,setLoading]=useState(true);
   const [showForm,setShowForm]=useState(false);
   const [editId,setEditId]=useState<string|null>(null);
-  const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:""};
+  const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:"",special_prices:[]};
   const [form,setForm]=useState<any>(empty);
 
   const onCustomersChangeRef=useRef(onCustomersChange);
@@ -1738,7 +1752,7 @@ function CustomerPage({onCustomersChange}:any){
   };
 
   const startEdit=(c:any)=>{
-    setForm({name:c.name||"",address:c.address||"",consignee_name:c.consignee_name||"",consignee_address:c.consignee_address||"",country:c.country||"Japan",currency:c.currency||"JPY",incoterms:c.incoterms||"",contact:c.contact||"",email:c.email||"",remarks:c.remarks||""});
+    setForm({name:c.name||"",address:c.address||"",consignee_name:c.consignee_name||"",consignee_address:c.consignee_address||"",country:c.country||"Japan",currency:c.currency||"JPY",incoterms:c.incoterms||"",contact:c.contact||"",email:c.email||"",remarks:c.remarks||"",special_prices:c.special_prices||[]});
     setEditId(c.id);setShowForm(true);
   };
 
@@ -1792,6 +1806,24 @@ function CustomerPage({onCustomersChange}:any){
               <label className="label">備考（Invoiceに反映）</label>
               <textarea className="input" rows={2} value={form.remarks} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,remarks:e.target.value}))}/>
             </div>
+            {/* 特別価格 */}
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:12,fontWeight:600,color:"var(--purple)",marginBottom:8}}>💰 製品別特別価格（Proforma入力時に自動反映）</div>
+              {(form.special_prices||[]).length===0&&(
+                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:6}}>未設定（製品マスタの標準価格が使用されます）</div>
+              )}
+              {(form.special_prices||[]).map((sp:any,idx:number)=>(
+                <div key={idx} style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
+                  <input className="input" style={{flex:2}} placeholder="製品名" value={sp.productName||""} onChange={(e:any)=>{const arr=[...(form.special_prices||[])];arr[idx]={...arr[idx],productName:e.target.value};setForm((v:any)=>({...v,special_prices:arr}));}}/>
+                  <input className="input" style={{flex:1,textAlign:"right"}} type="number" placeholder="単価" value={sp.unitPrice||""} onChange={(e:any)=>{const arr=[...(form.special_prices||[])];arr[idx]={...arr[idx],unitPrice:e.target.value};setForm((v:any)=>({...v,special_prices:arr}));}}/>
+                  <select className="input" style={{flex:1}} value={sp.currency||form.currency||"JPY"} onChange={(e:any)=>{const arr=[...(form.special_prices||[])];arr[idx]={...arr[idx],currency:e.target.value};setForm((v:any)=>({...v,special_prices:arr}));}}>
+                    {["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"].map((c:string)=><option key={c}>{c}</option>)}
+                  </select>
+                  <button className="btn btn-danger btn-xs" onClick={()=>{const arr=(form.special_prices||[]).filter((_:any,i:number)=>i!==idx);setForm((v:any)=>({...v,special_prices:arr}));}}>✕</button>
+                </div>
+              ))}
+              <button className="btn btn-secondary btn-xs" style={{marginTop:2}} onClick={()=>setForm((v:any)=>({...v,special_prices:[...(v.special_prices||[]),{productName:"",unitPrice:"",currency:v.currency||"JPY"}]}))}>＋ 特別価格を追加</button>
+            </div>
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
@@ -1824,6 +1856,11 @@ function CustomerPage({onCustomersChange}:any){
               </div>
             )}
             {c.remarks&&<div style={{marginTop:5,fontSize:11,color:"var(--text-muted)"}}>備考: {c.remarks}</div>}
+            {(c.special_prices||[]).length>0&&(
+              <div style={{marginTop:5,fontSize:11,color:"var(--purple)",fontWeight:500}}>
+                💰 特別価格: {(c.special_prices||[]).map((sp:any)=>`${sp.productName} → ${sp.currency} ${Number(sp.unitPrice).toLocaleString()}`).join(" / ")}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -2652,6 +2689,7 @@ export default function App(){
       language:h.language||"ja",approvalStatus:h.approval_status||"draft",
       trackingNumber:h.tracking_number||"",paymentConfirmed:h.payment_confirmed||false,
       items:h.items||[],
+      _selectedCustomer:null,
       invoice_items:h.invoice_items||[],
       commercial_items:h.commercial_items||[],
       invoice_remarks:h.invoice_remarks||"",
