@@ -1204,17 +1204,19 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       const totNW=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2);
       return `
         <div style="background:#fff;width:794px;margin:0 auto;padding:40px 50px;font-size:11px;color:#000">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
-            <div><div style="font-size:32px;font-weight:800;letter-spacing:2px">PACKING LIST</div>
-            ${invoice.invoiceNo?`<div style="font-size:11px;color:#444">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+            <div>
+              <div style="font-size:36px;font-weight:900;letter-spacing:3px;text-transform:uppercase">PACKING LIST</div>
+              ${invoice.invoiceNo?`<div style="font-size:11px;color:#444;margin-top:4px">No. <strong>${invoice.invoiceNo}</strong></div>`:""}
             </div>
             <div style="text-align:right;font-size:10px">
-              ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:60px;max-width:200px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto"/>`:""}
+              ${org?.logoBase64?`<img src="${org.logoBase64}" style="max-height:70px;max-width:220px;object-fit:contain;margin-bottom:6px;display:block;margin-left:auto"/>`:""}
               ${org?.companyName?`<div style="font-weight:700;font-size:12px">${org.companyName}</div>`:""}
-              ${org?.address?`<div style="white-space:pre-wrap">${org.address}</div>`:""}
+              ${org?.address?`<div style="white-space:pre-wrap;font-size:10px">${org.address}</div>`:""}
+              ${org?.tel?`<div style="font-size:10px">Tel: ${org.tel}</div>`:""}
             </div>
           </div>
-          <div style="height:2px;background:#000;margin-bottom:16px"></div>
+          <div style="height:2px;background:#000;margin-bottom:20px"></div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">Carton No</th>
