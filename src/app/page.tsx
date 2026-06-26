@@ -1,4 +1,4 @@
-"use client"; // v2
+"use client";
 
 async function signIn(email:string,password:string){
   const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
@@ -1719,6 +1719,36 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
 }
 
 // ============================================================
+// SPECIAL PRICES EDITOR
+// ============================================================
+function SpecialPricesEditor({prices,currency,onChange}:any){
+  const list:any[]=Array.isArray(prices)?prices:[];
+  const upd=(idx:number,field:string,val:string)=>{
+    const arr=list.map((sp:any,i:number)=>i===idx?{...sp,[field]:val}:sp);
+    onChange(arr);
+  };
+  const add=()=>onChange([...list,{productName:"",unitPrice:"",currency:currency||"JPY"}]);
+  const remove=(idx:number)=>onChange(list.filter((_:any,i:number)=>i!==idx));
+  return(
+    <div style={{marginBottom:10,padding:"10px 14px",background:"var(--purple-light)",borderRadius:"var(--radius-lg)"}}>
+      <div style={{fontSize:12,fontWeight:600,color:"var(--purple)",marginBottom:8}}>💰 製品別特別価格（Proforma入力時に自動反映）</div>
+      {list.length===0&&<div style={{fontSize:12,color:"var(--text-muted)",marginBottom:6}}>未設定（製品マスタの標準価格が使用されます）</div>}
+      {list.map((sp:any,idx:number)=>(
+        <div key={idx} style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
+          <input className="input" style={{flex:2}} placeholder="製品名" value={sp.productName||""} onChange={(e:any)=>upd(idx,"productName",e.target.value)}/>
+          <input className="input" style={{flex:1,textAlign:"right" as any}} type="number" placeholder="単価" value={sp.unitPrice||""} onChange={(e:any)=>upd(idx,"unitPrice",e.target.value)}/>
+          <select className="input" style={{flex:1}} value={sp.currency||currency||"JPY"} onChange={(e:any)=>upd(idx,"currency",e.target.value)}>
+            {["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"].map((c:string)=><option key={c}>{c}</option>)}
+          </select>
+          <button className="btn btn-danger btn-xs" onClick={()=>remove(idx)}>✕</button>
+        </div>
+      ))}
+      <button className="btn btn-secondary btn-xs" style={{marginTop:2}} onClick={add}>＋ 特別価格を追加</button>
+    </div>
+  );
+}
+
+// ============================================================
 // CUSTOMER MASTER
 // ============================================================
 function CustomerPage({onCustomersChange}:any){
@@ -1807,23 +1837,11 @@ function CustomerPage({onCustomersChange}:any){
               <textarea className="input" rows={2} value={form.remarks} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,remarks:e.target.value}))}/>
             </div>
             {/* 特別価格 */}
-            <div style={{marginBottom:10}}>
-              <div style={{fontSize:12,fontWeight:600,color:"var(--purple)",marginBottom:8}}>💰 製品別特別価格（Proforma入力時に自動反映）</div>
-              {(form.special_prices||[]).length===0&&(
-                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:6}}>未設定（製品マスタの標準価格が使用されます）</div>
-              )}
-              {(form.special_prices||[]).map((sp:any,idx:number)=>(
-                <div key={idx} style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
-                  <input className="input" style={{flex:2}} placeholder="製品名" value={sp.productName||""} onChange={(e:any)=>{const arr=[...(form.special_prices||[])];arr[idx]={...arr[idx],productName:e.target.value};setForm((v:any)=>({...v,special_prices:arr}));}}/>
-                  <input className="input" style={{flex:1,textAlign:"right"}} type="number" placeholder="単価" value={sp.unitPrice||""} onChange={(e:any)=>{const arr=[...(form.special_prices||[])];arr[idx]={...arr[idx],unitPrice:e.target.value};setForm((v:any)=>({...v,special_prices:arr}));}}/>
-                  <select className="input" style={{flex:1}} value={sp.currency||form.currency||"JPY"} onChange={(e:any)=>{const arr=[...(form.special_prices||[])];arr[idx]={...arr[idx],currency:e.target.value};setForm((v:any)=>({...v,special_prices:arr}));}}>
-                    {["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"].map((c:string)=><option key={c}>{c}</option>)}
-                  </select>
-                  <button className="btn btn-danger btn-xs" onClick={()=>{const arr=(form.special_prices||[]).filter((_:any,i:number)=>i!==idx);setForm((v:any)=>({...v,special_prices:arr}));}}>✕</button>
-                </div>
-              ))}
-              <button className="btn btn-secondary btn-xs" style={{marginTop:2}} onClick={()=>setForm((v:any)=>({...v,special_prices:[...(v.special_prices||[]),{productName:"",unitPrice:"",currency:v.currency||"JPY"}]}))}>＋ 特別価格を追加</button>
-            </div>
+            <SpecialPricesEditor
+              prices={Array.isArray(form.special_prices)?form.special_prices:[]}
+              currency={form.currency||"JPY"}
+              onChange={(prices:any[])=>setForm((v:any)=>({...v,special_prices:prices}))}
+            />
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
