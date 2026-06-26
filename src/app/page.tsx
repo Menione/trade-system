@@ -1095,18 +1095,27 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   `;
 
   const handlePrint=()=>{
-    const el=document.getElementById("print-area");
-    if(!el)return;
     const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>@page{margin:10mm;size:A4}@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    const style=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{margin:10mm;size:A4}${printStyle}</style></head><body style="background:#fff;margin:0;padding:0">`;
+    if(activeDoc==="packing"){
+      const html=buildPackingSection();
+      w.document.write(`${style}${html}</body></html>`);
+    }else{
+      const isProformaDoc=activeDoc==="proforma";
+      const isCommercial=activeDoc==="commercial";
+      const items=isCommercial?commercialItems:invoiceItems;
+      const remarks=isCommercial?commercialRemarks:invoiceRemarks;
+      const title=isProformaDoc?"PROFORMA INVOICE":isCommercial?"COMMERCIAL INVOICE":"INVOICE";
+      const html=buildInvoiceSection(title,items,remarks,true);
+      w.document.write(`${style}${html}</body></html>`);
+    }
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
 
-  // 全書類（Proforma/Invoice/Commercial/Packing List）を一括で印刷
-  const handlePrintAll=()=>{
-    const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
+  // 印刷用HTML生成関数（handlePrint / handlePrintAll 共通）
+  const buildInvoiceSection=(title:string,items:any[],remarks:string,showBank:boolean)=>{
       const showExp=items.some((it:any)=>it.expiryDate);
       const rows=items.map((it:any,i:number)=>`
         <tr>
@@ -1181,9 +1190,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           ${bankSection}
           ${sigSection}
         </div>`;
-    };
+  };
 
-    const buildPackingSection=()=>{
+  const buildPackingSection=()=>{
       const hasExpiryPrint=packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate));
       const rows=packingRows.map((row:any)=>{
         const lines=row.lines||[];
@@ -1246,8 +1255,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             </div>
           </div>
         </div>`;
-    };
+  };
 
+  // 全書類（Proforma/Invoice/Commercial/Packing List）を一括で印刷
+  const handlePrintAll=()=>{
     const w=window.open("","_blank","width=1100,height=1400");
     if(!w)return;
     const proformaSection=isProforma?buildInvoiceSection("PROFORMA INVOICE",invoiceItems,invoiceRemarks,true):"";
