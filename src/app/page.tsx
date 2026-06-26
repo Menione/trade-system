@@ -1,4 +1,4 @@
-"use client";
+"use client"; // v2
 
 async function signIn(email:string,password:string){
   const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
