@@ -1019,57 +1019,20 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   const delComItem=(id:any)=>delItem(commercialItems,setCommercialItems,id);
   const addComItem=()=>addItem(setCommercialItems);
 
-  // カートンを行に展開
-  // 同じ製品・同じ数量の連続カートンをグループ化してCarton No範囲表示
-  const packingRowsRaw:any[]=[];
-  packing.forEach((carton:any)=>{
-    const lines=carton.lines||[];
-    lines.forEach((line:any,li:number)=>{
-      packingRowsRaw.push({
-        cartonNo:carton.cartonNo,
-        productName:line.productName,
-        quantity:line.quantity,
-        grossWeight:Number(carton.grossWeight||0),
-        netWeight:Number(carton.netWeight||0),
-        dimL:carton.dimL,dimW:carton.dimW,dimH:carton.dimH,
-        isFirst:li===0,
-        isFraction:carton.isFraction,
-        expiryDate:line.expiryDate||"",
-      });
-    });
-  });
-
-  // グループ化：同製品・同数量・同重量・連続カートンをまとめる
-  const packingRows:any[]=[];
-  let gi=0;
-  while(gi<packingRowsRaw.length){
-    const cur=packingRowsRaw[gi];
-    let end=gi;
-    // 連続する同じ製品・同数量をまとめる
-    while(
-      end+1<packingRowsRaw.length&&
-      packingRowsRaw[end+1].productName===cur.productName&&
-      packingRowsRaw[end+1].quantity===cur.quantity&&
-      packingRowsRaw[end+1].isFraction===cur.isFraction&&
-      packingRowsRaw[end+1].cartonNo===packingRowsRaw[end].cartonNo+1
-    ){end++;}
-    const startNo=cur.cartonNo;
-    const endNo=packingRowsRaw[end].cartonNo;
-    const cartonLabel=startNo===endNo?String(startNo):`${startNo}～${endNo}`;
-    const count=end-gi+1;
-    packingRows.push({
-      cartonNo:cartonLabel,
-      productName:cur.productName,
-      quantity:cur.quantity, // 1カートンあたりの数量
-      totalQty:cur.quantity*count,
-      grossWeight:(cur.grossWeight*count).toFixed(2),
-      netWeight:(cur.netWeight*count).toFixed(2),
-      dimensions:[cur.dimL,cur.dimW,cur.dimH].every(Boolean)?`${cur.dimL}x${cur.dimW}x${cur.dimH}`:"—",
-      isFraction:cur.isFraction,
-      expiryDate:cur.expiryDate||"",
-    });
-    gi=end+1;
-  }
+  // カートンを行に展開（rowspan用：カートン単位でグループ化）
+  // packingRows = カートン1つ＝1グループ、各グループにlines[]を持つ
+  const packingRows:any[]=packing.map((carton:any)=>({
+    cartonNo:carton.cartonNo,
+    grossWeight:Number(carton.grossWeight||0).toFixed(2),
+    netWeight:Number(carton.netWeight||0).toFixed(2),
+    dimensions:[carton.dimL,carton.dimW,carton.dimH].every(Boolean)?`${carton.dimL}x${carton.dimW}x${carton.dimH}`:"—",
+    isFraction:carton.isFraction,
+    lines:(carton.lines||[]).map((l:any)=>({
+      productName:l.productName||"",
+      quantity:l.quantity||0,
+      expiryDate:l.expiryDate||"",
+    })),
+  }));
 
   const ROWS_PER_PAGE=15;
   const packingPages:any[][]=[];
@@ -1196,16 +1159,22 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     };
 
     const buildPackingSection=()=>{
-      const rows=packingRows.map((row:any,i:number)=>`
-        <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
-          <td style="text-align:center">${row.cartonNo}</td>
-          <td>${row.productName}</td>
-          <td style="text-align:right">${row.quantity}</td>
-          <td style="text-align:right">${row.grossWeight}</td>
-          <td style="text-align:right">${row.netWeight}</td>
-          <td>${row.dimensions}</td>
-          ${packingRows.some((r:any)=>r.expiryDate)?`<td>${fmtExpiry(row.expiryDate||"")}</td>`:""}
-        </tr>`).join("");
+      const hasExpiryPrint=packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate));
+      const rows=packingRows.map((row:any)=>{
+        const lines=row.lines||[];
+        const rs=lines.length||1;
+        if(lines.length===0)return `<tr style="background:${row.isFraction?"#FFFBEB":"#fff"}"><td style="text-align:center">${row.cartonNo}</td><td></td><td></td><td style="text-align:right">${row.grossWeight}</td><td style="text-align:right">${row.netWeight}</td><td>${row.dimensions}</td>${hasExpiryPrint?"<td></td>":""}</tr>`;
+        return lines.map((line:any,li:number)=>`
+          <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
+            ${li===0?`<td style="text-align:center" rowspan="${rs}">${row.cartonNo}</td>`:""}
+            <td>${line.productName}</td>
+            <td style="text-align:right">${line.quantity}</td>
+            ${li===0?`<td style="text-align:right" rowspan="${rs}">${row.grossWeight}</td>`:""}
+            ${li===0?`<td style="text-align:right" rowspan="${rs}">${row.netWeight}</td>`:""}
+            ${li===0?`<td rowspan="${rs}">${row.dimensions}</td>`:""}
+            ${hasExpiryPrint?`<td>${fmtExpiry(line.expiryDate||"")}</td>`:""}
+          </tr>`).join("");
+      }).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
       const totNW=packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2);
       return `
@@ -1229,7 +1198,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
-              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
+              ${packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate))?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
@@ -1506,27 +1475,42 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="en"?"G.W.(kg)":"総重量(kg)"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="en"?"N.W.(kg)":"正味重量(kg)"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>Dimensions(cm)</th>
-                      {packingRows.some((r:any)=>r.expiryDate)&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="en"?"Expiry":"賞味/使用期限"}</th>}
+                      {packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate))&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="en"?"Expiry":"賞味/使用期限"}</th>}
                     </tr></thead>
                     <tbody>
-                      {pageRows.map((row:any,i:number)=>(
-                        <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{row.cartonNo}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.quantity}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
-                          {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{fmtExpiry(row.expiryDate||"")}</td>}
-                        </tr>
-                      ))}
+                      {pageRows.map((row:any,i:number)=>{
+                        const lines=row.lines||[];
+                        const rowspan=lines.length||1;
+                        const hasExpiry=packingRows.some((r:any)=>(r.lines||[]).some((l:any)=>l.expiryDate));
+                        return lines.length===0?(
+                          <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{row.cartonNo}</td>
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}></td>
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
+                            {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>}
+                          </tr>
+                        ):lines.map((line:any,li:number)=>(
+                          <tr key={`${i}-${li}`} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
+                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{line.productName}</td>
+                            <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{line.quantity}</td>
+                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{row.grossWeight}</td>}
+                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{row.netWeight}</td>}
+                            {li===0&&<td rowSpan={rowspan} style={{border:"1px solid #ccc",padding:"4px 6px",verticalAlign:"middle"}}>{row.dimensions}</td>}
+                            {hasExpiry&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{fmtExpiry(line.expiryDate||"")}</td>}
+                          </tr>
+                        ));
+                      })}
                     </tbody>
                     {pi===packingPages.length-1&&(
                       <tfoot>
                         <tr style={{fontWeight:700,borderTop:"2px solid #000"}}>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>TOTAL</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0)}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packingRows.reduce((s:number,r:any)=>s+(r.lines||[]).reduce((ls:number,l:any)=>ls+(Number(l.quantity)||0),0),0)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
