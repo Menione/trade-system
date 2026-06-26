@@ -1798,9 +1798,9 @@ function CustomerPage({onCustomersChange}:any){
             </div>
           </div>
         )}
-        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
-        :items.length===0?<div className="empty-state"><div className="empty-icon">🏢</div><div style={{fontSize:13}}>得意先を登録してください</div></div>
-        :items.map((c:any)=>(
+        {loading&&items.length===0&&<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>}
+        {!loading&&items.length===0&&<div className="empty-state"><div className="empty-icon">🏢</div><div style={{fontSize:13}}>得意先を登録してください</div></div>}
+        {items.map((c:any)=>(
           <div key={c.id} className="history-item">
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <strong style={{fontSize:13}}>{c.name}</strong>
