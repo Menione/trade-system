@@ -2749,10 +2749,10 @@ setStep(targetStep);setPage("new");
       expiryDate:h.expiry_date||"",status:h.status||"draft",
       language:h.language||"ja",approvalStatus:h.approval_status||"draft",
       trackingNumber:h.tracking_number||"",paymentConfirmed:h.payment_confirmed||false,
-      items:h.items||[],
+      items:Array.isArray(h.items)?h.items:(typeof h.items==="string"?JSON.parse(h.items):[]),
       _selectedCustomer:null,
-      invoice_items:h.invoice_items||[],
-      commercial_items:h.commercial_items||[],
+      invoice_items:Array.isArray(h.invoice_items)?h.invoice_items:(typeof h.invoice_items==="string"?JSON.parse(h.invoice_items):[]),
+      commercial_items:Array.isArray(h.commercial_items)?h.commercial_items:(typeof h.commercial_items==="string"?JSON.parse(h.commercial_items):[]),
       invoice_remarks:h.invoice_remarks||"",
       commercial_remarks:h.commercial_remarks||"",
     });
