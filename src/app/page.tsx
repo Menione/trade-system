@@ -2364,14 +2364,13 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
 
   // itemsKeyが未初期化の場合はitemsから自動引用
   const [localItems,setLocalItems]=useState<any[]>(()=>{
-    const existing=invoice[itemsKey];
-    if(existing&&existing.length>0)return existing;
-    // syncFromがあればそこから引用、なければitemsから引用
-    const source=syncFrom&&invoice[syncFrom]&&invoice[syncFrom].length>0
-      ?invoice[syncFrom]
-      :invoice.items||[];
-    return source.map((it:any)=>({...it,id:Date.now()+Math.random()}));
-  });
+  const parse=(v:any)=>Array.isArray(v)?v:typeof v==="string"?JSON.parse(v):[];
+  const existing=parse(invoice[itemsKey]);
+  if(existing.length>0)return existing;
+  const src=syncFrom?parse(invoice[syncFrom]):[];
+  const source=src.length>0?src:parse(invoice.items);
+  return source.map((it:any)=>({...it,id:Date.now()+Math.random()}));
+});
   const [localRemarks,setLocalRemarks]=useState<string>(invoice[remarksKey]||invoice.remarks||"");
 
   // ローカル変更をinvoiceに反映
