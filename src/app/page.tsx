@@ -2363,14 +2363,14 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
   const cur=invoice.currency||"JPY";
 
   // itemsKeyが未初期化の場合はitemsから自動引用
-  const [localItems,setLocalItems]=useState<any[]>(()=>{
-  const parse=(v:any)=>Array.isArray(v)?v:typeof v==="string"?JSON.parse(v):[];
-  const existing=parse(invoice[itemsKey]);
-  if(existing.length>0)return existing;
-  const src=syncFrom?parse(invoice[syncFrom]):[];
-  const source=src.length>0?src:parse(invoice.items);
-  return source.map((it:any)=>({...it,id:Date.now()+Math.random()}));
-});
+const [localItems,setLocalItems]=useState<any[]>(()=>{
+    const parse=(v:any)=>Array.isArray(v)?v:typeof v==="string"?JSON.parse(v):[];
+    const existing=parse(invoice[itemsKey]);
+    if(existing.length>0)return existing;
+    const src=syncFrom?parse(invoice[syncFrom]):[];
+    const source=src.length>0?src:parse(invoice.items);
+    return source.map((it:any)=>({...it,id:Date.now()+Math.random()}));
+  });
   const [localRemarks,setLocalRemarks]=useState<string>(invoice[remarksKey]||invoice.remarks||"");
 
   // ローカル変更をinvoiceに反映
