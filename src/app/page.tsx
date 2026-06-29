@@ -2695,7 +2695,8 @@ export default function App(){
       setInvoice({...INIT_INVOICE,date:new Date().toISOString().split("T")[0],shipper:defaultShipper});
       return currentOrg;
     });
-    setPacking([]);setStep(1);setPage("new");
+    setPacking([]);const targetStep=(h.invoice_type&&h.invoice_type!=="proforma")?2:1;
+setStep(targetStep);setPage("new");
   },[]);
 
   const saveInvoice=async(status="draft")=>{
