@@ -129,6 +129,14 @@ const INIT_ORG: any = {
   shipLocations:[], // 出荷場所リスト [{name:"本社", address:"xxx"}]
 };
 
+function asArray(v:any):any[]{
+  if(Array.isArray(v))return v;
+  if(typeof v==="string"&&v){
+    try{const p=JSON.parse(v);return Array.isArray(p)?p:[];}
+    catch{return [];}
+  }
+  return [];
+}
 function fmt(amount: number, currency: string) {
   const nd = ["JPY","KRW","TWD","VND","IDR"];
   return nd.includes(currency) ? Math.round(amount).toLocaleString("ja-JP") : amount.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2747,22 +2755,24 @@ export default function App(){
       expiryDate:h.expiry_date||"",status:h.status||"draft",
       language:h.language||"ja",approvalStatus:h.approval_status||"draft",
       trackingNumber:h.tracking_number||"",paymentConfirmed:h.payment_confirmed||false,
-      items:Array.isArray(h.items)?h.items:(typeof h.items==="string"?JSON.parse(h.items):[]),
+      items:asArray(h.items),
       _selectedCustomer:null,
-      invoice_items:Array.isArray(h.invoice_items)?h.invoice_items:(typeof h.invoice_items==="string"?JSON.parse(h.invoice_items):[]),
-      commercial_items:Array.isArray(h.commercial_items)?h.commercial_items:(typeof h.commercial_items==="string"?JSON.parse(h.commercial_items):[]),
+      invoice_items:asArray(h.invoice_items),
+      commercial_items:asArray(h.commercial_items),
       invoice_remarks:h.invoice_remarks||"",
       commercial_remarks:h.commercial_remarks||"",
     });
-    const rawPacking=Array.isArray(h.packing_items)?h.packing_items:(typeof h.packing_items==="string"?JSON.parse(h.packing_items):[]);
-    setPacking(rawPacking.map((c:any)=>({...c,id:c.id||Date.now()+Math.random(),lines:Array.isArray(c.lines)?c.lines:(typeof c.lines==="string"?JSON.parse(c.lines):[])})));
+    const rawPacking=asArray(h.packing_items);
+    setPacking(rawPacking.map((c:any)=>({...c,id:c.id||Date.now()+Math.random(),lines:asArray(c.lines)})));
     setStep(1);setPage("new");
     showToast("📂 案件を読み込みました");
   };
 
   const convertToCommercial=(h:any)=>{
     // Proforma → Commercial変換：invoice_itemsをcommercial_itemsの初期値に自動引用
-    const baseItems=(h.invoice_items&&h.invoice_items.length>0?h.invoice_items:h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()}));
+    const hItems:any[]=asArray(h.items);
+    const hInvoiceItems:any[]=asArray(h.invoice_items);
+    const baseItems=(hInvoiceItems.length>0?hInvoiceItems:hItems).map((it:any)=>({...it,id:Date.now()+Math.random()}));
     const newInv={...INIT_INVOICE,
       invoiceNo:h.invoice_no||"",
       invoiceType:"commercial",
@@ -2773,7 +2783,7 @@ export default function App(){
       countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
       portOfLoading:h.port_of_loading||"",remarks:h.remarks||"",
       language:h.language||"ja",approvalStatus:"draft",status:"draft",
-      items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
+      items:hItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       invoice_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       commercial_items:baseItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
       invoice_remarks:h.invoice_remarks||h.remarks||"",
@@ -2781,8 +2791,8 @@ export default function App(){
       proformaRef:h.invoice_no||"",
     };
     setInvoice(newInv);
-    const rawPacking2=Array.isArray(h.packing_items)?h.packing_items:(typeof h.packing_items==="string"?JSON.parse(h.packing_items):[]);
-    setPacking(rawPacking2.map((c:any)=>({...c,id:Date.now()+Math.random(),lines:Array.isArray(c.lines)?c.lines:(typeof c.lines==="string"?JSON.parse(c.lines):[])})));
+    const rawPacking2=asArray(h.packing_items);
+    setPacking(rawPacking2.map((c:any)=>({...c,id:Date.now()+Math.random(),lines:asArray(c.lines)})));
     setStep(2);setPage("new"); // ②Invoice編集ステップへ
     showToast("🔄 Commercialに変換しました。② Invoice編集から進めてください。");
   };
@@ -2792,6 +2802,7 @@ export default function App(){
   };
 
   const copyInvoice=(h:any)=>{
+    const hItems:any[]=asArray(h.items);
     const newInv={...INIT_INVOICE,
       invoiceNo:"",invoiceType:h.invoice_type||"proforma",
       date:new Date().toISOString().split("T")[0],
@@ -2801,11 +2812,11 @@ export default function App(){
       countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
       portOfLoading:h.port_of_loading||"",remarks:h.remarks||"",
       language:h.language||"ja",approvalStatus:"draft",status:"draft",
-      items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
+      items:hItems.map((it:any)=>({...it,id:Date.now()+Math.random()})),
     };
     setInvoice(newInv);
-    const rawPacking3=Array.isArray(h.packing_items)?h.packing_items:(typeof h.packing_items==="string"?JSON.parse(h.packing_items):[]);
-    setPacking(rawPacking3.map((c:any)=>({...c,id:Date.now()+Math.random(),lines:Array.isArray(c.lines)?c.lines:(typeof c.lines==="string"?JSON.parse(c.lines):[])})));
+    const rawPacking3=asArray(h.packing_items);
+    setPacking(rawPacking3.map((c:any)=>({...c,id:Date.now()+Math.random(),lines:asArray(c.lines)})));
     setStep(1);setPage("new");
     showToast("📋 前回案件をコピーしました。Invoice Noを変更してください。");
   };
