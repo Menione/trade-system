@@ -1738,12 +1738,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       {/* Recipient signature */}
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:6}}>RECEIVED BY (RECIPIENT)</div>
-        <div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>
-        <div style={{fontSize:10,fontWeight:600}}>&nbsp;</div>
-        <div style={{fontSize:9,color:"#666"}}>Name &amp; Signature</div>
-        <div style={{marginTop:12,display:"flex",alignItems:"center",gap:8}}>
-          <div style={{fontSize:9,color:"#666",whiteSpace:"nowrap"}}>Date received:</div>
-          <div style={{flex:1,borderBottom:"1px solid #000"}}></div>
+        <div style={{height:60,borderBottom:"1px solid #000",marginBottom:4}}></div>
+        <div style={{fontSize:9,color:"#666",marginBottom:20}}>Name &amp; Signature / Date</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:8,marginTop:4}}>
+          <div style={{fontSize:9,color:"#666",whiteSpace:"nowrap",marginBottom:2}}>Date received:</div>
+          <div style={{flex:1,borderBottom:"1px solid #000",marginBottom:0}}></div>
         </div>
       </div>
     </div>
