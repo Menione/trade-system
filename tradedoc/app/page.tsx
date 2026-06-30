@@ -112,6 +112,21 @@ function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
 const INCOTERMS = ["EXW","FCA","CPT","CIP","DAP","DPU","DDP","FAS","FOB","CFR","CIF"];
 const SHIPPING_METHODS = ["FedEx","DHL","Net International","EMS","Other","Sea Freight","Air Freight"];
+
+function getTrackingUrl(method:string,trackingNo:string):string|null{
+  const no=(trackingNo||"").trim();
+  if(!no)return null;
+  switch(method){
+    case "FedEx":
+      return `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(no)}`;
+    case "DHL":
+      return `https://www.dhl.com/jp-en/home/tracking/tracking-express.html?submit=1&tracking-id=${encodeURIComponent(no)}`;
+    case "EMS":
+      return `https://trackings.post.japanpost.jp/services/srv/search/?requestNo1=${encodeURIComponent(no)}&locale=en`;
+    default:
+      return null; // Net International / Other / Sea Freight / Air Freight：公式の単一追跡URLがないため非対応
+  }
+}
 const COUNTRIES = ["Japan","United States","China","Germany","France","United Kingdom","South Korea","Taiwan","Singapore","Hong Kong","Australia","Canada","Thailand","Vietnam","India","Indonesia","Malaysia","Philippines","Bangladesh","Brazil","Mexico","Netherlands","Belgium","Italy","Spain","Sweden","Switzerland","Poland","Turkey","Saudi Arabia"];
 
 const INIT_INVOICE: any = {
@@ -1700,7 +1715,7 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
               <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>onLoad(h)}>
                 <strong style={{fontSize:13}}>{h.invoice_no||"No Invoice No"}</strong>
-                <span className={`status-badge status-${h.approval_status||h.status||"draft"}`}>● {statusLabel[h.approval_status||h.status||"draft"]}</span>
+                <span className={`status-badge status-${h.status==="completed"?"completed":(h.approval_status||h.status||"draft")}`}>● {statusLabel[h.status==="completed"?"completed":(h.approval_status||h.status||"draft")]}</span>
                 {h.invoice_type==="proforma"&&<span className="tag tag-amber">Proforma</span>}
               </div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
@@ -1719,7 +1734,15 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
               {h.country_of_origin&&<span className="tag tag-blue">{h.country_of_origin}</span>}
               {h.date&&<span className="tag tag-gray">{h.date}</span>}
               {h.currency&&<span className="tag tag-green">{h.currency}</span>}
-              {h.tracking_number&&<span className="tag tag-purple">追跡: {h.tracking_number}</span>}
+              {h.tracking_number&&(
+                getTrackingUrl(h.shipping_method,h.tracking_number)?(
+                  <a className="tag tag-purple" href={getTrackingUrl(h.shipping_method,h.tracking_number)!} target="_blank" rel="noopener noreferrer" onClick={(e:any)=>e.stopPropagation()} style={{textDecoration:"none"}}>
+                    📍 追跡: {h.tracking_number}
+                  </a>
+                ):(
+                  <span className="tag tag-purple">追跡: {h.tracking_number}</span>
+                )
+              )}
             </div>
           </div>
         ))}
@@ -2500,6 +2523,7 @@ function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
 // ============================================================
 function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
   const t=T[lang||"ja"];
+  const trackingUrl=getTrackingUrl(invoice.shippingMethod,invoice.trackingNumber);
   return(
     <div className="fade-in">
       <div className="card">
@@ -2515,6 +2539,19 @@ function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
               {SHIPPING_METHODS.map((m:string)=><option key={m}>{m}</option>)}
             </select></div>
         </div>
+        {invoice.trackingNumber&&(
+          trackingUrl?(
+            <div style={{marginBottom:14}}>
+              <a className="btn btn-secondary btn-sm" href={trackingUrl} target="_blank" rel="noopener noreferrer">
+                📍 {invoice.shippingMethod}の追跡ページで確認する
+              </a>
+            </div>
+          ):(
+            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:14}}>
+              {invoice.shippingMethod?`「${invoice.shippingMethod}」は追跡ページへの自動リンクに対応していません。`:"輸送業者を選択すると、対応していれば追跡ページへのリンクが表示されます。"}
+            </div>
+          )
+        )}
         <div style={{padding:"12px 16px",background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",marginBottom:14}}>
           <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:14,fontWeight:500}}>
             <input type="checkbox" checked={invoice.paymentConfirmed||false}
