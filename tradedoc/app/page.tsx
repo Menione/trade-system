@@ -112,6 +112,7 @@ function LoginPage({onLogin}:{onLogin:(token:string,user:any)=>void}){
 const CURRENCIES = ["JPY","USD","EUR","GBP","SGD","HKD","AUD","CNY"];
 const INCOTERMS = ["EXW","FCA","CPT","CIP","DAP","DPU","DDP","FAS","FOB","CFR","CIF"];
 const SHIPPING_METHODS = ["FedEx","DHL","Net International","EMS","Other","Sea Freight","Air Freight"];
+const PAYMENT_TERMS = ["Net 30","Net 45","Net 60","Net 90","Net 120","T/T in advance","T/T 30 days after B/L","T/T 60 days after B/L","T/T 90 days after B/L","L/C at sight","L/C 30 days","L/C 60 days","L/C 90 days","CAD","D/P","D/A 30 days","D/A 60 days","D/A 90 days","Open Account"];
 
 function getTrackingUrl(method:string,trackingNo:string):string|null{
   const no=(trackingNo||"").trim();
@@ -591,9 +592,12 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
           <div className="field"><label className="label">P.O. Number</label>
             <input className="input" value={invoice.poNumber||""} placeholder="PO-2024-001"
               onChange={(e:any)=>setInvoice((v:any)=>({...v,poNumber:e.target.value}))}/></div>
-          <div className="field"><label className="label">Payment Due</label>
-            <input type="date" className="input" value={invoice.paymentDue||""}
-              onChange={(e:any)=>setInvoice((v:any)=>({...v,paymentDue:e.target.value}))}/></div>
+          <div className="field"><label className="label">Payment Terms</label>
+            <select className="input" value={invoice.paymentDue||""}
+              onChange={(e:any)=>setInvoice((v:any)=>({...v,paymentDue:e.target.value}))}>
+              <option value="">{lang==="en"?"Select":"選択してください"}</option>
+              {PAYMENT_TERMS.map((p:string)=><option key={p}>{p}</option>)}
+            </select></div>
         </div>
         <div className="field" style={{marginBottom:13}}>
           <label className="label"><span className="req">*</span>{t.shipper}</label>
@@ -1128,6 +1132,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     .no-print{display:none !important}
     .bank-section{margin-top:16px;font-size:9px;border:1px solid #ddd;padding:8px;border-radius:4px}
     .bank-title{font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px}.no-print{display:none !important}
+    td{word-wrap:break-word;white-space:normal}
   `;
 
   const handlePrint=()=>{
@@ -1146,7 +1151,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       const showExp=items.some((it:any)=>it.expiryDate);
       const rows=items.map((it:any,i:number)=>`
         <tr style="background:${i%2===0?"#ffffff":"#f5f5f5"}">
-          <td style="border:1px solid #ddd;padding:4px 6px">${it.productName||""}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;word-wrap:break-word;white-space:normal;min-width:140px">${it.productName||""}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;font-family:monospace">${it.hsCode||""}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
@@ -1193,6 +1198,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Incoterms</div>${invoice.incoterms||"—"}</div>
             <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Country of Origin</div>${invoice.countryOfOrigin||"—"}</div>
             ${invoice.poNumber?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">P.O. Number</div>${invoice.poNumber}</div>`:""}
+            ${invoice.paymentDue?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Payment Terms</div>${invoice.paymentDue}</div>`:""}
             ${invoice.shippingMethod?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Shipping Method</div>${invoice.shippingMethod}</div>`:""}
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
@@ -1203,7 +1209,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">Description</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;min-width:160px">Description</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left">HS Code</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
@@ -1317,7 +1323,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
         <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Incoterms</div>{invoice.incoterms||"—"}</div>
         <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Country of Origin</div>{invoice.countryOfOrigin||"—"}</div>
         {invoice.poNumber&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>P.O. Number</div>{invoice.poNumber}</div>}
-        {invoice.paymentDue&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Payment Due</div>{invoice.paymentDue}</div>}
+        {invoice.paymentDue&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Payment Terms</div>{invoice.paymentDue}</div>}
         {invoice.shippingMethod&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Shipping Method</div>{invoice.shippingMethod}</div>}
         {invoice.portOfLoading&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Port of Loading</div>{invoice.portOfLoading}</div>}
       </div>
@@ -1398,6 +1404,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <button className={`tab ${activeDoc==="commercial"?"active":""}`} onClick={()=>setActiveDoc("commercial")}>📄 Commercial Invoice</button>
           <button className={`tab ${activeDoc==="packing"?"active":""}`} onClick={()=>setActiveDoc("packing")}>📦 Packing List</button>
           <button className={`tab ${activeDoc==="delivery"?"active":""}`} onClick={()=>setActiveDoc("delivery")}>🚚 Delivery Note</button>
+          <button className={`tab ${activeDoc==="receipt"?"active":""}`} onClick={()=>setActiveDoc("receipt")}>📬 Delivery Receipt</button>
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}} className="no-print">
           <div style={{display:"flex",background:"#F0EEE9",borderRadius:8,padding:3,gap:2}}>
@@ -1423,7 +1430,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 <>
                   <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                     <thead><tr style={{background:"#222",color:"#fff"}}>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description of Goods</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left",minWidth:160}}>Description of Goods</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>HS Code</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>Qty</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
@@ -1433,7 +1440,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     <tbody>
                       {items.map((it:any,i:number)=>(
                         <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updFn(it.id,"productName",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",wordBreak:"break-word",whiteSpace:"normal",minWidth:140}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",wordBreak:"break-word",whiteSpace:"normal"}} value={it.productName||""} onChange={(e:any)=>updFn(it.id,"productName",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",fontFamily:"monospace"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:50,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
@@ -1590,7 +1597,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       </div>
       <div style={{fontSize:11}}>
         {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>P.O. No: </span><strong>{invoice.poNumber}</strong></div>}
-        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Due: </span>{invoice.paymentDue}</div>}
+        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Terms: </span>{invoice.paymentDue}</div>}
         {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Incoterms: </span>{invoice.incoterms}</div>}
         {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Shipping: </span>{invoice.shippingMethod}</div>}
       </div>
@@ -1645,9 +1652,103 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     </div>
   </div>
 )}
-              </>
-            );
-          })()}
+{activeDoc==="receipt"&&(
+  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
+    {/* Header */}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+      <div>
+        <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>DELIVERY RECEIPT</div>
+        {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>No. <strong>{invoice.invoiceNo}</strong></div>}
+        {invoice.date&&<div style={{fontSize:11,color:"#444"}}>Date: <strong>{invoice.date}</strong></div>}
+      </div>
+      <div style={{textAlign:"right",fontSize:10}}>
+        {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
+        {org?.companyName&&<div style={{fontWeight:700,fontSize:12}}>{org.companyName}</div>}
+        {org?.address&&<div style={{whiteSpace:"pre-wrap"}}>{org.address}</div>}
+        {org?.tel&&<div>Tel: {org.tel}</div>}
+      </div>
+    </div>
+    <div style={{height:2,background:"#000",marginBottom:16}}></div>
+    {/* Meta info */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+      <div>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>CONSIGNEE / RECIPIENT</div>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{invoice.consignee?.split("\n")[0]||""}</div>
+        <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
+        {invoice.shipTo&&<>
+          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginTop:8,marginBottom:2}}>SHIP TO</div>
+          <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.shipTo}</div>
+        </>}
+      </div>
+      <div style={{fontSize:11}}>
+        {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>P.O. No: </span><strong>{invoice.poNumber}</strong></div>}
+        {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Incoterms: </span>{invoice.incoterms}</div>}
+        {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Shipping Method: </span>{invoice.shippingMethod}</div>}
+        {invoice.trackingNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Tracking No: </span>{invoice.trackingNumber}</div>}
+        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Terms: </span>{invoice.paymentDue}</div>}
+      </div>
+    </div>
+    {/* Items table */}
+    <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
+      <thead><tr style={{background:"#222",color:"#fff"}}>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left",minWidth:160}}>Description</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:50}}>Qty</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Lot No.</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Expiry</th>
+        <th style={{border:"none",width:28}} className="no-print"></th>
+      </tr></thead>
+      <tbody>
+        {invoiceItems.map((it:any,i:number)=>(
+          <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",wordBreak:"break-word",whiteSpace:"normal",minWidth:140}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
+            <td style={{border:"none",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr><td colSpan={4} style={{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:11,borderTop:"2px solid #000"}}>
+          TOTAL QTY: {invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity)||0),0)}
+        </td></tr>
+      </tfoot>
+    </table>
+    <div className="no-print" style={{marginTop:6}}>
+      <button onClick={addInvItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
+    </div>
+    {/* Remarks */}
+    {(invoiceRemarks||true)&&<div style={{marginTop:12}}>
+      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>REMARKS</div>
+      <div style={{fontSize:10,whiteSpace:"pre-wrap"}} className="print-only">{invoiceRemarks}</div>
+      <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
+    </div>}
+    {/* Signature section: Shipper left, Recipient right */}
+    <div style={{marginTop:48,display:"grid",gridTemplateColumns:"1fr 1fr",gap:40}}>
+      {/* Shipper signature */}
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:6}}>AUTHORIZED BY (SHIPPER)</div>
+        {org?.signatureBase64
+          ?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain" as any,marginBottom:4}}/>
+          :<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
+        <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
+        <div style={{fontSize:9,color:"#666"}}>{org?.signerTitle||""}</div>
+        <div style={{fontSize:9,color:"#666"}}>{org?.companyName||""}</div>
+      </div>
+      {/* Recipient signature */}
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:6}}>RECEIVED BY (RECIPIENT)</div>
+        <div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>
+        <div style={{fontSize:10,fontWeight:600}}>&nbsp;</div>
+        <div style={{fontSize:9,color:"#666"}}>Name &amp; Signature</div>
+        <div style={{marginTop:12,display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontSize:9,color:"#666",whiteSpace:"nowrap"}}>Date received:</div>
+          <div style={{flex:1,borderBottom:"1px solid #000"}}></div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
