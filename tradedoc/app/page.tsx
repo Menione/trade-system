@@ -1151,8 +1151,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       const showExp=items.some((it:any)=>it.expiryDate);
       const rows=items.map((it:any,i:number)=>`
         <tr style="background:${i%2===0?"#ffffff":"#f5f5f5"}">
-          <td style="border:1px solid #ddd;padding:4px 6px;word-wrap:break-word;white-space:normal;min-width:140px">${it.productName||""}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;font-family:monospace">${it.hsCode||""}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;word-wrap:break-word;white-space:normal">
+            <div style="font-size:10px">${it.productName||""}</div>
+            ${it.hsCode?`<div style="font-size:8px;color:#888;font-family:monospace;margin-top:2px">HS: ${it.hsCode}</div>`:""}
+          </td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
@@ -1209,15 +1211,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;min-width:160px">Description</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left">HS Code</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">Description of Goods</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:55px">Qty</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
-              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:90px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
+              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr><td colspan="${showExp?6:5}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">TOTAL: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
+            <tfoot><tr><td colspan="${showExp?5:4}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">TOTAL: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
           </table>
           ${remarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">Remarks</div><div style="font-size:10px;white-space:pre-wrap">${remarks}</div></div>`:""}
           ${bankSection}
@@ -1430,28 +1431,30 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 <>
                   <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                     <thead><tr style={{background:"#222",color:"#fff"}}>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left",minWidth:160}}>Description of Goods</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>HS Code</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>Qty</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
-                      {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:90}}>Expiry</th>}
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description of Goods</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:55}}>Qty</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:85}}>Unit Price</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:95}}>Amount</th>
+                      {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Expiry</th>}
                       </tr></thead>
                     <tbody>
                       {items.map((it:any,i:number)=>(
                         <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px",wordBreak:"break-word",whiteSpace:"normal",minWidth:140}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",wordBreak:"break-word",whiteSpace:"normal"}} value={it.productName||""} onChange={(e:any)=>updFn(it.id,"productName",e.target.value)}/></td>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",fontFamily:"monospace"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></td>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:50,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
+                            <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updFn(it.id,"productName",e.target.value)}/>
+                            {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: <input style={{border:"none",outline:"none",fontSize:8,color:"#888",fontFamily:"monospace",background:"transparent",width:"calc(100% - 24px)"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
+                            {!it.hsCode&&<div style={{fontSize:8,color:"#bbb",marginTop:2}} className="no-print"><input placeholder="HS Code（任意）" style={{border:"none",outline:"none",fontSize:8,color:"#aaa",fontFamily:"monospace",background:"transparent",width:"100%"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
+                          </td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
-                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:72,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
+                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:68,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
                           <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr><td colSpan={showExp?6:5} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
+                      <tr><td colSpan={showExp?5:4} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
                         TOTAL: {docCur} {fmt(items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
                       </td></tr>
                     </tfoot>
@@ -1616,7 +1619,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <tbody>
         {invoiceItems.map((it:any,i:number)=>(
           <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
+              <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
+              {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
+            </td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updInvItem(it.id,"unitPrice",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
@@ -1700,7 +1706,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <tbody>
         {invoiceItems.map((it:any,i:number)=>(
           <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",wordBreak:"break-word",whiteSpace:"normal",minWidth:140}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
+              <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
+              {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
+            </td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
