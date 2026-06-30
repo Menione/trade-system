@@ -1066,15 +1066,30 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   }
 
   const ROWS_PER_PAGE=15;
-  const packingPages:any[][]=[];
+  // 同じCarton No（番号）が連続する行をセル結合表示するための補助関数
+  const withCartonRowSpan=(rows:any[]):any[]=>{
+    const out:any[]=[];
+    for(let i=0;i<rows.length;i++){
+      if(i>0&&rows[i].cartonNo===rows[i-1].cartonNo){
+        out.push({...rows[i],showCartonNo:false});
+        let j=out.length-2;
+        while(j>=0&&!out[j].showCartonNo)j--;
+        if(j>=0)out[j].cartonRowSpan=(out[j].cartonRowSpan||1)+1;
+      }else{
+        out.push({...rows[i],showCartonNo:true,cartonRowSpan:1});
+      }
+    }
+    return out;
+  };
+  const packingPagesRaw:any[][]=[];
   for(let i=0;i<packingRows.length;i+=ROWS_PER_PAGE){
-    packingPages.push(packingRows.slice(i,i+ROWS_PER_PAGE));
+    packingPagesRaw.push(packingRows.slice(i,i+ROWS_PER_PAGE));
   }
-  if(packingPages.length===0)packingPages.push([]);
+  if(packingPagesRaw.length===0)packingPagesRaw.push([]);
+  const packingPages:any[][]=packingPagesRaw.map(withCartonRowSpan);
 
   const printStyle=`
-    @page{margin:15mm;size:A4;margin-top:10mm;margin-bottom:10mm}
-    @page{-webkit-margin-before:0;-webkit-margin-after:0}
+    @page{margin:20mm 15mm 15mm 15mm;size:A4}
     html{-webkit-print-color-adjust:exact}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
     body{font-family:sans-serif;font-size:10px;color:#000}
@@ -1105,7 +1120,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     if(!el)return;
     const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>@page{margin:10mm;size:A4}@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
@@ -1190,9 +1205,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     };
 
     const buildPackingSection=()=>{
-      const rows=packingRows.map((row:any,i:number)=>`
+      const spannedRows=withCartonRowSpan(packingRows);
+      const rows=spannedRows.map((row:any,i:number)=>`
         <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
-          <td style="text-align:center">${row.cartonNo}</td>
+          ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:center;vertical-align:middle">${row.cartonNo}</td>`:""}
           <td>${row.productName}</td>
           <td style="text-align:right">${row.quantity}</td>
           <td style="text-align:right">${row.grossWeight}</td>
@@ -1253,7 +1269,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const commercialSection=buildInvoiceSection("COMMERCIAL INVOICE",commercialItems,commercialRemarks,true);
     const packingSection=buildPackingSection();
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>全書類一括印刷 - ${invoice.invoiceNo||""}</title>
-    <style>@page{margin:10mm;size:A4}@media print{html,body{margin:0 !important;padding:0 !important}} *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
+    <style>@media print{html,body{margin:0 !important;padding:0 !important}} *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important} ${printStyle} body{background:#e8e8e8} .doc-wrapper{padding:24px 0}</style></head>
     <body><div class="doc-wrapper">
       ${proformaSection}
       ${invoiceSection}
@@ -1505,7 +1521,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     <tbody>
                       {pageRows.map((row:any,i:number)=>(
                         <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center"}}>{row.cartonNo}</td>
+                          {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.quantity}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
