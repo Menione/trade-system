@@ -1749,6 +1749,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     </div>
   </div>
 )}
+              </>
+            );
+          })()}
         </div>
       </div>
       <div style={{display:"flex",justifyContent:"space-between"}} className="no-print">
