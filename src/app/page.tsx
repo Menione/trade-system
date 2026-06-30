@@ -2754,7 +2754,8 @@ export default function App(){
       invoice_remarks:h.invoice_remarks||"",
       commercial_remarks:h.commercial_remarks||"",
     });
-    setPacking((h.packing_items||[]).map((c:any)=>({...c,id:c.id||Date.now()+Math.random()})));
+    const rawPacking=Array.isArray(h.packing_items)?h.packing_items:(typeof h.packing_items==="string"?JSON.parse(h.packing_items):[]);
+    setPacking(rawPacking.map((c:any)=>({...c,id:c.id||Date.now()+Math.random(),lines:Array.isArray(c.lines)?c.lines:(typeof c.lines==="string"?JSON.parse(c.lines):[])})));
     setStep(1);setPage("new");
     showToast("📂 案件を読み込みました");
   };
@@ -2780,7 +2781,8 @@ export default function App(){
       proformaRef:h.invoice_no||"",
     };
     setInvoice(newInv);
-    setPacking((h.packing_items||[]).map((c:any)=>({...c,id:Date.now()+Math.random()})));
+    const rawPacking2=Array.isArray(h.packing_items)?h.packing_items:(typeof h.packing_items==="string"?JSON.parse(h.packing_items):[]);
+    setPacking(rawPacking2.map((c:any)=>({...c,id:Date.now()+Math.random(),lines:Array.isArray(c.lines)?c.lines:(typeof c.lines==="string"?JSON.parse(c.lines):[])})));
     setStep(2);setPage("new"); // ②Invoice編集ステップへ
     showToast("🔄 Commercialに変換しました。② Invoice編集から進めてください。");
   };
@@ -2802,7 +2804,8 @@ export default function App(){
       items:(h.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})),
     };
     setInvoice(newInv);
-    setPacking((h.packing_items||[]).map((c:any)=>({...c,id:Date.now()+Math.random()})));
+    const rawPacking3=Array.isArray(h.packing_items)?h.packing_items:(typeof h.packing_items==="string"?JSON.parse(h.packing_items):[]);
+    setPacking(rawPacking3.map((c:any)=>({...c,id:Date.now()+Math.random(),lines:Array.isArray(c.lines)?c.lines:(typeof c.lines==="string"?JSON.parse(c.lines):[])})));
     setStep(1);setPage("new");
     showToast("📋 前回案件をコピーしました。Invoice Noを変更してください。");
   };
