@@ -135,7 +135,8 @@ const INIT_INVOICE: any = {
   poNumber:"", paymentDue:"", poFile:"", poFileName:"", shipper:"", consignee:"", shipTo:"", notifyParty:"",
   currency:"JPY", incoterms:"", countryOfOrigin:"Japan", shippingMethod:"", portOfLoading:"",
   remarks:"", expiryDate:"", items:[], status:"draft", language:"ja",
-  trackingNumber:"", paymentConfirmed:false, shippingCompleted:false, approvalStatus:"draft",
+  trackingNumber:"", paymentConfirmed:false, paymentConfirmedDate:"",
+  shippingCompleted:false, shippingCompletedDate:"", approvalStatus:"draft",
 };
 
 const INIT_ORG: any = {
@@ -552,7 +553,7 @@ function ValidationPanel({invoice,packing,setStep}:any){
 // ============================================================
 // INVOICE FORM
 // ============================================================
-function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any){
+function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,org,lang}:any){
   const t=T[lang||"ja"];
   const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",expiryDate:""}]}));
   const upd=(id:number,f:string,val:any)=>setInvoice((v:any)=>({...v,items:v.items.map((it:any)=>it.id===id?{...it,[f]:val}:it)}));
@@ -573,6 +574,9 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
 
   const selectedCustomer=(customers||[]).find((c:any)=>c.id===invoice.customerId);
   const getSpecialPrice=(productId:string)=>selectedCustomer?.special_prices?.find((sp:any)=>sp.product_id===productId);
+
+  const destCountry=selectedCustomer?.country||(invoice.consignee||"").split("\n").map((l:string)=>l.trim()).filter(Boolean).pop()||"";
+  const matchedCountryDoc=(countryDocs||[]).find((cd:any)=>cd.country&&destCountry&&cd.country.trim().toLowerCase()===destCountry.trim().toLowerCase());
 
   const applyShipTo=(c:any)=>{
     setInvoice((v:any)=>({...v,
@@ -711,6 +715,23 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
             )}
           </div>
         </div>
+        {matchedCountryDoc&&(
+          <div style={{marginBottom:13,padding:"12px 14px",background:"#FFF7E6",border:"1px solid #F0C36D",borderRadius:"var(--radius-lg)"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#B7791F",marginBottom:6}}>
+              ⚠️ {lang==="en"?`Required documents for ${matchedCountryDoc.country}`:`${matchedCountryDoc.country} 向け 必要書類にご注意ください`}
+            </div>
+            {(matchedCountryDoc.documents||[]).length>0&&(
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:matchedCountryDoc.notes?8:0}}>
+                {matchedCountryDoc.documents.map((d:string,i:number)=>(
+                  <span key={i} className="tag" style={{background:"#fff",border:"1px solid #F0C36D",color:"#8A5A0C"}}>📄 {d}</span>
+                ))}
+              </div>
+            )}
+            {matchedCountryDoc.notes&&(
+              <div style={{fontSize:12,color:"#8A5A0C",whiteSpace:"pre-wrap"}}>{matchedCountryDoc.notes}</div>
+            )}
+          </div>
+        )}
         <div className="field">
           <label className="label">Notify Party</label>
           <textarea className="input" value={invoice.notifyParty||""} rows={2}
@@ -2451,7 +2472,7 @@ function ApprovalPage({showToast}:any){
 // ============================================================
 // COUNTRY DOCS PAGE
 // ============================================================
-function CountryDocsPage(){
+function CountryDocsPage({onCountryDocsChange}:any){
   const [items,setItems]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [showForm,setShowForm]=useState(false);
@@ -2463,10 +2484,10 @@ function CountryDocsPage(){
 
   const fetch=useCallback(async()=>{
     setLoading(true);
-    try{const d=await sb("country_documents?order=country.asc");setItems(d||[]);}
+    try{const d=await sb("country_documents?order=country.asc");setItems(d||[]);onCountryDocsChange?.(d||[]);}
     catch(e){}
     setLoading(false);
-  },[]);
+  },[onCountryDocsChange]);
 
   useEffect(()=>{fetch();},[fetch]);
 
@@ -2785,6 +2806,12 @@ function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
 function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
   const t=T[lang||"ja"];
   const trackingUrl=getTrackingUrl(invoice.shippingMethod,invoice.trackingNumber);
+  const [saving,setSaving]=useState(false);
+  const handleSave=async()=>{
+    setSaving(true);
+    await onSave(invoice.shippingCompleted?"completed":(invoice.status||"in_progress"));
+    setSaving(false);
+  };
   return(
     <div className="fade-in">
       <div className="card">
@@ -2830,12 +2857,47 @@ function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
         <div style={{display:"flex",gap:8,justifyContent:"space-between"}}>
           {onBack&&<button className="btn btn-secondary" onClick={onBack}>← ⑥ 承認に戻る</button>}
           <div style={{display:"flex",gap:8}}>
-            <button className="btn btn-primary" onClick={()=>onSave(invoice.shippingCompleted?"completed":(invoice.status||"in_progress"))}>
-              💾 保存
+            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving?"保存中...":"💾 保存"}
             </button>
           </div>
         </div>
       </div>
+
+      {invoice.shippingCompleted&&(
+        <div className="card" style={{border:"2px solid var(--green-mid)"}}>
+          <div style={{textAlign:"center",padding:"8px 0 16px"}}>
+            <div style={{fontSize:38,marginBottom:6}}>🎉</div>
+            <div style={{fontSize:19,fontWeight:800,color:"var(--green-dark, #2F6B3C)"}}>案件がすべて完了しました</div>
+          </div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--text-muted)",marginBottom:10}}>📦 出荷詳細</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18,fontSize:13}}>
+            <div><span style={{color:"var(--text-muted)"}}>Invoice No：</span><strong>{invoice.invoiceNo||"—"}</strong></div>
+            <div><span style={{color:"var(--text-muted)"}}>得意先：</span><strong>{(invoice.consignee||"").split("\n")[0]||"—"}</strong></div>
+            <div><span style={{color:"var(--text-muted)"}}>通貨・インコタームズ：</span><strong>{invoice.currency||"—"} / {invoice.incoterms||"—"}</strong></div>
+            <div><span style={{color:"var(--text-muted)"}}>輸送業者：</span><strong>{invoice.shippingMethod||"—"}</strong></div>
+            <div>
+              <span style={{color:"var(--text-muted)"}}>追跡番号：</span>
+              {trackingUrl?(
+                <a href={trackingUrl} target="_blank" rel="noopener noreferrer" style={{fontWeight:700}}>{invoice.trackingNumber}</a>
+              ):(<strong>{invoice.trackingNumber||"—"}</strong>)}
+            </div>
+            <div><span style={{color:"var(--text-muted)"}}>出荷完了日：</span><strong>{invoice.shippingCompletedDate||"—"}</strong></div>
+          </div>
+
+          {invoice.paymentConfirmed?(
+            <div style={{padding:"12px 16px",background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",fontSize:14,fontWeight:600}}>
+              💰 入金確認：確認済み（{invoice.paymentConfirmedDate||"日付未記録"}）
+            </div>
+          ):(
+            <div style={{padding:"18px 20px",background:"#FFF1E6",border:"2px solid #E8934A",borderRadius:"var(--radius-lg)",textAlign:"center"}}>
+              <div style={{fontSize:17,fontWeight:800,color:"#B4501B",marginBottom:4}}>📢 出荷担当者へ</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#B4501B"}}>入金処理の依頼をお願いします</div>
+              <div style={{fontSize:12,color:"#8A5A0C",marginTop:6}}>入金が確認できたら、上のチェックボックス「💰 入金確認済み」にチェックを入れて保存してください。</div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -2850,6 +2912,7 @@ export default function App(){
   const [packing,setPacking]=useState<any[]>([]);
   const [customers,setCustomers]=useState<any[]>([]);
   const [products,setProducts]=useState<any[]>([]);
+  const [countryDocs,setCountryDocs]=useState<any[]>([]);
   const [org,setOrg]=useState<any>(INIT_ORG);
   const [toast,setToast]=useState("");
   const [saving,setSaving]=useState(false);
@@ -2905,6 +2968,7 @@ export default function App(){
     loadOrg();
     sb("customers?order=created_at.desc").then(d=>setCustomers(d||[])).catch(()=>{});
     sb("products?order=created_at.desc").then(d=>setProducts(d||[])).catch(()=>{});
+    sb("country_documents?order=country.asc").then(d=>setCountryDocs(d||[])).catch(()=>{});
   },[authToken]);
 
   const showToast=(msg:string)=>setToast(msg);
@@ -2923,6 +2987,9 @@ export default function App(){
   const saveInvoice=async(status="draft")=>{
     setSaving(true);
     try{
+      const nowDate=new Date().toISOString().split("T")[0];
+      const paymentConfirmedDate=invoice.paymentConfirmed?(invoice.paymentConfirmedDate||nowDate):"";
+      const shippingCompletedDate=invoice.shippingCompleted?(invoice.shippingCompletedDate||nowDate):"";
       const payload={
         invoice_no:invoice.invoiceNo,invoice_type:invoice.invoiceType||"proforma",
         date:invoice.date,po_number:invoice.poNumber,payment_due:invoice.paymentDue,
@@ -2935,7 +3002,9 @@ export default function App(){
         approval_status:invoice.approvalStatus||"draft",
         tracking_number:invoice.trackingNumber||"",
         payment_confirmed:invoice.paymentConfirmed||false,
+        payment_confirmed_date:paymentConfirmedDate,
         shipping_completed:invoice.shippingCompleted||false,
+        shipping_completed_date:shippingCompletedDate,
         items:invoice.items,packing_items:packing,
         invoice_items:invoice.invoice_items||[],
         commercial_items:invoice.commercial_items||[],
@@ -2948,6 +3017,7 @@ export default function App(){
         const r=await sb("invoices",{method:"POST",body:JSON.stringify(payload)});
         if(r?.[0]?.id)setInvoice((v:any)=>({...v,dbId:r[0].id}));
       }
+      setInvoice((v:any)=>({...v,paymentConfirmedDate,shippingCompletedDate}));
       showToast(status==="draft"?"💾 下書きを保存しました":"✅ 保存しました");
     }catch(e){showToast("❌ 保存に失敗しました");}
     setSaving(false);
@@ -2973,7 +3043,9 @@ export default function App(){
       expiryDate:h.expiry_date||"",status:h.status||"draft",
       language:h.language||"ja",approvalStatus:h.approval_status||"draft",
       trackingNumber:h.tracking_number||"",paymentConfirmed:h.payment_confirmed||false,
+      paymentConfirmedDate:h.payment_confirmed_date||"",
       shippingCompleted:h.shipping_completed||false,
+      shippingCompletedDate:h.shipping_completed_date||"",
       items:asArray(h.items),
       invoice_items:asArray(h.invoice_items),
       commercial_items:asArray(h.commercial_items),
@@ -3145,7 +3217,7 @@ export default function App(){
 
                 {invoice.invoiceType==="proforma"?(
                   <>
-                    {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("draft");setStep(2);}} customers={customers} products={products} org={org} lang={lang}/>}
+                    {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("draft");setStep(2);}} customers={customers} products={products} countryDocs={countryDocs} org={org} lang={lang}/>}
                     {step>=2&&<div className="card" style={{padding:24,textAlign:"center"}}>
                       <div style={{fontSize:32,marginBottom:12}}>📨</div>
                       <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>Proformaを保存しました</div>
@@ -3164,7 +3236,7 @@ export default function App(){
                             ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong> から自動引用済みです</div>
                             :<div style={{fontSize:13,color:"#92400E"}}>⚠️ Proformaからの変換でない場合は②へ進んでください</div>}
                         </div>
-                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} org={org} lang={lang}/>
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} countryDocs={countryDocs} org={org} lang={lang}/>
                         <div style={{display:"flex",justifyContent:"flex-end",marginTop:8,gap:8}}>
                           <button className="btn btn-amber" onClick={()=>{saveInvoice("draft");showToast("💾 保存しました");}}>💾 下書き保存</button>
                           <button className="btn btn-primary" onClick={()=>setStep(2)}>② Invoice編集へ →</button>
@@ -3222,7 +3294,7 @@ export default function App(){
             {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
             {page==="products"&&<ProductPage/>}
             {page==="approval"&&<ApprovalPage showToast={showToast}/>}
-            {page==="countryDocs"&&<CountryDocsPage/>}
+            {page==="countryDocs"&&<CountryDocsPage onCountryDocsChange={setCountryDocs}/>}
             {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
           </div>
         </main>
