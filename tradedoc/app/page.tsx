@@ -518,6 +518,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
 
   const applyCustomer=(c:any)=>{
     setInvoice((v:any)=>({...v,
+      customerId:c.id,
       consignee:[c.name,c.address,c.country].filter(Boolean).join("\n"),
       shipTo:c.consignee_name?[c.consignee_name,c.consignee_address].filter(Boolean).join("\n"):v.shipTo,
       currency:c.currency||v.currency,
@@ -526,6 +527,9 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
     }));
   };
 
+  const selectedCustomer=(customers||[]).find((c:any)=>c.id===invoice.customerId);
+  const getSpecialPrice=(productId:string)=>selectedCustomer?.special_prices?.find((sp:any)=>sp.product_id===productId);
+
   const applyShipTo=(c:any)=>{
     setInvoice((v:any)=>({...v,
       shipTo:[c.consignee_name||c.name,c.consignee_address||c.address,c.country].filter(Boolean).join("\n"),
@@ -533,10 +537,11 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
   };
 
   const applyProduct=(p:any,itemId:number)=>{
+    const sp=getSpecialPrice(p.id);
     upd(itemId,"productName",p.name);
     upd(itemId,"hsCode",p.hs_code||"");
-    upd(itemId,"unitPrice",p.unit_price||"");
-    upd(itemId,"currency",p.currency||cur);
+    upd(itemId,"unitPrice",sp?sp.unit_price:(p.unit_price||""));
+    upd(itemId,"currency",sp?sp.currency:(p.currency||cur));
     upd(itemId,"countryOfOrigin",p.country_of_origin||invoice.countryOfOrigin||"");
   };
 
@@ -623,9 +628,16 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
             <div style={{fontSize:12,fontWeight:600,color:"var(--blue)",marginBottom:6}}>{lang==="en"?"Auto-fill from Customer":"得意先から自動入力"}</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
               {customers.map((c:any)=>(
-                <button key={c.id} className="btn btn-secondary btn-xs" onClick={()=>applyCustomer(c)}>{c.name}</button>
+                <button key={c.id} className={c.id===invoice.customerId?"btn btn-primary btn-xs":"btn btn-secondary btn-xs"} onClick={()=>applyCustomer(c)}>
+                  {c.name}{(c.special_prices||[]).length>0?" 💰":""}
+                </button>
               ))}
             </div>
+            {selectedCustomer&&(selectedCustomer.special_prices||[]).length>0&&(
+              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:6}}>
+                {lang==="en"?"Special prices are set for this customer and will auto-apply when you pick a product below.":"この得意先には特別価格が設定されています。下の品目で製品を選択すると自動的に反映されます。"}
+              </div>
+            )}
           </div>
         )}
         <div className="grid-2" style={{marginBottom:8}}>
@@ -716,7 +728,9 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
                           <select className="input" style={{fontSize:11,padding:"3px 5px"}} value=""
                             onChange={(e:any)=>{const p=products.find((pr:any)=>pr.id===e.target.value);if(p)applyProduct(p,item.id);}}>
                             <option value="">選択...</option>
-                            {products.map((p:any)=><option key={p.id} value={p.id}>{p.name}</option>)}
+                            {products.map((p:any)=>{const sp=getSpecialPrice(p.id);return(
+                              <option key={p.id} value={p.id}>{sp?`💰 ${p.name}（特別: ${sp.currency} ${Number(sp.unit_price).toLocaleString()}）`:p.name}</option>
+                            );})}
                           </select>
                         )}
                       </td>
@@ -1866,13 +1880,29 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
 // ============================================================
 // CUSTOMER MASTER
 // ============================================================
-function CustomerPage({onCustomersChange}:any){
+function CustomerPage({onCustomersChange,products}:any){
   const [items,setItems]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [showForm,setShowForm]=useState(false);
   const [editId,setEditId]=useState<string|null>(null);
-  const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:""};
+  const empty={name:"",address:"",consignee_name:"",consignee_address:"",country:"Japan",currency:"JPY",incoterms:"",contact:"",email:"",remarks:"",special_prices:[]};
   const [form,setForm]=useState<any>(empty);
+  const [spProductId,setSpProductId]=useState("");
+  const [spPrice,setSpPrice]=useState("");
+
+  const addSpecialPrice=()=>{
+    if(!spProductId||!spPrice)return;
+    const p=(products||[]).find((pr:any)=>pr.id===spProductId);
+    if(!p)return;
+    setForm((v:any)=>{
+      const list=(v.special_prices||[]).filter((sp:any)=>sp.product_id!==spProductId);
+      return {...v,special_prices:[...list,{product_id:p.id,product_name:p.name,unit_price:Number(spPrice),currency:p.currency||"JPY"}]};
+    });
+    setSpProductId("");setSpPrice("");
+  };
+  const removeSpecialPrice=(productId:string)=>{
+    setForm((v:any)=>({...v,special_prices:(v.special_prices||[]).filter((sp:any)=>sp.product_id!==productId)}));
+  };
 
   const fetch=useCallback(async()=>{
     setLoading(true);
@@ -1885,16 +1915,17 @@ function CustomerPage({onCustomersChange}:any){
 
   const save=async()=>{
     if(!form.name.trim())return alert("会社名を入力してください");
+    const payload={...form,special_prices:form.special_prices||[]};
     if(editId){
-      await sb(`customers?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(form)});
+      await sb(`customers?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(payload)});
     }else{
-      await sb("customers",{method:"POST",body:JSON.stringify(form)});
+      await sb("customers",{method:"POST",body:JSON.stringify(payload)});
     }
     setForm(empty);setShowForm(false);setEditId(null);fetch();
   };
 
   const startEdit=(c:any)=>{
-    setForm({name:c.name||"",address:c.address||"",consignee_name:c.consignee_name||"",consignee_address:c.consignee_address||"",country:c.country||"Japan",currency:c.currency||"JPY",incoterms:c.incoterms||"",contact:c.contact||"",email:c.email||"",remarks:c.remarks||""});
+    setForm({name:c.name||"",address:c.address||"",consignee_name:c.consignee_name||"",consignee_address:c.consignee_address||"",country:c.country||"Japan",currency:c.currency||"JPY",incoterms:c.incoterms||"",contact:c.contact||"",email:c.email||"",remarks:c.remarks||"",special_prices:c.special_prices||[]});
     setEditId(c.id);setShowForm(true);
   };
 
@@ -1948,6 +1979,31 @@ function CustomerPage({onCustomersChange}:any){
               <label className="label">備考（Invoiceに反映）</label>
               <textarea className="input" rows={2} value={form.remarks} placeholder="特記事項" onChange={(e:any)=>setForm((v:any)=>({...v,remarks:e.target.value}))}/>
             </div>
+            <div style={{fontSize:12,fontWeight:600,color:"var(--blue)",marginBottom:8}}>💰 特別価格（この得意先専用の単価）</div>
+            {(!products||products.length===0)?(
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>製品マスタに製品を登録すると、ここで特別価格を設定できます。</div>
+            ):(
+              <>
+                <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+                  <select className="input" style={{flex:"1 1 200px"}} value={spProductId} onChange={(e:any)=>setSpProductId(e.target.value)}>
+                    <option value="">製品を選択...</option>
+                    {products.map((p:any)=><option key={p.id} value={p.id}>{p.name}{p.unit_price?`（標準: ${p.currency} ${Number(p.unit_price).toLocaleString()}）`:""}</option>)}
+                  </select>
+                  <input className="input" style={{width:130}} type="number" placeholder="特別単価" value={spPrice} onChange={(e:any)=>setSpPrice(e.target.value)}/>
+                  <button className="btn btn-secondary btn-sm" onClick={addSpecialPrice}>+ 追加</button>
+                </div>
+                {(form.special_prices||[]).length>0&&(
+                  <div style={{marginBottom:10}}>
+                    {form.special_prices.map((sp:any)=>(
+                      <div key={sp.product_id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 9px",background:"var(--blue-light)",borderRadius:"var(--radius)",fontSize:11,marginBottom:4}}>
+                        <span><strong>{sp.product_name}</strong>：{sp.currency} {Number(sp.unit_price).toLocaleString()}</span>
+                        <button className="btn btn-danger btn-xs" onClick={()=>removeSpecialPrice(sp.product_id)}>削除</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
               <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);setForm(empty);}}>キャンセル</button>
@@ -1980,6 +2036,14 @@ function CustomerPage({onCustomersChange}:any){
               </div>
             )}
             {c.remarks&&<div style={{marginTop:5,fontSize:11,color:"var(--text-muted)"}}>備考: {c.remarks}</div>}
+            {(c.special_prices||[]).length>0&&(
+              <div style={{marginTop:6,padding:"5px 9px",background:"#FFF7E6",borderRadius:"var(--radius)",fontSize:11}}>
+                <span style={{color:"var(--amber, #B7791F)",fontWeight:600}}>💰 特別価格: </span>
+                {c.special_prices.map((sp:any,i:number)=>(
+                  <span key={sp.product_id}>{i>0&&"、"}{sp.product_name} {sp.currency} {Number(sp.unit_price).toLocaleString()}</span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -3062,7 +3126,7 @@ export default function App(){
               </>
             )}
             {page==="history"&&<HistoryPage onLoad={loadInvoice} onCopy={copyInvoice} onConvert={convertToCommercial} onEdit={editInvoice}/>}
-            {page==="customers"&&<CustomerPage onCustomersChange={setCustomers}/>}
+            {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
             {page==="products"&&<ProductPage/>}
             {page==="approval"&&<ApprovalPage showToast={showToast}/>}
             {page==="countryDocs"&&<CountryDocsPage/>}
