@@ -132,10 +132,10 @@ const COUNTRIES = ["Japan","United States","China","Germany","France","United Ki
 
 const INIT_INVOICE: any = {
   invoiceType:"proforma", invoiceNo:"", date:new Date().toISOString().split("T")[0],
-  poNumber:"", paymentDue:"", shipper:"", consignee:"", shipTo:"", notifyParty:"",
+  poNumber:"", paymentDue:"", poFile:"", poFileName:"", shipper:"", consignee:"", shipTo:"", notifyParty:"",
   currency:"JPY", incoterms:"", countryOfOrigin:"Japan", shippingMethod:"", portOfLoading:"",
   remarks:"", expiryDate:"", items:[], status:"draft", language:"ja",
-  trackingNumber:"", paymentConfirmed:false, approvalStatus:"draft",
+  trackingNumber:"", paymentConfirmed:false, shippingCompleted:false, approvalStatus:"draft",
 };
 
 const INIT_ORG: any = {
@@ -431,6 +431,50 @@ function ImgUpload({label,value,onChange,hint}:any){
   );
 }
 
+function FileUpload({label,value,fileName,onChange,accept,hint}:any){
+  const ref=useRef<any>(null);
+  const [preview,setPreview]=useState(false);
+  const handle=(e:any)=>{
+    const f=e.target.files?.[0];
+    if(!f)return;
+    const r=new FileReader();
+    r.onload=(ev)=>{onChange(ev.target?.result as string,f.name);setPreview(false);};
+    r.readAsDataURL(f);
+  };
+  const isPdf=(value||"").startsWith("data:application/pdf");
+  const isImg=(value||"").startsWith("data:image");
+  return(
+    <div className="field">
+      <label className="label">{label}</label>
+      {value?(
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"#F7F7F5",borderRadius:"var(--radius)",marginBottom:preview?6:0,flexWrap:"wrap"}}>
+            <span style={{fontSize:18}}>{isPdf?"📄":isImg?"🖼️":"📎"}</span>
+            <span style={{fontSize:12,flex:"1 1 120px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fileName||"ファイル"}</span>
+            <button type="button" className="btn btn-secondary btn-xs" onClick={()=>setPreview(v=>!v)}>{preview?"閉じる":"👁️ プレビュー"}</button>
+            <button type="button" className="btn btn-secondary btn-xs" onClick={()=>ref.current?.click()}>変更</button>
+            <button type="button" className="btn btn-danger btn-xs" onClick={()=>{onChange("","");setPreview(false);}}>削除</button>
+          </div>
+          {preview&&(
+            isPdf?(
+              <iframe src={value} style={{width:"100%",height:420,border:"1px solid var(--border-strong)",borderRadius:"var(--radius)"}} title="file-preview"/>
+            ):isImg?(
+              <img src={value} alt="preview" style={{maxWidth:"100%",maxHeight:420,borderRadius:"var(--radius)",border:"1px solid var(--border-strong)"}}/>
+            ):null
+          )}
+        </div>
+      ):(
+        <div className="upload-area" onClick={()=>ref.current?.click()}>
+          <div style={{fontSize:22,marginBottom:6}}>📁</div>
+          <div style={{fontSize:12,color:"var(--text-muted)"}}>クリックしてアップロード</div>
+          {hint&&<div style={{fontSize:11,color:"var(--text-light)",marginTop:3}}>{hint}</div>}
+        </div>
+      )}
+      <input ref={ref} type="file" accept={accept||"application/pdf,image/*"} style={{display:"none"}} onChange={handle}/>
+    </div>
+  );
+}
+
 function StepBar({step,setStep,lang,invoiceType,approvalStatus}:any){
   // 統合7ステップワークフロー
   // ① Proforma作成・保存
@@ -604,6 +648,10 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,org,lang}:any
               {PAYMENT_TERMS.map((p:string)=><option key={p}>{p}</option>)}
             </select></div>
         </div>
+        <FileUpload label="📎 発注書（PO）添付 - 受注時に受け取ったPOを保管・プレビューできます" value={invoice.poFile||""} fileName={invoice.poFileName||""}
+          accept="application/pdf,image/*" hint="PDF・画像に対応（5MB程度まで推奨）"
+          onChange={(data:string,name:string)=>setInvoice((v:any)=>({...v,poFile:data,poFileName:name}))}/>
+        <div style={{marginBottom:13}}/>
         <div className="field" style={{marginBottom:13}}>
           <label className="label"><span className="req">*</span>{t.shipper}</label>
           <textarea className="input" value={invoice.shipper||""} rows={3} placeholder={lang==="en"?"Company\nAddress\nCountry":"会社名\n住所\n国"}
@@ -1795,6 +1843,7 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState("");
   const [filterStatus,setFilterStatus]=useState("all");
+  const [previewId,setPreviewId]=useState<string|null>(null);
   const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
 
   const fetch=useCallback(async()=>{
@@ -1811,6 +1860,15 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
     if(!confirm("削除しますか？"))return;
     await sb(`invoices?id=eq.${id}`,{method:"DELETE"});
     fetch();
+  };
+
+  const toggleFlag=async(h:any,field:string,val:boolean)=>{
+    setItems(prev=>prev.map(it=>it.id===h.id?{...it,[field]:val}:it));
+    try{
+      await sb(`invoices?id=eq.${h.id}`,{method:"PATCH",body:JSON.stringify({[field]:val})});
+    }catch(e){
+      setItems(prev=>prev.map(it=>it.id===h.id?{...it,[field]:!val}:it));
+    }
   };
 
   const filtered=items.filter(h=>{
@@ -1836,7 +1894,10 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
         <input className="input" placeholder="🔍 Invoice No・得意先・国で検索..." value={search} onChange={(e:any)=>setSearch(e.target.value)} style={{marginBottom:14}}/>
         {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
         :filtered.length===0?<div className="empty-state"><div className="empty-icon">📭</div><div style={{fontSize:13}}>保存済みの案件がありません</div></div>
-        :filtered.map(h=>(
+        :filtered.map(h=>{
+          const isPdf=(h.po_file||"").startsWith("data:application/pdf");
+          const isImg=(h.po_file||"").startsWith("data:image");
+          return(
           <div key={h.id} className="history-item">
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
               <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>onLoad(h)}>
@@ -1856,7 +1917,7 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
               </div>
             </div>
             <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:4,cursor:"pointer"}} onClick={()=>onLoad(h)}>{h.consignee?.split("\n")[0]||"—"}</div>
-            <div className="history-meta">
+            <div className="history-meta" style={{alignItems:"center"}}>
               {h.country_of_origin&&<span className="tag tag-blue">{h.country_of_origin}</span>}
               {h.date&&<span className="tag tag-gray">{h.date}</span>}
               {h.currency&&<span className="tag tag-green">{h.currency}</span>}
@@ -1869,9 +1930,33 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
                   <span className="tag tag-purple">追跡: {h.tracking_number}</span>
                 )
               )}
+              {h.po_file&&(
+                <button className="btn btn-secondary btn-xs" onClick={(e)=>{e.stopPropagation();setPreviewId(previewId===h.id?null:h.id);}}>
+                  📄 PO{previewId===h.id?"を閉じる":"を確認"}
+                </button>
+              )}
+              <label style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11,cursor:"pointer",background:h.shipping_completed?"var(--green-light)":"#F0EEE9",padding:"3px 8px",borderRadius:20}} onClick={(e)=>e.stopPropagation()}>
+                <input type="checkbox" checked={!!h.shipping_completed} onChange={(e:any)=>toggleFlag(h,"shipping_completed",e.target.checked)} style={{width:13,height:13}}/>
+                🚢 出荷完了
+              </label>
+              <label style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11,cursor:"pointer",background:h.payment_confirmed?"var(--green-light)":"#F0EEE9",padding:"3px 8px",borderRadius:20}} onClick={(e)=>e.stopPropagation()}>
+                <input type="checkbox" checked={!!h.payment_confirmed} onChange={(e:any)=>toggleFlag(h,"payment_confirmed",e.target.checked)} style={{width:13,height:13}}/>
+                💰 入金完了
+              </label>
             </div>
+            {previewId===h.id&&h.po_file&&(
+              <div style={{marginTop:8}}>
+                {h.po_file_name&&<div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{h.po_file_name}</div>}
+                {isPdf?(
+                  <iframe src={h.po_file} style={{width:"100%",height:420,border:"1px solid var(--border-strong)",borderRadius:"var(--radius)"}} title="po-preview"/>
+                ):isImg?(
+                  <img src={h.po_file} alt="PO preview" style={{maxWidth:"100%",maxHeight:420,borderRadius:"var(--radius)",border:"1px solid var(--border-strong)"}}/>
+                ):null}
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -2729,6 +2814,12 @@ function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
           )
         )}
         <div style={{padding:"12px 16px",background:"var(--green-light)",border:"1px solid var(--green-mid)",borderRadius:"var(--radius-lg)",marginBottom:14}}>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:14,fontWeight:500,marginBottom:10}}>
+            <input type="checkbox" checked={invoice.shippingCompleted||false}
+              onChange={(e:any)=>setInvoice((v:any)=>({...v,shippingCompleted:e.target.checked,status:e.target.checked?"completed":(v.status==="completed"?"in_progress":v.status)}))}
+              style={{width:18,height:18}}/>
+            🚢 出荷完了
+          </label>
           <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontSize:14,fontWeight:500}}>
             <input type="checkbox" checked={invoice.paymentConfirmed||false}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,paymentConfirmed:e.target.checked}))}
@@ -2739,10 +2830,7 @@ function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
         <div style={{display:"flex",gap:8,justifyContent:"space-between"}}>
           {onBack&&<button className="btn btn-secondary" onClick={onBack}>← ⑥ 承認に戻る</button>}
           <div style={{display:"flex",gap:8}}>
-            <button className="btn btn-green" onClick={()=>{setInvoice((v:any)=>({...v,status:"completed"}));onSave("completed");}}>
-              🚢 出荷完了としてマーク
-            </button>
-            <button className="btn btn-primary" onClick={()=>onSave(invoice.status||"in_progress")}>
+            <button className="btn btn-primary" onClick={()=>onSave(invoice.shippingCompleted?"completed":(invoice.status||"in_progress"))}>
               💾 保存
             </button>
           </div>
@@ -2838,6 +2926,7 @@ export default function App(){
       const payload={
         invoice_no:invoice.invoiceNo,invoice_type:invoice.invoiceType||"proforma",
         date:invoice.date,po_number:invoice.poNumber,payment_due:invoice.paymentDue,
+        po_file:invoice.poFile||"",po_file_name:invoice.poFileName||"",
         shipper:invoice.shipper,consignee:invoice.consignee,ship_to:invoice.shipTo,
         notify_party:invoice.notifyParty,currency:invoice.currency,incoterms:invoice.incoterms,
         country_of_origin:invoice.countryOfOrigin,shipping_method:invoice.shippingMethod,
@@ -2846,6 +2935,7 @@ export default function App(){
         approval_status:invoice.approvalStatus||"draft",
         tracking_number:invoice.trackingNumber||"",
         payment_confirmed:invoice.paymentConfirmed||false,
+        shipping_completed:invoice.shippingCompleted||false,
         items:invoice.items,packing_items:packing,
         invoice_items:invoice.invoice_items||[],
         commercial_items:invoice.commercial_items||[],
@@ -2875,6 +2965,7 @@ export default function App(){
     setInvoice({...INIT_INVOICE,
       dbId:h.id,invoiceNo:h.invoice_no||"",invoiceType:h.invoice_type||"proforma",
       date:h.date||"",poNumber:h.po_number||"",paymentDue:h.payment_due||"",
+      poFile:h.po_file||"",poFileName:h.po_file_name||"",
       shipper:h.shipper||"",consignee:h.consignee||"",shipTo:h.ship_to||"",
       notifyParty:h.notify_party||"",currency:h.currency||"JPY",incoterms:h.incoterms||"",
       countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
@@ -2882,6 +2973,7 @@ export default function App(){
       expiryDate:h.expiry_date||"",status:h.status||"draft",
       language:h.language||"ja",approvalStatus:h.approval_status||"draft",
       trackingNumber:h.tracking_number||"",paymentConfirmed:h.payment_confirmed||false,
+      shippingCompleted:h.shipping_completed||false,
       items:asArray(h.items),
       invoice_items:asArray(h.invoice_items),
       commercial_items:asArray(h.commercial_items),
@@ -2903,6 +2995,7 @@ export default function App(){
       invoiceType:"commercial",
       date:new Date().toISOString().split("T")[0],
       poNumber:h.po_number||"",paymentDue:h.payment_due||"",
+      poFile:h.po_file||"",poFileName:h.po_file_name||"",
       shipper:h.shipper||"",consignee:h.consignee||"",shipTo:h.ship_to||"",
       notifyParty:h.notify_party||"",currency:h.currency||"JPY",incoterms:h.incoterms||"",
       countryOfOrigin:h.country_of_origin||"",shippingMethod:h.shipping_method||"",
