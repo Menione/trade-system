@@ -1312,7 +1312,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     const buildPackingSection=()=>{
       const spannedRows=withCartonRowSpan(packingRows);
       const rows=spannedRows.map((row:any,i:number)=>`
-        <tr style="background:${row.isFraction?"#FFFBEB":"#fff"}">
+        <tr style="background:#fff">
           ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:center;vertical-align:middle">${row.cartonNo}</td>`:""}
           <td>${row.productName}</td>
           <td style="text-align:right">${row.quantity}</td>
@@ -1628,7 +1628,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     </tr></thead>
                     <tbody>
                       {pageRows.map((row:any,i:number)=>(
-                        <tr key={i} style={{background:row.isFraction?"#FFFBEB":"#fff"}}>
+                        <tr key={i} style={{background:"#fff"}}>
                           {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.quantity}</td>
