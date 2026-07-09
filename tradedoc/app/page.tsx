@@ -2160,7 +2160,7 @@ function CustomerPage({onCustomersChange,products}:any){
 // ============================================================
 // PRODUCT MASTER
 // ============================================================
-function ProductPage(){
+function ProductPage({onProductsChange}:any){
   const [items,setItems]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [showForm,setShowForm]=useState(false);
@@ -2170,10 +2170,10 @@ function ProductPage(){
 
   const fetch=useCallback(async()=>{
     setLoading(true);
-    try{const d=await sb("products?order=created_at.desc");setItems(d||[]);}
+    try{const d=await sb("products?order=created_at.desc");setItems(d||[]);onProductsChange?.(d||[]);}
     catch(e){}
     setLoading(false);
-  },[]);
+  },[onProductsChange]);
 
   useEffect(()=>{fetch();},[fetch]);
 
@@ -3292,7 +3292,7 @@ export default function App(){
             )}
             {page==="history"&&<HistoryPage onLoad={loadInvoice} onCopy={copyInvoice} onConvert={convertToCommercial} onEdit={editInvoice}/>}
             {page==="customers"&&<CustomerPage onCustomersChange={setCustomers} products={products}/>}
-            {page==="products"&&<ProductPage/>}
+            {page==="products"&&<ProductPage onProductsChange={setProducts}/>}
             {page==="approval"&&<ApprovalPage showToast={showToast}/>}
             {page==="countryDocs"&&<CountryDocsPage onCountryDocsChange={setCountryDocs}/>}
             {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
