@@ -2926,13 +2926,20 @@ export default function App(){
   useEffect(()=>{
     // 起動時にトークンを確認
     const checkAuth=async()=>{
-      const token=localStorage.getItem("trade_token");
-      if(token){
-        const user=await getUser(token);
-        if(user){setAuthToken(token);setAuthUser(user);}
-        else{localStorage.removeItem("trade_token");}
+      try{
+        const token=localStorage.getItem("trade_token");
+        if(token){
+          const user=await getUser(token);
+          if(user){setAuthToken(token);setAuthUser(user);}
+          else{localStorage.removeItem("trade_token");}
+        }
+      }catch(e){
+        // ネットワークエラーやSupabase一時停止などで失敗した場合も
+        // ログイン画面に戻れるようにする（読み込み中のまま固まるのを防止）
+        localStorage.removeItem("trade_token");
+      }finally{
+        setAuthLoading(false);
       }
-      setAuthLoading(false);
     };
     checkAuth();
   },[]);
