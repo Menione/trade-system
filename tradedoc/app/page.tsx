@@ -1108,6 +1108,29 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     setList((prev:any[])=>[...prev,{id:Date.now(),productName:"",hsCode:"",quantity:0,unitPrice:0}]);
 
   const [printLang,setPrintLang]=useState(invoice.language||"ja");
+  const PT=printLang==="en"?{
+    invoiceNo:"Invoice No.",date:"Date",incoterms:"Incoterms",countryOfOrigin:"Country of Origin",
+    poNumber:"P.O. Number",paymentTerms:"Payment Terms",shippingMethod:"Shipping Method",portOfLoading:"Port of Loading",
+    shipper:"SHIPPER",consignee:"CONSIGNEE",consigneeRecipient:"CONSIGNEE / RECIPIENT",shipTo:"SHIP TO",
+    description:"Description of Goods",descriptionShort:"Description",qty:"Qty",unitPrice:"Unit Price",amount:"Amount",
+    expiry:"Expiry",total:"TOTAL",totalQty:"TOTAL QTY",remarks:"Remarks",
+    bankInfo:"Banking Information",bank:"Bank",branch:"Branch",bankAddress:"Bank Address",accountNo:"Account No",swift:"SWIFT",
+    lotNo:"Lot No.",shipDate:"Ship Date:",no:"No.",dateLabel:"Date:",trackingNo:"Tracking No:",
+    authorizedShipper:"AUTHORIZED BY (SHIPPER)",receivedRecipient:"RECEIVED BY (RECIPIENT)",
+    nameSignatureDate:"Name & Signature / Date",dateReceived:"Date received:",
+    authorizedBy:(name:string,company:string)=>`Authorized by ${name}, ${company||""}`,
+  }:{
+    invoiceNo:"請求書番号",date:"作成日付",incoterms:"インコタームズ",countryOfOrigin:"原産国",
+    poNumber:"発注番号",paymentTerms:"支払条件",shippingMethod:"輸送方法",portOfLoading:"積出港",
+    shipper:"荷送人",consignee:"荷受人",consigneeRecipient:"荷受人／受取人",shipTo:"納入先",
+    description:"品名",descriptionShort:"品名",qty:"数量",unitPrice:"単価",amount:"金額",
+    expiry:"賞味/使用期限",total:"合計",totalQty:"数量合計",remarks:"備考",
+    bankInfo:"銀行口座情報",bank:"銀行名",branch:"支店名",bankAddress:"銀行住所",accountNo:"口座番号",swift:"SWIFTコード",
+    lotNo:"ロット番号",shipDate:"出荷日：",no:"番号",dateLabel:"日付：",trackingNo:"追跡番号：",
+    authorizedShipper:"署名（荷送人）",receivedRecipient:"受領サイン（受取人）",
+    nameSignatureDate:"氏名・署名／日付",dateReceived:"受領日：",
+    authorizedBy:(name:string,company:string)=>`${company||""}　${name}　承認`,
+  };
   const updInvItem=(id:any,k:string,v:any)=>updItem(invoiceItems,setInvoiceItems,id,k,v);
   const delInvItem=(id:any)=>delItem(invoiceItems,setInvoiceItems,id);
   const addInvItem=()=>addItem(setInvoiceItems);
@@ -1246,13 +1269,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       const total=items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
       const bankSection=showBank&&org?.bankName?`
         <div style="margin-top:16px;font-size:9px;border:1px solid #ddd;padding:8px;border-radius:4px">
-          <div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px">Banking Information</div>
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px">${PT.bankInfo}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            ${org.bankName?`<div><span style="color:#666">Bank: </span>${org.bankName}</div>`:""}
-            ${org.bankBranch?`<div><span style="color:#666">Branch: </span>${org.bankBranch}</div>`:""}
-            ${org.bankAddress?`<div style="grid-column:1/-1"><span style="color:#666">Address: </span>${org.bankAddress}</div>`:""}
-            ${org.accountNo?`<div><span style="color:#666">Account: </span>${org.accountNo}</div>`:""}
-            ${org.swiftCode?`<div><span style="color:#666">SWIFT: </span>${org.swiftCode}</div>`:""}
+            ${org.bankName?`<div><span style="color:#666">${PT.bank}: </span>${org.bankName}</div>`:""}
+            ${org.bankBranch?`<div><span style="color:#666">${PT.branch}: </span>${org.bankBranch}</div>`:""}
+            ${org.bankAddress?`<div style="grid-column:1/-1"><span style="color:#666">${PT.bankAddress}: </span>${org.bankAddress}</div>`:""}
+            ${org.accountNo?`<div><span style="color:#666">${PT.accountNo}: </span>${org.accountNo}</div>`:""}
+            ${org.swiftCode?`<div><span style="color:#666">${PT.swift}: </span>${org.swiftCode}</div>`:""}
           </div>
         </div>`:"";
       const sigSection=`
@@ -1278,32 +1301,32 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           </div>
           <div style="height:2px;background:#000;margin-bottom:16px"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
-            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Invoice No.</div><strong>${invoice.invoiceNo||"—"}</strong></div>
-            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Date</div>${invoice.date||"—"}</div>
-            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Incoterms</div>${invoice.incoterms||"—"}</div>
-            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Country of Origin</div>${invoice.countryOfOrigin||"—"}</div>
-            ${invoice.poNumber?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">P.O. Number</div>${invoice.poNumber}</div>`:""}
-            ${invoice.paymentDue?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Payment Terms</div>${invoice.paymentDue}</div>`:""}
-            ${invoice.shippingMethod?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">Shipping Method</div>${invoice.shippingMethod}</div>`:""}
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">${PT.invoiceNo}</div><strong>${invoice.invoiceNo||"—"}</strong></div>
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">${PT.date}</div>${invoice.date||"—"}</div>
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">${PT.incoterms}</div>${invoice.incoterms||"—"}</div>
+            <div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">${PT.countryOfOrigin}</div>${invoice.countryOfOrigin||"—"}</div>
+            ${invoice.poNumber?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">${PT.poNumber}</div>${invoice.poNumber}</div>`:""}
+            ${invoice.paymentDue?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">${PT.paymentTerms}</div>${invoice.paymentDue}</div>`:""}
+            ${invoice.shippingMethod?`<div style="padding:4px 0;border-bottom:1px solid #eee"><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666">${PT.shippingMethod}</div>${invoice.shippingMethod}</div>`:""}
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
-            <div><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-bottom:3px">SHIPPER</div><div style="white-space:pre-wrap;font-size:10px">${invoice.shipper||"—"}</div></div>
-            <div><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-bottom:3px">CONSIGNEE</div><div style="white-space:pre-wrap;font-size:10px">${invoice.consignee||"—"}</div>
-            ${invoice.shipTo?`<div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-top:8px;margin-bottom:3px">SHIP TO</div><div style="white-space:pre-wrap;font-size:10px">${invoice.shipTo}</div>`:""}
+            <div><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-bottom:3px">${PT.shipper}</div><div style="white-space:pre-wrap;font-size:10px">${invoice.shipper||"—"}</div></div>
+            <div><div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-bottom:3px">${PT.consignee}</div><div style="white-space:pre-wrap;font-size:10px">${invoice.consignee||"—"}</div>
+            ${invoice.shipTo?`<div style="font-size:8px;font-weight:600;text-transform:uppercase;color:#666;margin-top:8px;margin-bottom:3px">${PT.shipTo}</div><div style="white-space:pre-wrap;font-size:10px">${invoice.shipTo}</div>`:""}
             </div>
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">Description of Goods</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:55px">Qty</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">Unit Price</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">Amount</th>
-              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:left;background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">${PT.description}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:55px">${PT.qty}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:90px">${PT.unitPrice}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:100px">${PT.amount}</th>
+              ${showExp?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${PT.expiry}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
-            <tfoot><tr><td colspan="${showExp?5:4}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">TOTAL: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
+            <tfoot><tr><td colspan="${showExp?5:4}" style="padding:8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000">${PT.total}: ${cur} ${fmt(total,cur)}</td></tr></tfoot>
           </table>
-          ${remarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">Remarks</div><div style="font-size:10px;white-space:pre-wrap">${remarks}</div></div>`:""}
+          ${remarks?`<div style="margin-top:10px"><div style="font-size:9px;font-weight:600;color:#666;margin-bottom:3px;text-transform:uppercase">${PT.remarks}</div><div style="font-size:10px;white-space:pre-wrap">${remarks}</div></div>`:""}
           ${bankSection}
           ${sigSection}
         </div>`;
@@ -1338,17 +1361,17 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           <div style="height:2px;background:#000;margin-bottom:16px"></div>
           <table style="width:100%;border-collapse:collapse;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">Carton No</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px">Description</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">Qty</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">G.W.(kg)</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">N.W.(kg)</th>
-              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions</th>
-              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="en"?"Expiry":"賞味/使用期限"}</th>`:""}
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="en"?"Carton No":"番号"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="en"?"Description":"商品 & 詳細"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:60px">${PT.qty}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="en"?"G.W.(kg)":"総重量(kg)"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;text-align:right;width:80px">${printLang==="en"?"N.W.(kg)":"正味重量(kg)"}</th>
+              <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:100px">Dimensions(cm)</th>
+              ${packingRows.some((r:any)=>r.expiryDate)?`<th style="border:1px solid #444;padding:6px 8px;font-size:10px">${PT.expiry}</th>`:""}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
-              <td style="border:1px solid #ccc;padding:4px 6px">TOTAL</td>
+              <td style="border:1px solid #ccc;padding:4px 6px">${PT.total}</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0)}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
@@ -1402,21 +1425,21 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       </div>
       <div style={{height:2,background:"#000",marginBottom:16}}></div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
-        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Invoice No.</div><strong>{invoice.invoiceNo||"—"}</strong></div>
-        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Date</div>{invoice.date||"—"}</div>
-        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Incoterms</div>{invoice.incoterms||"—"}</div>
-        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Country of Origin</div>{invoice.countryOfOrigin||"—"}</div>
-        {invoice.poNumber&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>P.O. Number</div>{invoice.poNumber}</div>}
-        {invoice.paymentDue&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Payment Terms</div>{invoice.paymentDue}</div>}
-        {invoice.shippingMethod&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Shipping Method</div>{invoice.shippingMethod}</div>}
-        {invoice.portOfLoading&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>Port of Loading</div>{invoice.portOfLoading}</div>}
+        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.invoiceNo}</div><strong>{invoice.invoiceNo||"—"}</strong></div>
+        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.date}</div>{invoice.date||"—"}</div>
+        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.incoterms}</div>{invoice.incoterms||"—"}</div>
+        <div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.countryOfOrigin}</div>{invoice.countryOfOrigin||"—"}</div>
+        {invoice.poNumber&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.poNumber}</div>{invoice.poNumber}</div>}
+        {invoice.paymentDue&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.paymentTerms}</div>{invoice.paymentDue}</div>}
+        {invoice.shippingMethod&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.shippingMethod}</div>{invoice.shippingMethod}</div>}
+        {invoice.portOfLoading&&<div style={{padding:"4px 0",borderBottom:"1px solid #eee"}}><div style={{fontSize:8,fontWeight:600,textTransform:"uppercase" as any,color:"#666",marginBottom:1}}>{PT.portOfLoading}</div>{invoice.portOfLoading}</div>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:10}}>
-        <div><div className="meta-key" style={{marginBottom:3}}>SHIPPER</div><div style={{whiteSpace:"pre-wrap",fontSize:10}}>{invoice.shipper||"—"}</div></div>
+        <div><div className="meta-key" style={{marginBottom:3}}>{PT.shipper}</div><div style={{whiteSpace:"pre-wrap",fontSize:10}}>{invoice.shipper||"—"}</div></div>
         <div>
-          <div className="meta-key" style={{marginBottom:3}}>CONSIGNEE</div>
+          <div className="meta-key" style={{marginBottom:3}}>{PT.consignee}</div>
           <div style={{whiteSpace:"pre-wrap",fontSize:10}}>{invoice.consignee||"—"}</div>
-          {invoice.shipTo&&<><div className="meta-key" style={{marginBottom:3,marginTop:8}}>SHIP TO</div><div style={{whiteSpace:"pre-wrap",fontSize:10}}>{invoice.shipTo}</div></>}
+          {invoice.shipTo&&<><div className="meta-key" style={{marginBottom:3,marginTop:8}}>{PT.shipTo}</div><div style={{whiteSpace:"pre-wrap",fontSize:10}}>{invoice.shipTo}</div></>}
         </div>
       </div>
     </>
@@ -1451,17 +1474,17 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           {invoice.paymentTerms&&<MetaRow label={printLang==="en"?"Payment Terms:":"支払い条件："} value={invoice.paymentTerms}/>}
           {invoice.paymentDue&&<MetaRow label={printLang==="en"?"Payment Due:":"支払い期限："} value={invoice.paymentDue}/>}
           {invoice.poNumber&&<MetaRow label={printLang==="en"?"P.O. No:":"発注番号："} value={invoice.poNumber}/>}
-          {invoice.shippingMethod&&<MetaRow label="Shipping Method：" value={invoice.shippingMethod}/>}
-          {invoice.incoterms&&<MetaRow label="Incoterms：" value={invoice.incoterms}/>}
-          <MetaRow label="Total Cartons：" value={`${packing.length} CTNS`}/>
-          <MetaRow label="Total G.W.：" value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
+          {invoice.shippingMethod&&<MetaRow label={`${PT.shippingMethod}：`} value={invoice.shippingMethod}/>}
+          {invoice.incoterms&&<MetaRow label={`${PT.incoterms}：`} value={invoice.incoterms}/>}
+          <MetaRow label={printLang==="en"?"Total Cartons：":"梱包総数："} value={`${packing.length} CTNS`}/>
+          <MetaRow label={printLang==="en"?"Total G.W.：":"総重量合計："} value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
         </div>
         <div>
           <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{printLang==="en"?"CONSIGNEE":"請求先"}</div>
           {invoice.consignee&&<div style={{fontWeight:700,fontSize:11,marginBottom:2}}>{invoice.consignee.split("\n")[0]}</div>}
           <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
           {invoice.shipTo&&<>
-            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginTop:8,marginBottom:4}}>SHIP TO</div>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginTop:8,marginBottom:4}}>{PT.shipTo}</div>
             <div style={{whiteSpace:"pre-wrap",fontSize:10}}>{invoice.shipTo}</div>
           </>}
         </div>
@@ -1514,11 +1537,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                 <>
                   <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
                     <thead><tr style={{background:"#222",color:"#fff"}}>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description of Goods</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:55}}>Qty</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:85}}>Unit Price</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:95}}>Amount</th>
-                      {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Expiry</th>}
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>{PT.description}</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:55}}>{PT.qty}</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:85}}>{PT.unitPrice}</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:95}}>{PT.amount}</th>
+                      {showExp&&<th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{PT.expiry}</th>}
                       </tr></thead>
                     <tbody>
                       {items.map((it:any,i:number)=>(
@@ -1538,7 +1561,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     </tbody>
                     <tfoot>
                       <tr><td colSpan={showExp?5:4} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>
-                        TOTAL: {docCur} {fmt(items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
+                        {PT.total}: {docCur} {fmt(items.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),docCur)}
                       </td></tr>
                     </tfoot>
                   </table>
@@ -1546,7 +1569,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     <button onClick={addFn} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
                   </div>
                   {remarks!==undefined&&<div style={{marginTop:10}}>
-                    <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase"}}>Remarks</div>
+                    <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase"}}>{PT.remarks}</div>
                     <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical",minHeight:36}} value={remarks} onChange={(e:any)=>setRemarks(e.target.value)}/>
                     <div className="print-only" style={{fontSize:10,whiteSpace:"pre-wrap"}}>{remarks}</div>
                   </div>}
@@ -1562,11 +1585,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                      {org.bankName&&<div><span style={{color:"#666"}}>Bank: </span>{org.bankName}</div>}
-                      {org.bankBranch&&<div><span style={{color:"#666"}}>Branch: </span>{org.bankBranch}</div>}
-                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>Bank Address: </span>{org.bankAddress}</div>}
-                      {org.accountNo&&<div><span style={{color:"#666"}}>Account No: </span>{org.accountNo}</div>}
-                      {org.swiftCode&&<div><span style={{color:"#666"}}>SWIFT: </span>{org.swiftCode}</div>}
+                      {org.bankName&&<div><span style={{color:"#666"}}>{PT.bank}: </span>{org.bankName}</div>}
+                      {org.bankBranch&&<div><span style={{color:"#666"}}>{PT.branch}: </span>{org.bankBranch}</div>}
+                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>{PT.bankAddress}: </span>{org.bankAddress}</div>}
+                      {org.accountNo&&<div><span style={{color:"#666"}}>{PT.accountNo}: </span>{org.accountNo}</div>}
+                      {org.swiftCode&&<div><span style={{color:"#666"}}>{PT.swift}: </span>{org.swiftCode}</div>}
                     </div>
                   </div>
                 )}
@@ -1581,11 +1604,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                      {org.bankName&&<div><span style={{color:"#666"}}>Bank: </span>{org.bankName}</div>}
-                      {org.bankBranch&&<div><span style={{color:"#666"}}>Branch: </span>{org.bankBranch}</div>}
-                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>Bank Address: </span>{org.bankAddress}</div>}
-                      {org.accountNo&&<div><span style={{color:"#666"}}>Account No: </span>{org.accountNo}</div>}
-                      {org.swiftCode&&<div><span style={{color:"#666"}}>SWIFT: </span>{org.swiftCode}</div>}
+                      {org.bankName&&<div><span style={{color:"#666"}}>{PT.bank}: </span>{org.bankName}</div>}
+                      {org.bankBranch&&<div><span style={{color:"#666"}}>{PT.branch}: </span>{org.bankBranch}</div>}
+                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>{PT.bankAddress}: </span>{org.bankAddress}</div>}
+                      {org.accountNo&&<div><span style={{color:"#666"}}>{PT.accountNo}: </span>{org.accountNo}</div>}
+                      {org.swiftCode&&<div><span style={{color:"#666"}}>{PT.swift}: </span>{org.swiftCode}</div>}
                     </div>
                   </div>
                 )}
@@ -1600,11 +1623,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                   <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                      {org.bankName&&<div><span style={{color:"#666"}}>Bank: </span>{org.bankName}</div>}
-                      {org.bankBranch&&<div><span style={{color:"#666"}}>Branch: </span>{org.bankBranch}</div>}
-                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>Bank Address: </span>{org.bankAddress}</div>}
-                      {org.accountNo&&<div><span style={{color:"#666"}}>Account No: </span>{org.accountNo}</div>}
-                      {org.swiftCode&&<div><span style={{color:"#666"}}>SWIFT: </span>{org.swiftCode}</div>}
+                      {org.bankName&&<div><span style={{color:"#666"}}>{PT.bank}: </span>{org.bankName}</div>}
+                      {org.bankBranch&&<div><span style={{color:"#666"}}>{PT.branch}: </span>{org.bankBranch}</div>}
+                      {org.bankAddress&&<div style={{gridColumn:"1/-1"}}><span style={{color:"#666"}}>{PT.bankAddress}: </span>{org.bankAddress}</div>}
+                      {org.accountNo&&<div><span style={{color:"#666"}}>{PT.accountNo}: </span>{org.accountNo}</div>}
+                      {org.swiftCode&&<div><span style={{color:"#666"}}>{PT.swift}: </span>{org.swiftCode}</div>}
                     </div>
                   </div>
                 )}
@@ -1620,7 +1643,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     <thead><tr style={{background:"#222",color:"#fff"}}>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{printLang==="en"?"Carton No":"番号"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="en"?"Description":"商品 & 詳細"}</th>
-                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>Qty</th>
+                      <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:60}}>{PT.qty}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="en"?"G.W.(kg)":"総重量(kg)"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:80}}>{printLang==="en"?"N.W.(kg)":"正味重量(kg)"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:100}}>Dimensions(cm)</th>
@@ -1642,7 +1665,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     {pi===packingPages.length-1&&(
                       <tfoot>
                         <tr style={{fontWeight:700,borderTop:"2px solid #000"}}>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>TOTAL</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{PT.total}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
@@ -1664,7 +1687,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div>
         <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>DELIVERY NOTE</div>
         {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>No. <strong>{invoice.invoiceNo}</strong></div>}
-        {invoice.date&&<div style={{fontSize:11,color:"#444"}}>Ship Date: <strong>{invoice.date}</strong></div>}
+        {invoice.date&&<div style={{fontSize:11,color:"#444"}}>{PT.shipDate} <strong>{invoice.date}</strong></div>}
       </div>
       <div style={{textAlign:"right",fontSize:10}}>
         {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
@@ -1677,26 +1700,26 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     <div style={{height:2,background:"#000",marginBottom:16}}></div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
       <div>
-        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>CONSIGNEE</div>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{PT.consignee}</div>
         <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{invoice.consignee?.split("\n")[0]||""}</div>
         <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
       </div>
       <div style={{fontSize:11}}>
-        {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>P.O. No: </span><strong>{invoice.poNumber}</strong></div>}
-        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Terms: </span>{invoice.paymentDue}</div>}
-        {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Incoterms: </span>{invoice.incoterms}</div>}
-        {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Shipping: </span>{invoice.shippingMethod}</div>}
+        {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.poNumber}: </span><strong>{invoice.poNumber}</strong></div>}
+        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.paymentTerms}: </span>{invoice.paymentDue}</div>}
+        {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.incoterms}: </span>{invoice.incoterms}</div>}
+        {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.shippingMethod}: </span>{invoice.shippingMethod}</div>}
       </div>
     </div>
     {/* 品目テーブル（編集可） */}
     <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
       <thead><tr style={{background:"#222",color:"#fff"}}>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>Description</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:50}}>Qty</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>Unit Price</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>Amount</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Lot No.</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Expiry</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left"}}>{PT.descriptionShort}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:50}}>{PT.qty}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:90}}>{PT.unitPrice}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:100}}>{PT.amount}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{PT.lotNo}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{PT.expiry}</th>
         <th style={{border:"none",width:28}} className="no-print"></th>
       </tr></thead>
       <tbody>
@@ -1716,7 +1739,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
         ))}
       </tbody>
       <tfoot>
-        <tr><td colSpan={3} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>TOTAL</td>
+        <tr><td colSpan={3} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>{PT.total}</td>
         <td style={{padding:"8px",fontWeight:700,fontSize:12,borderTop:"2px solid #000",textAlign:"right"}}>{cur} {fmt(invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
         <td colSpan={3} style={{borderTop:"2px solid #000"}}></td></tr>
       </tfoot>
@@ -1725,18 +1748,18 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <button onClick={addInvItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
     </div>
     {invoiceRemarks&&<div style={{marginTop:12}}>
-      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>REMARKS</div>
+      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>{PT.remarks}</div>
       <div style={{fontSize:10,whiteSpace:"pre-wrap"}} className="print-only">{invoiceRemarks}</div>
       <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
     </div>}
     {!invoiceRemarks&&<div className="no-print" style={{marginTop:12}}>
-      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>REMARKS</div>
+      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>{PT.remarks}</div>
       <textarea style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
     </div>}
     <div style={{marginTop:40,display:"flex",justifyContent:"flex-end"}}>
       <div style={{textAlign:"center",minWidth:200}}>
         {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain" as any,marginBottom:4}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
-        <div style={{fontSize:10,fontWeight:600}}>{org?.signerName?`Authorized by ${org.signerName}, ${org.companyName||""}`:""}</div>
+        <div style={{fontSize:10,fontWeight:600}}>{org?.signerName?PT.authorizedBy(org.signerName,org.companyName):""}</div>
       </div>
     </div>
   </div>
@@ -1748,7 +1771,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div>
         <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>DELIVERY RECEIPT</div>
         {invoice.invoiceNo&&<div style={{fontSize:11,color:"#444"}}>No. <strong>{invoice.invoiceNo}</strong></div>}
-        {invoice.date&&<div style={{fontSize:11,color:"#444"}}>Date: <strong>{invoice.date}</strong></div>}
+        {invoice.date&&<div style={{fontSize:11,color:"#444"}}>{PT.dateLabel} <strong>{invoice.date}</strong></div>}
       </div>
       <div style={{textAlign:"right",fontSize:10}}>
         {org?.logoBase64&&<img src={org.logoBase64} alt="logo" style={{maxHeight:60,maxWidth:200,objectFit:"contain",marginBottom:4,display:"block",marginLeft:"auto"}}/>}
@@ -1761,29 +1784,29 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     {/* Meta info */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
       <div>
-        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>CONSIGNEE / RECIPIENT</div>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{PT.consigneeRecipient}</div>
         <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{invoice.consignee?.split("\n")[0]||""}</div>
         <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
         {invoice.shipTo&&<>
-          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginTop:8,marginBottom:2}}>SHIP TO</div>
+          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginTop:8,marginBottom:2}}>{PT.shipTo}</div>
           <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.shipTo}</div>
         </>}
       </div>
       <div style={{fontSize:11}}>
-        {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>P.O. No: </span><strong>{invoice.poNumber}</strong></div>}
-        {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Incoterms: </span>{invoice.incoterms}</div>}
-        {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Shipping Method: </span>{invoice.shippingMethod}</div>}
-        {invoice.trackingNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Tracking No: </span>{invoice.trackingNumber}</div>}
-        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>Payment Terms: </span>{invoice.paymentDue}</div>}
+        {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.poNumber}: </span><strong>{invoice.poNumber}</strong></div>}
+        {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.incoterms}: </span>{invoice.incoterms}</div>}
+        {invoice.shippingMethod&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.shippingMethod}: </span>{invoice.shippingMethod}</div>}
+        {invoice.trackingNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.trackingNo} </span>{invoice.trackingNumber}</div>}
+        {invoice.paymentDue&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.paymentTerms}: </span>{invoice.paymentDue}</div>}
       </div>
     </div>
     {/* Items table */}
     <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
       <thead><tr style={{background:"#222",color:"#fff"}}>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left",minWidth:160}}>Description</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:50}}>Qty</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Lot No.</th>
-        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>Expiry</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"left",minWidth:160}}>{PT.descriptionShort}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,textAlign:"right",width:50}}>{PT.qty}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{PT.lotNo}</th>
+        <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{PT.expiry}</th>
         <th style={{border:"none",width:28}} className="no-print"></th>
       </tr></thead>
       <tbody>
@@ -1802,7 +1825,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       </tbody>
       <tfoot>
         <tr><td colSpan={4} style={{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:11,borderTop:"2px solid #000"}}>
-          TOTAL QTY: {invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity)||0),0)}
+          {PT.totalQty}: {invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity)||0),0)}
         </td></tr>
       </tfoot>
     </table>
@@ -1811,7 +1834,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     </div>
     {/* Remarks */}
     {(invoiceRemarks||true)&&<div style={{marginTop:12}}>
-      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>REMARKS</div>
+      <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>{PT.remarks}</div>
       <div style={{fontSize:10,whiteSpace:"pre-wrap"}} className="print-only">{invoiceRemarks}</div>
       <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
     </div>}
@@ -1819,7 +1842,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     <div style={{marginTop:48,display:"grid",gridTemplateColumns:"1fr 1fr",gap:40}}>
       {/* Shipper signature */}
       <div style={{textAlign:"center"}}>
-        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:6}}>AUTHORIZED BY (SHIPPER)</div>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:6}}>{PT.authorizedShipper}</div>
         {org?.signatureBase64
           ?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain" as any,marginBottom:4}}/>
           :<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
@@ -1829,11 +1852,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       </div>
       {/* Recipient signature */}
       <div style={{textAlign:"center"}}>
-        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:6}}>RECEIVED BY (RECIPIENT)</div>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:6}}>{PT.receivedRecipient}</div>
         <div style={{height:60,borderBottom:"1px solid #000",marginBottom:4}}></div>
-        <div style={{fontSize:9,color:"#666",marginBottom:20}}>Name &amp; Signature / Date</div>
+        <div style={{fontSize:9,color:"#666",marginBottom:20}}>{PT.nameSignatureDate}</div>
         <div style={{display:"flex",alignItems:"flex-end",gap:8,marginTop:4}}>
-          <div style={{fontSize:9,color:"#666",whiteSpace:"nowrap",marginBottom:2}}>Date received:</div>
+          <div style={{fontSize:9,color:"#666",whiteSpace:"nowrap",marginBottom:2}}>{PT.dateReceived}</div>
           <div style={{flex:1,borderBottom:"1px solid #000",marginBottom:0}}></div>
         </div>
       </div>
