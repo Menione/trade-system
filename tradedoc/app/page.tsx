@@ -159,6 +159,20 @@ function fmt(amount: number, currency: string) {
   return nd.includes(currency) ? Math.round(amount).toLocaleString("ja-JP") : amount.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
+// 単価入力欄用：カンマ区切り表示⇔生の数値文字列の相互変換
+function formatPriceDisplay(val: any): string {
+  if (val === "" || val === null || val === undefined) return "";
+  const s = String(val);
+  const n = Number(s.replace(/,/g, ""));
+  if (isNaN(n)) return s;
+  const [intPart, decPart] = s.replace(/,/g, "").split(".");
+  const intFormatted = Number(intPart || 0).toLocaleString("en-US");
+  return decPart !== undefined ? `${intFormatted}.${decPart}` : intFormatted;
+}
+function parsePriceInput(val: string): string {
+  return val.replace(/[^0-9.]/g, "");
+}
+
 // 賞味期限を YYYY-MM（年月のみ）にフォーマット
 function fmtExpiry(val: string): string {
   if (!val) return "";
@@ -805,7 +819,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,o
                       </td>
                       <td><input className="input" value={item.productName||""} placeholder={t.productName} onChange={(e:any)=>upd(item.id,"productName",e.target.value)}/></td>
                       <td><input className="input" type="number" value={item.quantity||""} placeholder="0" onChange={(e:any)=>upd(item.id,"quantity",e.target.value)}/></td>
-                      <td><input className="input" type="number" value={item.unitPrice||""} placeholder="0" onChange={(e:any)=>upd(item.id,"unitPrice",e.target.value)}/></td>
+                      <td><input className="input" type="text" inputMode="decimal" value={formatPriceDisplay(item.unitPrice)} placeholder="0" onChange={(e:any)=>upd(item.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
                       <td><select className="input" value={item.currency||cur} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
                         {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
                       <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
@@ -1262,7 +1276,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             ${it.hsCode?`<div style="font-size:8px;color:#888;font-family:monospace;margin-top:2px">HS: ${it.hsCode}</div>`:""}
           </td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.unitPrice||0}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${formatPriceDisplay(it.unitPrice||0)}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
           ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${fmtExpiry(it.expiryDate||"")}</td>`:""}
         </tr>`).join("");
@@ -1552,7 +1566,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                             {!it.hsCode&&<div style={{fontSize:8,color:"#bbb",marginTop:2}} className="no-print"><input placeholder="HS Code（任意）" style={{border:"none",outline:"none",fontSize:8,color:"#aaa",fontFamily:"monospace",background:"transparent",width:"100%"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
                           </td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updFn(it.id,"unitPrice",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updFn(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
                           {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:68,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
                           <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
@@ -1730,7 +1744,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
             </td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.unitPrice||""} onChange={(e:any)=>updInvItem(it.id,"unitPrice",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updInvItem(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
@@ -2685,7 +2699,7 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
                     <tr key={item.id}>
                       <td><input className="input" value={item.productName||""} onChange={(e:any)=>upd(item.id,"productName",e.target.value)}/></td>
                       <td><input className="input" type="number" value={item.quantity||""} onChange={(e:any)=>upd(item.id,"quantity",e.target.value)}/></td>
-                      <td><input className="input" type="number" value={item.unitPrice||""} onChange={(e:any)=>upd(item.id,"unitPrice",e.target.value)}/></td>
+                      <td><input className="input" type="text" inputMode="decimal" value={formatPriceDisplay(item.unitPrice)} onChange={(e:any)=>upd(item.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
                       <td><select className="input" value={ic} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
                         {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
                       <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
