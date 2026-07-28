@@ -1253,6 +1253,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     .bank-section{margin-top:16px;font-size:9px;border:1px solid #ddd;padding:8px;border-radius:4px}
     .bank-title{font-size:8px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:6px}.no-print{display:none !important}
     td{word-wrap:break-word;white-space:normal}
+    #print-area>div{min-height:0 !important}
   `;
 
   const handlePrint=()=>{
@@ -1260,7 +1261,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     if(!el)return;
     const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Invoice":"Packing List"}</title><style>@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    const printTitle=activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":activeDoc==="invoice"?"Invoice":activeDoc==="delivery"?"Delivery Note":activeDoc==="receipt"?"Delivery Receipt":"Packing List";
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${printTitle}</title><style>@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
