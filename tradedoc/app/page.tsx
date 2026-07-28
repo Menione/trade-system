@@ -1228,7 +1228,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   const packingPages:any[][]=packingPagesRaw.map(withCartonRowSpan);
 
   const printStyle=`
-    @page{margin:20mm 15mm 15mm 15mm;size:A4}
+    @page{margin:12mm 15mm 12mm 15mm;size:A4}
     html{-webkit-print-color-adjust:exact}
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
     body{font-family:sans-serif;font-size:10px;color:#000}
@@ -1509,7 +1509,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   );
 
   const SignatureSection=()=>(
-    <div style={{marginTop:40,display:"flex",justifyContent:"flex-end"}}>
+    <div style={{marginTop:24,display:"flex",justifyContent:"flex-end"}}>
       <div style={{textAlign:"center",minWidth:200}}>
         {org?.signatureBase64?<img src={org.signatureBase64} alt="signature" style={{height:50,objectFit:"contain",marginBottom:4}}/>:<div style={{height:50,borderBottom:"1px solid #000",marginBottom:4}}></div>}
         <div style={{fontSize:10,fontWeight:600}}>{org?.signerName||""}</div>
@@ -1598,7 +1598,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     <InvoiceHeader title="PROFORMA INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
-                  <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
+                  <div style={{marginTop:12,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                       {org.bankName&&<div><span style={{color:"#666"}}>{PT.bank}: </span>{org.bankName}</div>}
@@ -1617,7 +1617,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     <InvoiceHeader title="INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
-                  <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
+                  <div style={{marginTop:12,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                       {org.bankName&&<div><span style={{color:"#666"}}>{PT.bank}: </span>{org.bankName}</div>}
@@ -1636,7 +1636,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                     <InvoiceHeader title="COMMERCIAL INVOICE"/>
                     {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur)}
                 {org?.bankName&&(
-                  <div style={{marginTop:16,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
+                  <div style={{marginTop:12,fontSize:9,border:"1px solid #ddd",padding:8,borderRadius:4}}>
                     <div style={{fontSize:8,fontWeight:700,textTransform:"uppercase" as any,color:"#666",marginBottom:6}}>Banking Information / 銀行口座情報</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                       {org.bankName&&<div><span style={{color:"#666"}}>{PT.bank}: </span>{org.bankName}</div>}
