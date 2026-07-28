@@ -170,7 +170,9 @@ function formatPriceDisplay(val: any): string {
   return decPart !== undefined ? `${intFormatted}.${decPart}` : intFormatted;
 }
 function parsePriceInput(val: string): string {
-  return val.replace(/[^0-9.]/g, "");
+  const negative = val.trim().startsWith("-");
+  const digits = val.replace(/[^0-9.]/g, "");
+  return negative ? `-${digits}` : digits;
 }
 
 // 賞味期限を YYYY-MM（年月のみ）にフォーマット
