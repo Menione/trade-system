@@ -1270,6 +1270,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       totalQty:cur.quantity*count,
       grossWeight:(cur.grossWeight*count).toFixed(2),
       netWeight:(cur.netWeight*count).toFixed(2),
+      grossPerCarton:Number(cur.grossWeight).toFixed(2), // 1箱分の総重量
+      netPerCarton:Number(cur.netWeight).toFixed(2), // 1箱分の正味重量
+      cartonCount:count,
       dimensions:[cur.dimL,cur.dimW,cur.dimH].every(Boolean)?`${cur.dimL}x${cur.dimW}x${cur.dimH}`:"—",
       isFraction:cur.isFraction,
       expiryDate:cur.expiryDate||"",
@@ -1429,8 +1432,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
           ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:center;vertical-align:middle">${row.cartonNo}</td>`:""}
           <td>${row.productName}</td>
           <td style="text-align:right">${fmtQty(row.quantity)}</td>
-          <td style="text-align:right">${row.grossWeight}</td>
-          <td style="text-align:right">${row.netWeight}</td>
+          <td style="text-align:right">${row.grossWeight}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.grossPerCarton}/箱)</div>`:""}</td>
+          <td style="text-align:right">${row.netWeight}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.netPerCarton}/箱)</div>`:""}</td>
           <td>${row.dimensions}</td>
           ${packingRows.some((r:any)=>r.expiryDate)?`<td>${fmtExpiry(row.expiryDate||"")}</td>`:""}
         </tr>`).join("");
@@ -1745,8 +1748,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                           {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(row.quantity)}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.grossPerCarton}/箱)</div>}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.netPerCarton}/箱)</div>}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
                           {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{fmtExpiry(row.expiryDate||"")}</td>}
                         </tr>
