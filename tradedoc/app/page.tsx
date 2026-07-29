@@ -861,7 +861,9 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,o
 // ============================================================
 function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:any){
   const t=T[lang||"ja"];
-  const invProducts=(invoice.items||[]).map((i:any)=>i.productName).filter(Boolean);
+  // ②Invoice編集で調整済みのinvoice_itemsを優先。未調整ならProforma品目(items)にフォールバック
+  const invoiceItemsSource=(invoice.invoice_items&&invoice.invoice_items.length>0)?invoice.invoice_items:(invoice.items||[]);
+  const invProducts=invoiceItemsSource.map((i:any)=>i.productName).filter(Boolean);
   const [bulkModal,setBulkModal]=useState<any>(null); // {type:"size"|"gross"|"net", l, w, h, val}
 
   const applyBulk=()=>{
@@ -891,10 +893,10 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
   const delLine=(cid:number,lid:number)=>setPacking((v:any[])=>v.map((c:any)=>c.id===cid?{...c,lines:c.lines.filter((l:any)=>l.id!==lid)}:c));
 
   const autoFill=()=>{
-    if(!invoice.items?.length)return;
+    if(!invoiceItemsSource?.length)return;
     const newCartons:any[]=[];
     let cartonNo=1;
-    invoice.items.forEach((item:any)=>{
+    invoiceItemsSource.forEach((item:any)=>{
       // 製品マスタからcartons_per_boxを取得
       const masterProduct=products.find((p:any)=>p.name===item.productName);
       const perBox=masterProduct?.cartons_per_box?Number(masterProduct.cartons_per_box):0;
@@ -950,10 +952,15 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
   const totalQty=packing.reduce((s:number,c:any)=>s+(c.lines||[]).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
 
   const qtyWarnings:string[]=[];
-  (invoice.items||[]).forEach((inv:any)=>{
-    const pq=packing.reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===inv.productName).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
-    const iq=Number(inv.quantity||0);
-    if(iq>0&&pq>0&&iq!==pq)qtyWarnings.push(`「${inv.productName}」: Invoice ${iq} / Packing ${pq}`);
+  const invQtyByProduct:Record<string,number>={};
+  invoiceItemsSource.forEach((inv:any)=>{
+    if(!inv.productName)return;
+    invQtyByProduct[inv.productName]=(invQtyByProduct[inv.productName]||0)+Number(inv.quantity||0);
+  });
+  Object.keys(invQtyByProduct).forEach((name:string)=>{
+    const pq=packing.reduce((s:number,c:any)=>s+(c.lines||[]).filter((l:any)=>l.productName===name).reduce((ss:number,l:any)=>ss+Number(l.quantity||0),0),0);
+    const iq=invQtyByProduct[name];
+    if(iq>0&&pq>0&&iq!==pq)qtyWarnings.push(`「${name}」: Invoice ${iq} / Packing ${pq}`);
   });
 
   return(
@@ -3353,6 +3360,7 @@ export default function App(){
                         itemsKey="invoice_items" remarksKey="invoice_remarks"
                         nextLabel="③ Commercial Invoice編集へ →"
                         hint="Proformaから自動引用されています。金額・品目を調整してください。"
+                        syncFrom="items"
                       />
                     )}
 
