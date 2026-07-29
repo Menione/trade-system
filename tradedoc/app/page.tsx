@@ -159,6 +159,14 @@ function fmt(amount: number, currency: string) {
   return nd.includes(currency) ? Math.round(amount).toLocaleString("ja-JP") : amount.toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
+// 数量表示用：カンマ区切り（PDF/プレビューの読み取り専用表示に使用）
+function fmtQty(val: any): string {
+  if (val === "" || val === null || val === undefined) return "";
+  const n = Number(String(val).replace(/,/g, ""));
+  if (isNaN(n)) return String(val);
+  return n.toLocaleString("en-US");
+}
+
 // 単価入力欄用：カンマ区切り表示⇔生の数値文字列の相互変換
 function formatPriceDisplay(val: any): string {
   if (val === "" || val === null || val === undefined) return "";
@@ -239,6 +247,7 @@ const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:#F7F7F5;color:#1A1A1A;min-height:100vh}
+#print-area td,#print-area th,.items-table td,.items-table th{font-variant-numeric:tabular-nums}
 :root{
   --surface:#FFF;--border:#E5E3DE;--border-strong:#C8C5BE;
   --text:#1A1A1A;--text-muted:#6B6960;--text-light:#9B9890;
@@ -1293,6 +1302,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     body{font-family:sans-serif;font-size:10px;color:#000}
     table{width:100%;border-collapse:collapse}
     th,td{border:1px solid #ccc;padding:4px 6px}
+    td,th{font-variant-numeric:tabular-nums}
     th{background:#222 !important;color:#fff !important;font-size:10px;font-weight:600;padding:6px 8px}
     tr:nth-child(even) td{background:#f5f5f5 !important}
     .pdf-header{margin-bottom:12px}
@@ -1336,7 +1346,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             <div style="font-size:10px">${it.productName||""}</div>
             ${it.hsCode?`<div style="font-size:8px;color:#888;font-family:monospace;margin-top:2px">HS: ${it.hsCode}</div>`:""}
           </td>
-          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${it.quantity||0}</td>
+          <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${fmtQty(it.quantity||0)}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${formatPriceDisplay(it.unitPrice||0)}</td>
           <td style="border:1px solid #ddd;padding:4px 6px;text-align:right">${cur} ${fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
           ${showExp?`<td style="border:1px solid #ddd;padding:4px 6px">${fmtExpiry(it.expiryDate||"")}</td>`:""}
@@ -1413,7 +1423,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
         <tr style="background:#fff">
           ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:center;vertical-align:middle">${row.cartonNo}</td>`:""}
           <td>${row.productName}</td>
-          <td style="text-align:right">${row.quantity}</td>
+          <td style="text-align:right">${fmtQty(row.quantity)}</td>
           <td style="text-align:right">${row.grossWeight}</td>
           <td style="text-align:right">${row.netWeight}</td>
           <td>${row.dimensions}</td>
@@ -1448,7 +1458,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
               <td style="border:1px solid #ccc;padding:4px 6px">${PT.total}</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
-              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0)}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${fmtQty(packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0))}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totNW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
@@ -1626,7 +1636,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                             {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: <input style={{border:"none",outline:"none",fontSize:8,color:"#888",fontFamily:"monospace",background:"transparent",width:"calc(100% - 24px)"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
                             {!it.hsCode&&<div style={{fontSize:8,color:"#bbb",marginTop:2}} className="no-print"><input placeholder="HS Code（任意）" style={{border:"none",outline:"none",fontSize:8,color:"#aaa",fontFamily:"monospace",background:"transparent",width:"100%"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
                           </td>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updFn(it.id,"quantity",e.target.value)}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:55,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updFn(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updFn(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
                           {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:68,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
@@ -1729,7 +1739,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                         <tr key={i} style={{background:"#fff"}}>
                           {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.quantity}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(row.quantity)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
@@ -1742,7 +1752,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
                         <tr style={{fontWeight:700,borderTop:"2px solid #000"}}>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{PT.total}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0)}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0))}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
@@ -1804,7 +1814,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
               {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
             </td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:55,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updInvItem(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
@@ -1891,7 +1901,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
               <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
               {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
             </td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:45,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="number" value={it.quantity||""} onChange={(e:any)=>updInvItem(it.id,"quantity",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:55,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
             <td style={{border:"none",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
@@ -1900,7 +1910,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       </tbody>
       <tfoot>
         <tr><td colSpan={4} style={{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:11,borderTop:"2px solid #000"}}>
-          {PT.totalQty}: {invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity)||0),0)}
+          {PT.totalQty}: {fmtQty(invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity)||0),0))}
         </td></tr>
       </tfoot>
     </table>
