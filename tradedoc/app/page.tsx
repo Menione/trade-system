@@ -862,6 +862,23 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,o
 function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:any){
   const t=T[lang||"ja"];
   const invProducts=(invoice.items||[]).map((i:any)=>i.productName).filter(Boolean);
+  const [bulkModal,setBulkModal]=useState<any>(null); // {type:"size"|"gross"|"net", l, w, h, val}
+
+  const applyBulk=()=>{
+    if(!bulkModal)return;
+    if(bulkModal.type==="size"){
+      const {l,w,h}=bulkModal;
+      if(!l&&!w&&!h){setBulkModal(null);return;}
+      setPacking((prev:any[])=>prev.map((c:any)=>({...c,dimL:l||c.dimL,dimW:w||c.dimW,dimH:h||c.dimH})));
+    }else if(bulkModal.type==="gross"){
+      if(!bulkModal.val){setBulkModal(null);return;}
+      setPacking((prev:any[])=>prev.map((c:any)=>({...c,grossWeight:bulkModal.val})));
+    }else if(bulkModal.type==="net"){
+      if(!bulkModal.val){setBulkModal(null);return;}
+      setPacking((prev:any[])=>prev.map((c:any)=>({...c,netWeight:bulkModal.val})));
+    }
+    setBulkModal(null);
+  };
 
   const addCarton=()=>{
     const nextNo=(packing.length>0?Math.max(...packing.map((p:any)=>Number(p.cartonNo)||0)):0)+1;
@@ -952,14 +969,9 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
           <div><div className="card-title">{t.packingList}</div><div className="card-subtitle">1カートンに複数製品を混載できます。端数は🟡で表示。</div></div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             <button className="btn btn-secondary btn-sm" onClick={autoFill}>{t.autoFill}</button>
-            <button className="btn btn-secondary btn-sm" onClick={()=>{
-              const l=prompt("全カートンに適用するサイズを入力\n例: 50x30x20 (L×W×H)");
-              if(!l)return;
-              const parts=l.trim().split(/[xX×✕]/);
-              if(parts.length>=3){
-                setPacking((prev:any[])=>prev.map((c:any)=>({...c,dimL:parts[0].trim(),dimW:parts[1].trim(),dimH:parts[2].trim()})));
-              }
-            }}>📦 サイズ一括設定</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setBulkModal({type:"gross",val:""})}>⚖️ 総重量一括設定</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setBulkModal({type:"net",val:""})}>⚖️ 正味重量一括設定</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setBulkModal({type:"size",l:"",w:"",h:""})}>📦 サイズ一括設定</button>
             <button className="btn btn-primary btn-sm" onClick={addCarton}>{t.addCarton}</button>
           </div>
         </div>
@@ -1037,6 +1049,44 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
         <button className="btn btn-secondary" onClick={onBack}>← Invoice に戻る</button>
         <button className="btn btn-primary" onClick={onNext}>内容確認へ →</button>
       </div>
+      {bulkModal&&(
+        <div className="modal-overlay" onClick={()=>setBulkModal(null)}>
+          <div className="modal" style={{maxWidth:360}} onClick={(e:any)=>e.stopPropagation()}>
+            <div className="modal-title">
+              <span>
+                {bulkModal.type==="size"?"📦 全カートンにサイズを一括設定":bulkModal.type==="gross"?"⚖️ 全カートンに総重量を一括設定":"⚖️ 全カートンに正味重量を一括設定"}
+              </span>
+              <button className="btn btn-secondary btn-xs" onClick={()=>setBulkModal(null)}>✕</button>
+            </div>
+            {bulkModal.type==="size"?(
+              <>
+                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:10}}>空欄の項目は変更されません</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14}}>
+                  <input className="input" type="number" placeholder="L" value={bulkModal.l} style={{width:80}}
+                    onChange={(e:any)=>setBulkModal({...bulkModal,l:e.target.value})}/>
+                  <span style={{color:"var(--text-muted)"}}>×</span>
+                  <input className="input" type="number" placeholder="W" value={bulkModal.w} style={{width:80}}
+                    onChange={(e:any)=>setBulkModal({...bulkModal,w:e.target.value})}/>
+                  <span style={{color:"var(--text-muted)"}}>×</span>
+                  <input className="input" type="number" placeholder="H" value={bulkModal.h} style={{width:80}}
+                    onChange={(e:any)=>setBulkModal({...bulkModal,h:e.target.value})}/>
+                  <span style={{fontSize:12,color:"var(--text-muted)"}}>cm</span>
+                </div>
+              </>
+            ):(
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <input className="input" type="number" placeholder="0.00" value={bulkModal.val} style={{width:120}}
+                  onChange={(e:any)=>setBulkModal({...bulkModal,val:e.target.value})} autoFocus/>
+                <span style={{fontSize:12,color:"var(--text-muted)"}}>kg</span>
+              </div>
+            )}
+            <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+              <button className="btn btn-secondary btn-sm" onClick={()=>setBulkModal(null)}>キャンセル</button>
+              <button className="btn btn-primary btn-sm" onClick={applyBulk}>適用</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
