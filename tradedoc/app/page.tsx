@@ -1001,7 +1001,7 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
                 {carton.isFraction&&<span style={{fontSize:11,fontWeight:700,color:"var(--amber)"}}>⚠️ 端数</span>}
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
                   <span style={{fontSize:11,fontWeight:600,color:"var(--text-muted)"}}>{t.cartonNo}</span>
-                  <input className="input" type="number" value={carton.cartonNo} style={{width:55,padding:"3px 7px",fontSize:12}} onChange={(e:any)=>updCarton(carton.id,"cartonNo",e.target.value)}/>
+                  <input className="input" type="number" value={carton.cartonNo} style={{width:55,padding:"3px 7px",fontSize:12}} onChange={(e:any)=>updCarton(carton.id,"cartonNo",e.target.value===""?"":Number(e.target.value))}/>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
                   <span style={{fontSize:11,fontWeight:600,color:"var(--text-muted)"}}>{t.grossWeight}<span style={{color:"var(--red)"}}>*</span></span>
@@ -1252,9 +1252,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
     while(
       end+1<packingRowsRaw.length&&
       packingRowsRaw[end+1].productName===cur.productName&&
-      packingRowsRaw[end+1].quantity===cur.quantity&&
+      Number(packingRowsRaw[end+1].quantity)===Number(cur.quantity)&&
       packingRowsRaw[end+1].isFraction===cur.isFraction&&
-      packingRowsRaw[end+1].cartonNo===packingRowsRaw[end].cartonNo+1
+      Number(packingRowsRaw[end+1].grossWeight)===Number(cur.grossWeight)&&
+      Number(packingRowsRaw[end+1].netWeight)===Number(cur.netWeight)&&
+      packingRowsRaw[end+1].dimL===cur.dimL&&packingRowsRaw[end+1].dimW===cur.dimW&&packingRowsRaw[end+1].dimH===cur.dimH&&
+      Number(packingRowsRaw[end+1].cartonNo)===Number(packingRowsRaw[end].cartonNo)+1
     ){end++;}
     const startNo=cur.cartonNo;
     const endNo=packingRowsRaw[end].cartonNo;
