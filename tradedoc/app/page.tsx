@@ -988,12 +988,13 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
             <button className="btn btn-secondary btn-sm" onClick={()=>setBulkModal({type:"gross",val:""})}>⚖️ 総重量一括設定</button>
             <button className="btn btn-secondary btn-sm" onClick={()=>setBulkModal({type:"net",val:""})}>⚖️ 正味重量一括設定</button>
             <button className="btn btn-secondary btn-sm" onClick={()=>setBulkModal({type:"size",l:"",w:"",h:""})}>📦 サイズ一括設定</button>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setPacking((prev:any[])=>[...prev].sort((a:any,b:any)=>Number(a.cartonNo)-Number(b.cartonNo)))}>🔀 番号順に並び替え</button>
             <button className="btn btn-primary btn-sm" onClick={addCarton}>{t.addCarton}</button>
           </div>
         </div>
         {packing.length===0?(
           <div className="empty-state"><div className="empty-icon">📦</div><div style={{fontSize:13}}>「{t.autoFill}」または「{t.addCarton}」で開始</div></div>
-        ):packing.map((carton:any)=>(
+        ):[...packing].sort((a:any,b:any)=>Number(a.cartonNo)-Number(b.cartonNo)).map((carton:any)=>(
           <div key={carton.id} className={`carton-block ${carton.isFraction?"carton-fraction":""}`}>
             <div className="carton-header">
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -1223,7 +1224,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   // カートンを行に展開
   // 同じ製品・同じ数量の連続カートンをグループ化してCarton No範囲表示
   const packingRowsRaw:any[]=[];
-  packing.forEach((carton:any)=>{
+  const sortedForOutput=[...packing].sort((a:any,b:any)=>Number(a.cartonNo)-Number(b.cartonNo));
+  sortedForOutput.forEach((carton:any)=>{
     const lines=carton.lines||[];
     lines.forEach((line:any,li:number)=>{
       packingRowsRaw.push({
