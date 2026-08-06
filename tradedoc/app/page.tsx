@@ -36,14 +36,22 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
   const el = document.getElementById(elementId);
   if (!el) throw new Error(`要素が見つかりません: ${elementId}`);
 
+  // no-print要素（削除ボタンなど）をキャプチャ前に一時的に隠す
+  const hidden: HTMLElement[] = Array.from(el.querySelectorAll(".no-print"));
+  const prevDisplay = hidden.map(elm => elm.style.display);
+  hidden.forEach(elm => { elm.style.display = "none"; });
+
   const canvas = await html2canvas(el, {
-    scale: 1.5,
+    scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
   });
 
+  // 元に戻す
+  hidden.forEach((elm, i) => { elm.style.display = prevDisplay[i]; });
+
   // PNGだとファイルサイズが数MBになりVercelのリクエストサイズ上限を超えるため、JPEG圧縮を使用
-  const imgData = canvas.toDataURL("image/jpeg", 0.75);
+  const imgData = canvas.toDataURL("image/jpeg", 0.85);
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
 
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -1709,7 +1717,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                 ❌ {uploadError}
               </div>
             )}
-        <div id="print-area" style={{background:"#fff",padding:"0"}}>
+        <div style={{background:"#fff",padding:"0"}}>
           {(()=>{
             const showExp=(invoiceItems||[]).some((it:any)=>it.expiryDate)||(commercialItems||[]).some((it:any)=>it.expiryDate);
             const editTable=(items:any[],updFn:any,delFn:any,addFn:any,showExp:boolean,remarks:string,setRemarks:any,docCur:string)=>(
@@ -1757,7 +1765,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
             return(
               <>
                 {activeDoc==="proforma"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                  <div id="print-area" style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="PROFORMA INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
@@ -1776,7 +1784,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                   </div>
                 )}
                 {activeDoc==="invoice"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                  <div id="print-area" style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="INVOICE"/>
                     {editTable(invoiceItems,updInvItem,delInvItem,addInvItem,showExp,invoiceRemarks,setInvoiceRemarks,cur)}
                 {org?.bankName&&(
@@ -1795,7 +1803,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                   </div>
                 )}
                 {activeDoc==="commercial"&&(
-                  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
+                  <div id="print-area" style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any,position:"relative" as any}}>
                     <InvoiceHeader title="COMMERCIAL INVOICE"/>
                     {editTable(commercialItems,updComItem,delComItem,addComItem,showExp,commercialRemarks,setCommercialRemarks,cur)}
                 {org?.bankName&&(
@@ -1814,7 +1822,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                   </div>
                 )}
                 {activeDoc==="packing"&&(
-                              <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
+                              <div id="print-area" style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
               {packingPages.map((pageRows,pi)=>(
                 <div key={pi} className={pi<packingPages.length-1?"pdf-page":""}>
                   <PackingHeader/>
@@ -1861,7 +1869,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
               ))}
             </div>
                 )}{activeDoc==="delivery"&&(
-  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
+  <div id="print-area" style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
       <div>
         <div style={{fontSize:32,fontWeight:800,letterSpacing:2,lineHeight:1.1,marginBottom:4}}>DELIVERY NOTE</div>
@@ -1944,7 +1952,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
   </div>
 )}
 {activeDoc==="receipt"&&(
-  <div style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
+  <div id="print-area" style={{background:"#fff",width:794,margin:"0 auto",padding:"40px 50px",fontSize:11,color:"#000",minHeight:1123,boxSizing:"border-box" as any}}>
     {/* Header */}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
       <div>
