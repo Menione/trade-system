@@ -1207,6 +1207,7 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
 // PDF OUTPUT
 // ============================================================
 function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestApproval}:any){
+  const [uploadError,setUploadError]=useState("");
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
   const [activeDoc,setActiveDoc]=useState("proforma");
@@ -1221,12 +1222,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
 
   const requestApprovalAllDocs=async()=>{
     setSubmittingApproval(true);
+    setUploadError("");
     const docTypes=[
-      {key:"invoice",activeDoc:"invoice"},
-      {key:"commercial",activeDoc:"commercial"},
-      {key:"packing",activeDoc:"packing"},
-      {key:"deliveryNote",activeDoc:"delivery"},
-      {key:"deliveryReceipt",activeDoc:"receipt"},
+      {key:"invoice",activeDoc:"invoice",label:"INVOICE"},
+      {key:"commercial",activeDoc:"commercial",label:"Commercial Invoice"},
+      {key:"packing",activeDoc:"packing",label:"Packing List"},
+      {key:"deliveryNote",activeDoc:"delivery",label:"Delivery Note"},
+      {key:"deliveryReceipt",activeDoc:"receipt",label:"Delivery Receipt"},
     ];
     const fileKeys:any[]=[];
     for(const d of docTypes){
@@ -1243,7 +1245,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
         const uploaded=await res.json();
         if(!res.ok)throw new Error(uploaded.error||"アップロード失敗");
         fileKeys.push({docType:d.key,fileKey:uploaded.fileKey});
-      }catch(e){console.warn(`${d.key} PDFアップロードスキップ`,e);}
+      }catch(e:any){
+        setSubmittingApproval(false);
+        setUploadError(`${d.label} のアップロードに失敗しました: ${e.message||e}`);
+        return;
+      }
     }
     setSubmittingApproval(false);
     await onRequestApproval(fileKeys);
@@ -1693,6 +1699,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                 </button>
               )}
             </div>
+            {uploadError&&(
+              <div style={{background:"#FEF2F2",color:"#DC2626",padding:"10px 14px",fontSize:13,margin:"0 16px 12px"}}>
+                ❌ {uploadError}
+              </div>
+            )}
         <div id="print-area" style={{background:"#fff",padding:"0"}}>
           {(()=>{
             const showExp=(invoiceItems||[]).some((it:any)=>it.expiryDate)||(commercialItems||[]).some((it:any)=>it.expiryDate);
