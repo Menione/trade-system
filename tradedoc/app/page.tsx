@@ -45,6 +45,20 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
+    onclone: (clonedDoc: Document) => {
+      // input/textareaのvalueはHTML属性としてクローンされないため、明示的にコピーする
+      const origInputs = el.querySelectorAll("input, textarea");
+      const clonedRoot = clonedDoc.getElementById(elementId);
+      if (clonedRoot) {
+        const clonedInputs = clonedRoot.querySelectorAll("input, textarea");
+        origInputs.forEach((orig: any, i: number) => {
+          const clone = clonedInputs[i] as any;
+          if (!clone) return;
+          clone.value = orig.value;
+          clone.setAttribute("value", orig.value);
+        });
+      }
+    },
   });
 
   // 元に戻す
@@ -65,7 +79,8 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
   pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
   heightLeft -= pageHeight;
 
-  while (heightLeft > 0) {
+  // 数mm程度のはみ出しは描画誤差とみなし、無駄な空白ページを作らない
+  while (heightLeft > 5) {
     position = heightLeft - imgHeight;
     pdf.addPage();
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
