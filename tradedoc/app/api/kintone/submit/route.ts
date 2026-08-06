@@ -80,14 +80,14 @@ export async function POST(req: NextRequest) {
     const safeAmount = Number.isFinite(amount) ? amount : 0;
 
     const baseFields: Record<string, { value: any }> = {
-      書類番号: { value: invoiceNo },
-      作成者: { value: applicantName || "" },
-      取引先: { value: customer || "" },
-      金額: { value: safeAmount },
-      通貨: { value: currency || "" },
-      コメント: { value: "" },
-      tradedoc_id: { value: invoiceId != null ? String(invoiceId) : "" },
-    };
+  書類番号: { value: invoiceNo },
+  Applicant: { value: applicantName || "" },
+  取引先: { value: customer || "" },
+  金額: { value: safeAmount },
+  通貨: { value: currency || "" },
+  コメント: { value: "" },
+  tradedoc_id: { value: invoiceId != null ? String(invoiceId) : "" },
+};
 
     // 書類ごとに1レコードずつ作成
     const createdIds: string[] = [];
