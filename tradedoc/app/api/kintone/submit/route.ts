@@ -15,35 +15,10 @@ const DOC_TYPE_TO_FIELD: Record<string, string> = {
   deliveryReceipt: "DeliveryReceipt",
 };
 
-type IncomingFile = {
+type FileKeyEntry = {
   docType: string;
-  base64: string;
-  fileName: string;
+  fileKey: string;
 };
-
-async function uploadFileToKintone(base64: string, fileName: string): Promise<string> {
-  const buffer = Buffer.from(base64, "base64");
-  const blob = new Blob([buffer], { type: "application/pdf" });
-
-  const form = new FormData();
-  form.append("file", blob, fileName);
-
-  const res = await fetch(`https://${KINTONE_DOMAIN}/k/v1/file.json`, {
-    method: "POST",
-    headers: {
-      "X-Cybozu-API-Token": KINTONE_API_TOKEN,
-    },
-    body: form,
-  });
-
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`ファイルアップロード失敗 (${fileName}): ${text}`);
-  }
-
-  const data = JSON.parse(text);
-  return data.fileKey as string;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -62,7 +37,7 @@ export async function POST(req: NextRequest) {
       amount,
       currency,
       customer,
-      files,
+      fileKeys,
     }: {
       invoiceId: string | number;
       invoiceNo: string;
@@ -70,27 +45,21 @@ export async function POST(req: NextRequest) {
       amount: number;
       currency: string;
       customer: string;
-      files: IncomingFile[];
+      fileKeys: FileKeyEntry[];
     } = body;
 
     if (!invoiceNo) {
       return NextResponse.json({ error: "invoiceNoが指定されていません" }, { status: 400 });
     }
 
-    // 1. 各PDFをKintoneにアップロードしてfileKeyを取得
+    // アップロード済みfileKeyを各添付ファイルフィールドに割り当て
     const fileFieldValues: Record<string, { value: { fileKey: string }[] }> = {};
-
-    for (const f of files || []) {
+    for (const f of fileKeys || []) {
       const fieldCode = DOC_TYPE_TO_FIELD[f.docType];
-      if (!fieldCode) {
-        console.warn(`未知のdocType: ${f.docType}（スキップ）`);
-        continue;
-      }
-      const fileKey = await uploadFileToKintone(f.base64, f.fileName);
-      fileFieldValues[fieldCode] = { value: [{ fileKey }] };
+      if (!fieldCode || !f.fileKey) continue;
+      fileFieldValues[fieldCode] = { value: [{ fileKey: f.fileKey }] };
     }
 
-    // 2. レコード作成
     const record: Record<string, { value: any }> = {
       書類番号: { value: invoiceNo },
       作成者: { value: applicantName || "" },
