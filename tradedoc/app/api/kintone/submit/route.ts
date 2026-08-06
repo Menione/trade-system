@@ -80,35 +80,32 @@ export async function POST(req: NextRequest) {
     const safeAmount = Number.isFinite(amount) ? amount : 0;
 
     const baseFields: Record<string, { value: any }> = {
-  書類番号: { value: invoiceNo },
-  Applicant: { value: applicantName || "" },
-  取引先: { value: customer || "" },
-  金額: { value: safeAmount },
-  通貨: { value: currency || "" },
-  コメント: { value: "" },
-  tradedoc_id: { value: invoiceId != null ? String(invoiceId) : "" },
-};
+      書類番号: { value: invoiceNo },
+      Applicant: { value: applicantName || "" },
+      取引先: { value: customer || "" },
+      金額: { value: safeAmount },
+      通貨: { value: currency || "" },
+      コメント: { value: "" },
+      tradedoc_id: { value: invoiceId != null ? String(invoiceId) : "" },
+    };
 
-    // 書類ごとに1レコードずつ作成
-    const createdIds: string[] = [];
+    // 全書類を1レコードにまとめる
+    const record: Record<string, { value: any }> = { ...baseFields };
+    let hasAnyFile = false;
     for (const f of fileKeys) {
       const fieldCode = DOC_TYPE_TO_FIELD[f.docType];
       if (!fieldCode || !f.fileKey) continue;
-
-      const record = {
-        ...baseFields,
-        [fieldCode]: { value: [{ fileKey: f.fileKey }] },
-      };
-
-      const created = await createKintoneRecord(record);
-      createdIds.push(created.id);
+      record[fieldCode] = { value: [{ fileKey: f.fileKey }] };
+      hasAnyFile = true;
     }
 
-    if (createdIds.length === 0) {
+    if (!hasAnyFile) {
       return NextResponse.json({ error: "有効な添付ファイルがありませんでした" }, { status: 400 });
     }
 
-    return NextResponse.json({ kintoneRecordId: createdIds.join(",") });
+    const created = await createKintoneRecord(record);
+
+    return NextResponse.json({ kintoneRecordId: created.id });
   } catch (e: any) {
     console.error("Kintone送信エラー:", e);
     return NextResponse.json({ error: e.message || "不明なエラー" }, { status: 500 });
