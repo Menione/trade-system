@@ -2885,33 +2885,6 @@ function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
   const approvalStatusLabel:any={draft:"未申請",pending_approval:"承認待ち",approved:"承認済み ✅",rejected:"差し戻し ❌"};
   const st=invoice.approvalStatus||"draft";
 
-  const submitForApproval=async(files:{docType:string;base64:string;fileName:string}[])=>{
-    if(!invoice.invoiceNo)return showToast("Invoice Noを入力してください");
-    try{
-      const res=await fetch("/api/kintone/submit",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          invoiceId:invoice.dbId,
-          invoiceNo:invoice.invoiceNo,
-          applicantName:authUser?.email,
-          amount:(invoice.items||[]).reduce((s:number,i:any)=>s+Number(i.quantity||0)*Number(i.unitPrice||0),0),
-          currency:invoice.currency,
-          customer:invoice.consignee,
-          files,
-        }),
-      });
-      const d=await res.json();
-      if(!res.ok)throw new Error(d.error||"送信失敗");
-      setInvoice((v:any)=>({...v,approvalStatus:"pending_approval",kintoneRecordId:d.kintoneRecordId}));
-      await saveInvoice("in_progress");
-      setStep(6);
-      showToast("📨 承認依頼を送信しました");
-    }catch(e:any){
-      showToast("❌ Kintone送信に失敗しました: "+e.message);
-    }
-  };
-
   const selfApprove=async()=>{
     setInvoice((v:any)=>({...v,approvalStatus:"approved"}));
     await onSave("in_progress");
@@ -2952,11 +2925,11 @@ function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
         {st==="draft"&&(
           <div>
             <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:12}}>
-              📌 「承認依頼を送信」すると、承認管理ページで上長が承認できます。<br/>
+              📌 承認依頼は「⑤ PDF出力」画面の「📨 承認依頼」ボタンから送信してください（各書類のPDFを添えてKintoneに送信されます）。<br/>
               承認者自身が承認する場合は「自己承認」を使用してください。
             </div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              <button className="btn btn-purple" onClick={requestApproval}>📨 承認依頼を送信</button>
+              <button className="btn btn-secondary" onClick={onBack}>← ⑤ PDF出力へ戻る</button>
               <button className="btn btn-green" onClick={selfApprove}>✅ 自己承認（テスト用）</button>
             </div>
           </div>
@@ -3229,12 +3202,31 @@ export default function App(){
     setSaving(false);
   };
 
-  const requestApproval=async()=>{
+  const requestApproval=async(files:{docType:string;base64:string;fileName:string}[])=>{
     if(!invoice.invoiceNo)return showToast("Invoice Noを入力してください");
-    setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
-    await saveInvoice("draft");
-    setStep(6);
-    showToast("📨 承認依頼を送信しました");
+    try{
+      const res=await fetch("/api/kintone/submit",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          invoiceId:invoice.dbId,
+          invoiceNo:invoice.invoiceNo,
+          applicantName:authUser?.email,
+          amount:(invoice.items||[]).reduce((s:number,i:any)=>s+Number(i.quantity||0)*Number(i.unitPrice||0),0),
+          currency:invoice.currency,
+          customer:invoice.consignee,
+          files,
+        }),
+      });
+      const d=await res.json();
+      if(!res.ok)throw new Error(d.error||"送信失敗");
+      setInvoice((v:any)=>({...v,approvalStatus:"pending_approval",kintoneRecordId:d.kintoneRecordId}));
+      await saveInvoice("in_progress");
+      setStep(6);
+      showToast("📨 承認依頼を送信しました");
+    }catch(e:any){
+      showToast("❌ Kintone送信に失敗しました: "+e.message);
+    }
   };
 
   const loadInvoice=(h:any)=>{
@@ -3482,7 +3474,7 @@ export default function App(){
                     {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
 
                     {/* ⑤ PDF出力 */}
-                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)} onRequestApproval={submitForApproval}/>}
+                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)} onRequestApproval={requestApproval}/>}
 
                     {/* ⑥ 承認申請→承認 */}
                     {step===6&&(
