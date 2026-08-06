@@ -1488,7 +1488,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
         <tr style="background:#fff">
           ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:center;vertical-align:middle">${row.cartonNo}</td>`:""}
           <td>${row.productName}</td>
-          <td style="text-align:right">${fmtQty(row.quantity)}</td>
+          <td style="text-align:right">${fmtQty(row.totalQty)}</td>
           <td style="text-align:right">${row.grossWeight}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.grossPerCarton}${printLang==="en"?"/ctn":"/箱"})</div>`:""}</td>
           <td style="text-align:right">${row.netWeight}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.netPerCarton}${printLang==="en"?"/ctn":"/箱"})</div>`:""}</td>
           <td>${row.dimensions}</td>
@@ -1523,7 +1523,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
             <tfoot><tr style="font-weight:700;border-top:2px solid #000">
               <td style="border:1px solid #ccc;padding:4px 6px">${PT.total}</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
-              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${fmtQty(packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0))}</td>
+              <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${fmtQty(packingRows.reduce((s:number,r:any)=>s+(Number(r.totalQty)||0),0))}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totGW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px;text-align:right">${totNW}</td>
               <td style="border:1px solid #ccc;padding:4px 6px"></td>
@@ -1809,7 +1809,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                         <tr key={i} style={{background:"#fff"}}>
                           {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(row.quantity)}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(row.totalQty)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.grossWeight}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.grossPerCarton}{printLang==="en"?"/ctn":"/箱"})</div>}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{row.netWeight}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.netPerCarton}{printLang==="en"?"/ctn":"/箱"})</div>}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.dimensions}</td>
@@ -1822,7 +1822,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                         <tr style={{fontWeight:700,borderTop:"2px solid #000"}}>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{PT.total}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
-                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(packingRows.reduce((s:number,r:any)=>s+(Number(r.quantity)||0),0))}</td>
+                          <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(packingRows.reduce((s:number,r:any)=>s+(Number(r.totalQty)||0),0))}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{packing.reduce((s:number,c:any)=>s+Number(c.netWeight||0),0).toFixed(2)}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}></td>
