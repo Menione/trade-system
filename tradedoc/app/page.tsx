@@ -37,13 +37,14 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
   if (!el) throw new Error(`要素が見つかりません: ${elementId}`);
 
   const canvas = await html2canvas(el, {
-    scale: 2,
+    scale: 1.5,
     useCORS: true,
     backgroundColor: "#ffffff",
   });
 
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  // PNGだとファイルサイズが数MBになりVercelのリクエストサイズ上限を超えるため、JPEG圧縮を使用
+  const imgData = canvas.toDataURL("image/jpeg", 0.75);
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
 
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -53,13 +54,13 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
   let heightLeft = imgHeight;
   let position = 0;
 
-  pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+  pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
   heightLeft -= pageHeight;
 
   while (heightLeft > 0) {
     position = heightLeft - imgHeight;
     pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
   }
 
@@ -1236,6 +1237,10 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
       await new Promise(r=>setTimeout(r,300));
       try{
         const base64=await generatePdfBase64FromElement("print-area");
+        const approxBytes=base64.length*0.75;
+        if(approxBytes>3*1024*1024){
+          throw new Error(`PDFサイズが大きすぎます（約${(approxBytes/1024/1024).toFixed(1)}MB）。内容量を減らすか、画質設定の見直しが必要です。`);
+        }
         const fileName=`${invoice.invoiceNo}_${d.key}.pdf`;
         const res=await fetch("/api/kintone/upload-file",{
           method:"POST",
