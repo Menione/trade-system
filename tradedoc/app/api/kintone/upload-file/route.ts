@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const KINTONE_DOMAIN = process.env.KINTONE_DOMAIN || "";
-const KINTONE_API_TOKEN = process.env.KINTONE_API_TOKEN || "";
+const KINTONE_DOMAIN = (process.env.KINTONE_DOMAIN || "").trim();
+const KINTONE_API_TOKEN = (process.env.KINTONE_API_TOKEN || "").trim();
 
 export async function POST(req: NextRequest) {
   try {
