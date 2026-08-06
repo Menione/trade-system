@@ -12,7 +12,8 @@ async function signIn(email:string,password:string){
 }
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
@@ -31,7 +32,40 @@ async function sb(path: string, options: any = {}) {
   const t = await res.text();
   return t ? JSON.parse(t) : null;
 }
+async function generatePdfBase64FromElement(elementId: string): Promise<string> {
+  const el = document.getElementById(elementId);
+  if (!el) throw new Error(`要素が見つかりません: ${elementId}`);
 
+  const canvas = await html2canvas(el, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+
+  pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+
+  const dataUri = pdf.output("datauristring");
+  return dataUri.split(",")[1];
+}
 async function signOut(token:string){
   await fetch(`${SUPABASE_URL}/auth/v1/logout`,{
     method:"POST",
@@ -1172,7 +1206,7 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
 // ============================================================
 // PDF OUTPUT
 // ============================================================
-function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
+function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestApproval}:any){
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
   const [activeDoc,setActiveDoc]=useState("proforma");
@@ -1183,6 +1217,29 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
 
+  const [submittingApproval,setSubmittingApproval]=useState(false);
+
+  const requestApprovalAllDocs=async()=>{
+    setSubmittingApproval(true);
+    const docTypes=[
+      {key:"invoice",activeDoc:"invoice"},
+      {key:"commercial",activeDoc:"commercial"},
+      {key:"packing",activeDoc:"packing"},
+      {key:"deliveryNote",activeDoc:"delivery"},
+      {key:"deliveryReceipt",activeDoc:"receipt"},
+    ];
+    const files:any[]=[];
+    for(const d of docTypes){
+      setActiveDoc(d.activeDoc);
+      await new Promise(r=>setTimeout(r,300));
+      try{
+        const base64=await generatePdfBase64FromElement("print-area");
+        files.push({docType:d.key,base64,fileName:`${invoice.invoiceNo}_${d.key}.pdf`});
+      }catch(e){console.warn(`${d.key} PDF生成スキップ`,e);}
+    }
+    setSubmittingApproval(false);
+    await onRequestApproval(files);
+  };
   const updItem=(list:any[],setList:any,id:any,key:string,val:any)=>
     setList((prev:any[])=>prev.map((it:any)=>it.id===id?{...it,[key]:val}:it));
   const delItem=(list:any[],setList:any,id:any)=>
@@ -1621,7 +1678,13 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext}:any){
       <div className="card">
         <div className="card-header no-print">
           <div className="card-title">{activeDoc==="invoice"?(isProforma?"Proforma Invoice プレビュー":"Invoice プレビュー"):"Packing List プレビュー"}</div>
-          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ {t.print}</button>
+         <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ {t.print}</button>
+              {invoice.invoiceType!=="proforma"&&onRequestApproval&&invoice.approvalStatus!=="pending_approval"&&invoice.approvalStatus!=="approved"&&(
+                <button className="btn btn-purple btn-sm" disabled={submittingApproval} onClick={requestApprovalAllDocs}>
+                  {submittingApproval?"⏳ 送信中...":"📨 承認依頼"}
+                </button>
+              )}
+            </div>
         </div>
         <div id="print-area" style={{background:"#fff",padding:"0"}}>
           {(()=>{
@@ -2822,11 +2885,31 @@ function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
   const approvalStatusLabel:any={draft:"未申請",pending_approval:"承認待ち",approved:"承認済み ✅",rejected:"差し戻し ❌"};
   const st=invoice.approvalStatus||"draft";
 
-  const requestApproval=async()=>{
-    if(!invoice.invoiceNo){showToast("Invoice Noを入力してください");return;}
-    setInvoice((v:any)=>({...v,approvalStatus:"pending_approval"}));
-    await onSave("draft");
-    showToast("📨 承認依頼を送信しました");
+  const submitForApproval=async(files:{docType:string;base64:string;fileName:string}[])=>{
+    if(!invoice.invoiceNo)return showToast("Invoice Noを入力してください");
+    try{
+      const res=await fetch("/api/kintone/submit",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          invoiceId:invoice.dbId,
+          invoiceNo:invoice.invoiceNo,
+          applicantName:authUser?.email,
+          amount:(invoice.items||[]).reduce((s:number,i:any)=>s+Number(i.quantity||0)*Number(i.unitPrice||0),0),
+          currency:invoice.currency,
+          customer:invoice.consignee,
+          files,
+        }),
+      });
+      const d=await res.json();
+      if(!res.ok)throw new Error(d.error||"送信失敗");
+      setInvoice((v:any)=>({...v,approvalStatus:"pending_approval",kintoneRecordId:d.kintoneRecordId}));
+      await saveInvoice("in_progress");
+      setStep(6);
+      showToast("📨 承認依頼を送信しました");
+    }catch(e:any){
+      showToast("❌ Kintone送信に失敗しました: "+e.message);
+    }
   };
 
   const selfApprove=async()=>{
@@ -3315,9 +3398,7 @@ export default function App(){
                     {saving?<span className="spinner"/>:"💾"} 下書き保存
                   </button>
                 )}
-                {invoice.invoiceType!=="proforma"&&invoice.approvalStatus==="draft"&&step>=5&&(
-                  <button className="btn btn-purple btn-sm" onClick={requestApproval}>📨 ⑥承認依頼</button>
-                )}
+              
                 <button className="btn btn-green btn-sm" onClick={()=>setPage("history")}>📚 保存済み案件</button>
               </>}
             </div>
@@ -3401,7 +3482,7 @@ export default function App(){
                     {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
 
                     {/* ⑤ PDF出力 */}
-                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)}/>}
+                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)} onRequestApproval={submitForApproval}/>}
 
                     {/* ⑥ 承認申請→承認 */}
                     {step===6&&(
