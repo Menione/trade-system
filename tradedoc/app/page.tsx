@@ -1228,17 +1228,25 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
       {key:"deliveryNote",activeDoc:"delivery"},
       {key:"deliveryReceipt",activeDoc:"receipt"},
     ];
-    const files:any[]=[];
+    const fileKeys:any[]=[];
     for(const d of docTypes){
       setActiveDoc(d.activeDoc);
       await new Promise(r=>setTimeout(r,300));
       try{
         const base64=await generatePdfBase64FromElement("print-area");
-        files.push({docType:d.key,base64,fileName:`${invoice.invoiceNo}_${d.key}.pdf`});
-      }catch(e){console.warn(`${d.key} PDF生成スキップ`,e);}
+        const fileName=`${invoice.invoiceNo}_${d.key}.pdf`;
+        const res=await fetch("/api/kintone/upload-file",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({base64,fileName}),
+        });
+        const uploaded=await res.json();
+        if(!res.ok)throw new Error(uploaded.error||"アップロード失敗");
+        fileKeys.push({docType:d.key,fileKey:uploaded.fileKey});
+      }catch(e){console.warn(`${d.key} PDFアップロードスキップ`,e);}
     }
     setSubmittingApproval(false);
-    await onRequestApproval(files);
+    await onRequestApproval(fileKeys);
   };
   const updItem=(list:any[],setList:any,id:any,key:string,val:any)=>
     setList((prev:any[])=>prev.map((it:any)=>it.id===id?{...it,[key]:val}:it));
@@ -3201,7 +3209,7 @@ export default function App(){
     setSaving(false);
   };
 
-  const requestApproval=async(files:{docType:string;base64:string;fileName:string}[])=>{
+  const requestApproval=async(fileKeys:{docType:string;fileKey:string}[])=>{
     if(!invoice.invoiceNo)return showToast("Invoice Noを入力してください");
     try{
       const res=await fetch("/api/kintone/submit",{
@@ -3214,7 +3222,7 @@ export default function App(){
           amount:(invoice.items||[]).reduce((s:number,i:any)=>s+Number(i.quantity||0)*Number(i.unitPrice||0),0),
           currency:invoice.currency,
           customer:invoice.consignee,
-          files,
+          fileKeys,
         }),
       });
       const d=await res.json();
