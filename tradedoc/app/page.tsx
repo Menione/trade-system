@@ -1685,7 +1685,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                 </button>
               )}
             </div>
-        </div>
         <div id="print-area" style={{background:"#fff",padding:"0"}}>
           {(()=>{
             const showExp=(invoiceItems||[]).some((it:any)=>it.expiryDate)||(commercialItems||[]).some((it:any)=>it.expiryDate);
