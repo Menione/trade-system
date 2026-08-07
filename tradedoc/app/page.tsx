@@ -261,6 +261,26 @@ function fmtExpiry(val: string): string {
   return m ? m[1].replace("/","-") : val;
 }
 
+// Proformaではロット番号ごとに行を分けて入力するため、同じ商品名の行が複数存在しうる。
+// Invoice/Commercial Invoiceではロット別に分ける必要がないため、商品名で数量を合算した1行にまとめる。
+// （ロット番号・使用期限はDelivery Note/Delivery Receipt側でロットごとに個別管理するため、ここでは持たない）
+function aggregateByProductName(items: any[]): any[] {
+  const order: string[] = [];
+  const map: Record<string, any> = {};
+  (items || []).forEach((it: any) => {
+    const key = (it.productName || "").trim() || `__untitled_${Math.random()}`;
+    if (!map[key]) {
+      order.push(key);
+      map[key] = { ...it, id: Date.now() + Math.random(), quantity: Number(it.quantity || 0) };
+      delete map[key].lotNo;
+    } else {
+      map[key].quantity += Number(it.quantity || 0);
+    }
+  });
+  return order.map(k => map[k]);
+}
+
+
 function validate(invoice: any, packing: any[]) {
   const errors: any[] = [], warnings: any[] = [];
   if (!invoice.incoterms) errors.push({step:1,msg:"Incotermsが未選択です"});
@@ -1249,39 +1269,23 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
   const [activeDoc,setActiveDoc]=useState("proforma");
-  const [invoiceItems,setInvoiceItems]=useState<any[]>(invoice.invoice_items||invoice.items||[]);
-  const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
+  // Invoice/Commercial Invoiceは書類の性質上、ロット別に行を分ける必要がないため、
+  // Proforma（invoice.items）から初期化する際は商品名で数量を合算する。
+  // すでにinvoice_items/commercial_itemsとして調整済みのデータがあればそれをそのまま使う。
+  const [invoiceItems,setInvoiceItems]=useState<any[]>(()=>invoice.invoice_items&&invoice.invoice_items.length>0?invoice.invoice_items:aggregateByProductName(invoice.items||[]));
+  const [commercialItems,setCommercialItems]=useState<any[]>(()=>invoice.commercial_items&&invoice.commercial_items.length>0?invoice.commercial_items:aggregateByProductName(invoice.items||[]));
   const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
   const [commercialRemarks,setCommercialRemarks]=useState(invoice.commercial_remarks||invoice.remarks||"");
-
-  // ロット番号・使用期限はProforma（invoice.items）でしか入力できない項目のため、
-  // この画面を開いた時点・Proformaが変更された時点で常に最新の値をInvoice/Commercial/DeliveryNote/DeliveryReceiptへ反映する。
-  // （品名でマッチングするため、金額・品名などここで調整済みの値は保持される）
-  useEffect(()=>{
-    const proformaSource=invoice.items||[];
-    if(proformaSource.length===0)return;
-    const overlay=(list:any[])=>{
-      let changed=false;
-      const next=list.map((it:any)=>{
-        const match=proformaSource.find((p:any)=>p.productName&&p.productName===it.productName);
-        if(!match)return it;
-        const newLot=match.lotNo||"";
-        const newExp=match.expiryDate||"";
-        if((it.lotNo||"")===newLot&&(it.expiryDate||"")===newExp)return it;
-        changed=true;
-        return {...it,lotNo:newLot,expiryDate:newExp};
-      });
-      return changed?next:list;
-    };
-    setInvoiceItems((prev:any[])=>overlay(prev));
-    setCommercialItems((prev:any[])=>overlay(prev));
-  },[invoice.items]);
+  // Delivery Note / Delivery Receiptはロット単位の管理が必要なため、Invoice/Commercialとは別の
+  // 独立した品目リストを持つ（Proformaでロット番号ごとに分けた行をそのまま保持できるようにするため）。
+  // 「Proformaから引用」「Invoiceから引用」ボタンで、いつでも明示的に取り直せる。
+  const [deliveryItems,setDeliveryItems]=useState<any[]>(()=>invoice.delivery_items&&invoice.delivery_items.length>0?invoice.delivery_items:(invoice.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})));
 
   // この画面（Invoice/Commercial/Delivery Note/Delivery Receipt）で直接行った編集も
   // 「💾 保存」時に失われないよう、親のinvoiceへ常に反映しておく
   useEffect(()=>{
-    setInvoice&&setInvoice((v:any)=>({...v,invoice_items:invoiceItems,commercial_items:commercialItems,invoice_remarks:invoiceRemarks,commercial_remarks:commercialRemarks}));
-  },[invoiceItems,commercialItems,invoiceRemarks,commercialRemarks]);
+    setInvoice&&setInvoice((v:any)=>({...v,invoice_items:invoiceItems,commercial_items:commercialItems,invoice_remarks:invoiceRemarks,commercial_remarks:commercialRemarks,delivery_items:deliveryItems}));
+  },[invoiceItems,commercialItems,invoiceRemarks,commercialRemarks,deliveryItems]);
 
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
@@ -1379,6 +1383,12 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
   const updComItem=(id:any,k:string,v:any)=>updItem(commercialItems,setCommercialItems,id,k,v);
   const delComItem=(id:any)=>delItem(commercialItems,setCommercialItems,id);
   const addComItem=()=>addItem(setCommercialItems);
+  const updDeliveryItem=(id:any,k:string,v:any)=>updItem(deliveryItems,setDeliveryItems,id,k,v);
+  const delDeliveryItem=(id:any)=>delItem(deliveryItems,setDeliveryItems,id);
+  const addDeliveryItem=()=>addItem(setDeliveryItems);
+  // Delivery Note / Delivery Receipt用：Proforma（ロット別の行そのまま）またはInvoice（商品名で合算済み）から品目を取り直す
+  const quoteDeliveryFromProforma=()=>setDeliveryItems((invoice.items||[]).map((it:any)=>({...it,id:Date.now()+Math.random()})));
+  const quoteDeliveryFromInvoice=()=>setDeliveryItems(invoiceItems.map((it:any)=>({...it,id:Date.now()+Math.random()})));
 
   // カートンを行に展開
   // 同じ製品・同じ数量の連続カートンをグループ化してCarton No範囲表示
@@ -1993,29 +2003,31 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
         <th style={{border:"none",width:28}} className="no-print"></th>
       </tr></thead>
       <tbody>
-        {invoiceItems.map((it:any,i:number)=>(
+        {deliveryItems.map((it:any,i:number)=>(
           <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
             <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
-              <Field width="100%" display="block" value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
+              <Field width="100%" display="block" value={it.productName||""} onChange={(e:any)=>updDeliveryItem(it.id,"productName",e.target.value)}/>
               {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
             </td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={55} align="right" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={80} align="right" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updInvItem(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={55} align="right" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updDeliveryItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={80} align="right" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updDeliveryItem(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" placeholder="YYYY/MM" value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
-            <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" value={it.lotNo||""} onChange={(e:any)=>updDeliveryItem(it.id,"lotNo",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" placeholder="YYYY/MM" value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updDeliveryItem(it.id,"expiryDate",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delDeliveryItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
           </tr>
         ))}
       </tbody>
       <tfoot>
         <tr><td colSpan={3} style={{padding:"8px",textAlign:"right",fontWeight:700,fontSize:12,borderTop:"2px solid #000"}}>{PT.total}</td>
-        <td style={{padding:"8px",fontWeight:700,fontSize:12,borderTop:"2px solid #000",textAlign:"right"}}>{cur} {fmt(invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
+        <td style={{padding:"8px",fontWeight:700,fontSize:12,borderTop:"2px solid #000",textAlign:"right"}}>{cur} {fmt(deliveryItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0),cur)}</td>
         <td colSpan={3} style={{borderTop:"2px solid #000"}}></td></tr>
       </tfoot>
     </table>
-    <div className="no-print" style={{marginTop:6}}>
-      <button onClick={addInvItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
+    <div className="no-print" style={{marginTop:6,display:"flex",gap:8,flexWrap:"wrap" as any}}>
+      <button onClick={addDeliveryItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
+      <button onClick={quoteDeliveryFromProforma} style={{fontSize:11,border:"1px solid #ccc",background:"#fff",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#444"}}>🔄 Proformaから引用</button>
+      <button onClick={quoteDeliveryFromInvoice} style={{fontSize:11,border:"1px solid #ccc",background:"#fff",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#444"}}>🔄 Invoiceから引用</button>
     </div>
     {invoiceRemarks&&<div style={{marginTop:12}}>
       <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>{PT.remarks}</div>
@@ -2081,27 +2093,29 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
         <th style={{border:"none",width:28}} className="no-print"></th>
       </tr></thead>
       <tbody>
-        {invoiceItems.map((it:any,i:number)=>(
+        {deliveryItems.map((it:any,i:number)=>(
           <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
             <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
-              <Field width="100%" display="block" value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
+              <Field width="100%" display="block" value={it.productName||""} onChange={(e:any)=>updDeliveryItem(it.id,"productName",e.target.value)}/>
               {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
             </td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={55} align="right" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" placeholder="YYYY/MM" value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
-            <td style={{border:"none",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={55} align="right" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updDeliveryItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" value={it.lotNo||""} onChange={(e:any)=>updDeliveryItem(it.id,"lotNo",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" placeholder="YYYY/MM" value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updDeliveryItem(it.id,"expiryDate",e.target.value)}/></td>
+            <td style={{border:"none",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delDeliveryItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
           </tr>
         ))}
       </tbody>
       <tfoot>
         <tr><td colSpan={4} style={{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:11,borderTop:"2px solid #000"}}>
-          {PT.totalQty}: {fmtQty(invoiceItems.reduce((s:number,it:any)=>s+(Number(it.quantity)||0),0))}
+          {PT.totalQty}: {fmtQty(deliveryItems.reduce((s:number,it:any)=>s+(Number(it.quantity)||0),0))}
         </td></tr>
       </tfoot>
     </table>
-    <div className="no-print" style={{marginTop:6}}>
-      <button onClick={addInvItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
+    <div className="no-print" style={{marginTop:6,display:"flex",gap:8,flexWrap:"wrap" as any}}>
+      <button onClick={addDeliveryItem} style={{fontSize:11,border:"1px dashed #ccc",background:"#f9f9f9",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#666"}}>＋ 品目追加</button>
+      <button onClick={quoteDeliveryFromProforma} style={{fontSize:11,border:"1px solid #ccc",background:"#fff",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#444"}}>🔄 Proformaから引用</button>
+      <button onClick={quoteDeliveryFromInvoice} style={{fontSize:11,border:"1px solid #ccc",background:"#fff",padding:"4px 10px",borderRadius:4,cursor:"pointer",color:"#444"}}>🔄 Invoiceから引用</button>
     </div>
     {/* Remarks */}
     {(invoiceRemarks||true)&&<div style={{marginTop:12}}>
@@ -2888,40 +2902,20 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
     const existing=invoice[itemsKey];
     if(existing&&existing.length>0)return existing;
     // syncFromがあればそこから引用、なければitemsから引用
+    // Proformaはロット番号ごとに行が分かれていることがあるため、商品名で数量を合算する
     const source=syncFrom&&invoice[syncFrom]&&invoice[syncFrom].length>0
       ?invoice[syncFrom]
       :invoice.items||[];
-    return source.map((it:any)=>({...it,id:Date.now()+Math.random()}));
+    return aggregateByProductName(source);
   });
   const [localRemarks,setLocalRemarks]=useState<string>(invoice[remarksKey]||invoice.remarks||"");
-
-  // ロット番号・使用期限はこの画面では編集できず、Proforma（invoice.items）でしか入力できない項目のため、
-  // 金額・品名などの調整値は保持したまま、Proforma側の最新のロット番号・使用期限だけを常に自動反映する。
-  // （品名でマッチングするため、Proformaで値を変更→保存するだけで②③⑤/DeliveryNote/DeliveryReceiptまで自動的に伝わる）
-  useEffect(()=>{
-    const proformaSource=invoice.items||[];
-    if(proformaSource.length===0)return;
-    setLocalItems((prev:any[])=>{
-      let changed=false;
-      const next=prev.map((it:any)=>{
-        const match=proformaSource.find((p:any)=>p.productName&&p.productName===it.productName);
-        if(!match)return it;
-        const newLot=match.lotNo||"";
-        const newExp=match.expiryDate||"";
-        if((it.lotNo||"")===newLot&&(it.expiryDate||"")===newExp)return it;
-        changed=true;
-        return {...it,lotNo:newLot,expiryDate:newExp};
-      });
-      return changed?next:prev;
-    });
-  },[invoice.items]);
 
   // ローカル変更をinvoiceに反映
   useEffect(()=>{
     setInvoice((v:any)=>({...v,[itemsKey]:localItems,[remarksKey]:localRemarks}));
   },[localItems,localRemarks]);
 
-  const addItem=()=>setLocalItems(v=>[...v,{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:cur,hsCode:"",lotNo:""}]);
+  const addItem=()=>setLocalItems(v=>[...v,{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:cur,hsCode:""}]);
   const upd=(id:any,f:string,val:any)=>setLocalItems(v=>v.map((it:any)=>it.id===id?{...it,[f]:val}:it));
   const del=(id:any)=>setLocalItems(v=>v.filter((it:any)=>it.id!==id));
   const total=localItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
@@ -2930,7 +2924,7 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
     const source=syncFrom&&invoice[syncFrom]&&invoice[syncFrom].length>0
       ?invoice[syncFrom]
       :invoice.items||[];
-    setLocalItems(source.map((it:any)=>({...it,id:Date.now()+Math.random()})));
+    setLocalItems(aggregateByProductName(source));
     setLocalRemarks(invoice[syncFrom==="invoice_items"?"invoice_remarks":"remarks"]||invoice.remarks||"");
   };
 
