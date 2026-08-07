@@ -32,6 +32,28 @@ async function sb(path: string, options: any = {}) {
   const t = await res.text();
   return t ? JSON.parse(t) : null;
 }
+// input/textareaの現在値をHTML属性・textContentとして反映しておくヘルパー
+// （html2canvasのDOM複製処理やel.innerHTMLでの文字列化はvalue属性しか見ず、
+//   Reactが管理しているvalueプロパティ自体は反映されないため、
+//   品名・数量・単価などの入力欄が空欄になってしまう問題への対策）
+function syncInputValuesToDom(el: HTMLElement) {
+  const inputs: HTMLInputElement[] = Array.from(el.querySelectorAll("input"));
+  const textareas: HTMLTextAreaElement[] = Array.from(el.querySelectorAll("textarea"));
+  const prevInputAttrs = inputs.map(i => i.getAttribute("value"));
+  const prevTextareaText = textareas.map(t => t.textContent);
+  inputs.forEach(i => i.setAttribute("value", i.value));
+  textareas.forEach(t => { t.textContent = t.value; });
+
+  return function restore() {
+    inputs.forEach((i, idx) => {
+      const prev = prevInputAttrs[idx];
+      if (prev === null) i.removeAttribute("value");
+      else i.setAttribute("value", prev);
+    });
+    textareas.forEach((t, idx) => { t.textContent = prevTextareaText[idx] || ""; });
+  };
+}
+
 async function generatePdfBase64FromElement(elementId: string): Promise<string> {
   const el = document.getElementById(elementId);
   if (!el) throw new Error(`要素が見つかりません: ${elementId}`);
@@ -42,14 +64,7 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
   hidden.forEach(elm => { elm.style.display = "none"; });
 
   // input/textareaの現在値をHTML属性として反映しておく
-  // （html2canvasはDOMを複製してから撮影するが、複製処理はvalue属性しかコピーせず、
-  //   Reactが管理しているvalueプロパティ自体はコピーされないため、品名などが空欄になってしまう）
-  const inputs: HTMLInputElement[] = Array.from(el.querySelectorAll("input"));
-  const textareas: HTMLTextAreaElement[] = Array.from(el.querySelectorAll("textarea"));
-  const prevInputAttrs = inputs.map(i => i.getAttribute("value"));
-  const prevTextareaText = textareas.map(t => t.textContent);
-  inputs.forEach(i => i.setAttribute("value", i.value));
-  textareas.forEach(t => { t.textContent = t.value; });
+  const restoreInputs = syncInputValuesToDom(el);
 
   const canvas = await html2canvas(el, {
     scale: 2,
@@ -58,12 +73,7 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
   });
 
   // 元に戻す
-  inputs.forEach((i, idx) => {
-    const prev = prevInputAttrs[idx];
-    if (prev === null) i.removeAttribute("value");
-    else i.setAttribute("value", prev);
-  });
-  textareas.forEach((t, idx) => { t.textContent = prevTextareaText[idx] || ""; });
+  restoreInputs();
   hidden.forEach((elm, i) => { elm.style.display = prevDisplay[i]; });
 
   // PNGだとファイルサイズが数MBになりVercelのリクエストサイズ上限を超えるため、JPEG圧縮を使用
@@ -1245,10 +1255,23 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
   const cur=invoice.currency||"JPY";
 
   const [submittingApproval,setSubmittingApproval]=useState(false);
+  // true の間、品名・数量・単価などの編集欄を「入力欄」ではなく「テキスト」として描画する。
+  // html2canvasはReactの<input>のvalueプロパティを正しく読み取れないことがあり、
+  // PackingListのようにテキストで描画している箇所は問題なく、<input>を使っている
+  // Proforma/Invoice/Commercial/DeliveryNote/DeliveryReceiptだけ空欄になる原因になっていた。
+  // PDFダウンロード・Kintone連携用のキャプチャ直前だけこれをtrueにして、
+  // 画面に見えているのと同じ内容を確実にPDF化する。
+  const [printCapturing,setPrintCapturing]=useState(false);
+  const Field=({value,width,align,placeholder,onChange,inputMode,fontSize=10,display}:any)=>(
+    printCapturing
+      ? <div style={{width,fontSize,textAlign:align||"left",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{value||"\u00A0"}</div>
+      : <input style={{width,border:"none",outline:"none",fontSize,background:"transparent",textAlign:align||"left",display}} type="text" inputMode={inputMode} placeholder={placeholder} value={value} onChange={onChange}/>
+  );
 
   const requestApprovalAllDocs=async()=>{
     setSubmittingApproval(true);
     setUploadError("");
+    setPrintCapturing(true);
     const docTypes=[
       {key:"invoice",activeDoc:"invoice",label:"INVOICE"},
       {key:"commercial",activeDoc:"commercial",label:"Commercial Invoice"},
@@ -1257,32 +1280,35 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
       {key:"deliveryReceipt",activeDoc:"receipt",label:"Delivery Receipt"},
     ];
     const fileKeys:any[]=[];
-    for(const d of docTypes){
-      setActiveDoc(d.activeDoc);
-      await new Promise(r=>setTimeout(r,300));
-      try{
-        const base64=await generatePdfBase64FromElement("print-area");
-        const approxBytes=base64.length*0.75;
-        if(approxBytes>3*1024*1024){
-          throw new Error(`PDFサイズが大きすぎます（約${(approxBytes/1024/1024).toFixed(1)}MB）。内容量を減らすか、画質設定の見直しが必要です。`);
+    try{
+      for(const d of docTypes){
+        setActiveDoc(d.activeDoc);
+        await new Promise(r=>setTimeout(r,300));
+        try{
+          const base64=await generatePdfBase64FromElement("print-area");
+          const approxBytes=base64.length*0.75;
+          if(approxBytes>3*1024*1024){
+            throw new Error(`PDFサイズが大きすぎます（約${(approxBytes/1024/1024).toFixed(1)}MB）。内容量を減らすか、画質設定の見直しが必要です。`);
+          }
+          const fileName=`${invoice.invoiceNo}_${d.key}.pdf`;
+          const res=await fetch("/api/kintone/upload-file",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({base64,fileName}),
+          });
+          const uploaded=await res.json();
+          if(!res.ok)throw new Error(uploaded.error||"アップロード失敗");
+          fileKeys.push({docType:d.key,fileKey:uploaded.fileKey});
+        }catch(e:any){
+          setUploadError(`${d.label} のアップロードに失敗しました: ${e.message||e}`);
+          return;
         }
-        const fileName=`${invoice.invoiceNo}_${d.key}.pdf`;
-        const res=await fetch("/api/kintone/upload-file",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({base64,fileName}),
-        });
-        const uploaded=await res.json();
-        if(!res.ok)throw new Error(uploaded.error||"アップロード失敗");
-        fileKeys.push({docType:d.key,fileKey:uploaded.fileKey});
-      }catch(e:any){
-        setSubmittingApproval(false);
-        setUploadError(`${d.label} のアップロードに失敗しました: ${e.message||e}`);
-        return;
       }
+      await onRequestApproval(fileKeys);
+    }finally{
+      setPrintCapturing(false);
+      setSubmittingApproval(false);
     }
-    setSubmittingApproval(false);
-    await onRequestApproval(fileKeys);
   };
   const updItem=(list:any[],setList:any,id:any,key:string,val:any)=>
     setList((prev:any[])=>prev.map((it:any)=>it.id===id?{...it,[key]:val}:it));
@@ -1437,10 +1463,16 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
   const handlePrint=()=>{
     const el=document.getElementById("print-area");
     if(!el)return;
+    // innerHTMLで文字列化する前に、input/textareaの現在値をHTML属性に反映しておく
+    // （そうしないと品名・数量・単価などの入力欄が印刷/PDF保存時に空欄になる）
+    const restoreInputs=syncInputValuesToDom(el);
+    const html=el.innerHTML;
+    restoreInputs();
+
     const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
     const printTitle=activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":activeDoc==="invoice"?"Invoice":activeDoc==="delivery"?"Delivery Note":activeDoc==="receipt"?"Delivery Receipt":"Packing List";
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${printTitle}</title><style>@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${el.innerHTML}</body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${printTitle}</title><style>@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${html}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
   };
@@ -1751,14 +1783,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                       {items.map((it:any,i:number)=>(
                         <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
                           <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
-                            <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updFn(it.id,"productName",e.target.value)}/>
-                            {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: <input style={{border:"none",outline:"none",fontSize:8,color:"#888",fontFamily:"monospace",background:"transparent",width:"calc(100% - 24px)"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
-                            {!it.hsCode&&<div style={{fontSize:8,color:"#bbb",marginTop:2}} className="no-print"><input placeholder="HS Code（任意）" style={{border:"none",outline:"none",fontSize:8,color:"#aaa",fontFamily:"monospace",background:"transparent",width:"100%"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
+                            <Field width="100%" display="block" value={it.productName||""} onChange={(e:any)=>updFn(it.id,"productName",e.target.value)}/>
+                            {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {printCapturing?it.hsCode:<input style={{border:"none",outline:"none",fontSize:8,color:"#888",fontFamily:"monospace",background:"transparent",width:"calc(100% - 24px)"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/>}</div>}
+                            {!it.hsCode&&!printCapturing&&<div style={{fontSize:8,color:"#bbb",marginTop:2}} className="no-print"><input placeholder="HS Code（任意）" style={{border:"none",outline:"none",fontSize:8,color:"#aaa",fontFamily:"monospace",background:"transparent",width:"100%"}} value={it.hsCode||""} onChange={(e:any)=>updFn(it.id,"hsCode",e.target.value)}/></div>}
                           </td>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:55,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updFn(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
-                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:70,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updFn(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={55} align="right" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updFn(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
+                          <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={70} align="right" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updFn(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
                           <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{docCur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),docCur)}</td>
-                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input type="text" placeholder="YYYY/MM" style={{width:68,border:"none",outline:"none",fontSize:9,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
+                          {showExp&&<td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width={68} fontSize={9} placeholder="YYYY/MM" value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updFn(it.id,"expiryDate",e.target.value)}/></td>}
                           <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delFn(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
                         </tr>
                       ))}
@@ -1774,8 +1806,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
                   </div>
                   {remarks!==undefined&&<div style={{marginTop:10}}>
                     <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase"}}>{PT.remarks}</div>
-                    <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical",minHeight:36}} value={remarks} onChange={(e:any)=>setRemarks(e.target.value)}/>
-                    <div className="print-only" style={{fontSize:10,whiteSpace:"pre-wrap"}}>{remarks}</div>
+                    {printCapturing
+                      ?<div style={{fontSize:10,whiteSpace:"pre-wrap"}}>{remarks}</div>
+                      :<textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical",minHeight:36}} value={remarks} onChange={(e:any)=>setRemarks(e.target.value)}/>}
                   </div>}
                 </>
               );
@@ -1930,14 +1963,14 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
         {invoiceItems.map((it:any,i:number)=>(
           <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
             <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
-              <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
+              <Field width="100%" display="block" value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
               {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
             </td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:55,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:80,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updInvItem(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={55} align="right" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={80} align="right" inputMode="decimal" value={formatPriceDisplay(it.unitPrice)} onChange={(e:any)=>updInvItem(it.id,"unitPrice",parsePriceInput(e.target.value))}/></td>
             <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right",fontSize:10}}>{cur} {fmt(Number(it.quantity||0)*Number(it.unitPrice||0),cur)}</td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" placeholder="YYYY/MM" value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
             <td style={{border:"1px solid #ddd",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
           </tr>
         ))}
@@ -1953,10 +1986,11 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
     </div>
     {invoiceRemarks&&<div style={{marginTop:12}}>
       <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>{PT.remarks}</div>
-      <div style={{fontSize:10,whiteSpace:"pre-wrap"}} className="print-only">{invoiceRemarks}</div>
-      <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
+      {printCapturing
+        ?<div style={{fontSize:10,whiteSpace:"pre-wrap"}}>{invoiceRemarks}</div>
+        :<textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>}
     </div>}
-    {!invoiceRemarks&&<div className="no-print" style={{marginTop:12}}>
+    {!invoiceRemarks&&!printCapturing&&<div className="no-print" style={{marginTop:12}}>
       <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>{PT.remarks}</div>
       <textarea style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
     </div>}
@@ -2017,12 +2051,12 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
         {invoiceItems.map((it:any,i:number)=>(
           <tr key={it.id||i} style={{background:i%2===0?"#fff":"#fafafa"}}>
             <td style={{border:"1px solid #ddd",padding:"4px 6px",wordBreak:"break-word",whiteSpace:"normal"}}>
-              <input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent",display:"block"}} value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
+              <Field width="100%" display="block" value={it.productName||""} onChange={(e:any)=>updInvItem(it.id,"productName",e.target.value)}/>
               {it.hsCode&&<div style={{fontSize:8,color:"#888",fontFamily:"monospace",marginTop:2}}>HS: {it.hsCode}</div>}
             </td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><input style={{width:55,border:"none",outline:"none",fontSize:10,background:"transparent",textAlign:"right"}} type="text" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
-            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><input style={{width:"100%",border:"none",outline:"none",fontSize:10,background:"transparent"}} value={fmtExpiry(it.expiryDate||"")} placeholder="YYYY/MM" onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px",textAlign:"right"}}><Field width={55} align="right" inputMode="numeric" value={formatPriceDisplay(it.quantity)} onChange={(e:any)=>updInvItem(it.id,"quantity",parsePriceInput(e.target.value))}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" value={it.lotNo||""} onChange={(e:any)=>updInvItem(it.id,"lotNo",e.target.value)}/></td>
+            <td style={{border:"1px solid #ddd",padding:"3px 6px"}}><Field width="100%" placeholder="YYYY/MM" value={fmtExpiry(it.expiryDate||"")} onChange={(e:any)=>updInvItem(it.id,"expiryDate",e.target.value)}/></td>
             <td style={{border:"none",padding:"2px",textAlign:"center"}} className="no-print"><button onClick={()=>delInvItem(it.id)} style={{border:"none",background:"#fee2e2",color:"#dc2626",cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:10}}>✕</button></td>
           </tr>
         ))}
@@ -2039,8 +2073,9 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
     {/* Remarks */}
     {(invoiceRemarks||true)&&<div style={{marginTop:12}}>
       <div style={{fontSize:9,fontWeight:600,color:"#666",marginBottom:3,textTransform:"uppercase" as any}}>{PT.remarks}</div>
-      <div style={{fontSize:10,whiteSpace:"pre-wrap"}} className="print-only">{invoiceRemarks}</div>
-      <textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>
+      {printCapturing
+        ?<div style={{fontSize:10,whiteSpace:"pre-wrap"}}>{invoiceRemarks}</div>
+        :<textarea className="no-print" style={{width:"100%",fontSize:10,border:"1px solid #eee",borderRadius:3,padding:"4px 6px",resize:"vertical" as any,minHeight:36}} value={invoiceRemarks} onChange={(e:any)=>setInvoiceRemarks(e.target.value)}/>}
     </div>}
     {/* Signature section: Shipper left, Recipient right */}
     <div style={{marginTop:48,display:"grid",gridTemplateColumns:"1fr 1fr",gap:40}}>
