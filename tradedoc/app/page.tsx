@@ -289,7 +289,7 @@ const T: any = {
     productName:"製品名", qty:"数量", unitPrice:"単価", hsCode:"HSコード",
     subtotal:"小計", grossWeight:"総重量(kg)", netWeight:"正味重量(kg)", dimensions:"寸法(cm)",
     cartonNo:"Carton No", addCarton:"+ カートン追加", autoFill:"Invoiceから自動反映",
-    mixed:"混載", expiryDate:"賞味期限/使用期限", trackingNo:"追跡番号",
+    mixed:"混載", expiryDate:"賞味期限/使用期限", trackingNo:"追跡番号", lotNo:"ロット番号",
     paymentConfirm:"入金確認", completed:"出荷完了", print:"PDF印刷",
     save:"保存", cancel:"キャンセル", edit:"編集", delete:"削除",
     addItem:"+ 品目追加", selectProduct:"製品マスタから選択",
@@ -306,7 +306,7 @@ const T: any = {
     productName:"Product Name", qty:"Qty", unitPrice:"Unit Price", hsCode:"HS Code",
     subtotal:"Subtotal", grossWeight:"G.W.(kg)", netWeight:"N.W.(kg)", dimensions:"Dimensions(cm)",
     cartonNo:"Carton No", addCarton:"+ Add Carton", autoFill:"Auto Fill from Invoice",
-    mixed:"Mixed", expiryDate:"Expiry Date", trackingNo:"Tracking No",
+    mixed:"Mixed", expiryDate:"Expiry Date", trackingNo:"Tracking No", lotNo:"Lot No.",
     paymentConfirm:"Payment Confirmed", completed:"Shipment Completed", print:"Print PDF",
     save:"Save", cancel:"Cancel", edit:"Edit", delete:"Delete",
     addItem:"+ Add Item", selectProduct:"Select from Products",
@@ -650,7 +650,7 @@ function ValidationPanel({invoice,packing,setStep}:any){
 // ============================================================
 function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,org,lang}:any){
   const t=T[lang||"ja"];
-  const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",expiryDate:""}]}));
+  const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",expiryDate:"",lotNo:""}]}));
   const upd=(id:number,f:string,val:any)=>setInvoice((v:any)=>({...v,items:v.items.map((it:any)=>it.id===id?{...it,[f]:val}:it)}));
   const del=(id:number)=>setInvoice((v:any)=>({...v,items:v.items.filter((it:any)=>it.id!==id)}));
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
@@ -877,6 +877,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,o
                 <th style={{width:85}}>{t.unitPrice}</th>
                 <th style={{width:60}}>通貨</th>
                 <th style={{width:100}}>{t.hsCode}(任意)</th>
+                <th style={{width:110}}>{t.lotNo}(任意)</th>
                 <th style={{width:120}}>{t.expiryDate}(任意)</th>
                 <th style={{width:85,textAlign:"right"}}>{t.subtotal}</th>
                 <th style={{width:32}}></th>
@@ -904,6 +905,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,o
                       <td><select className="input" value={item.currency||cur} onChange={(e:any)=>upd(item.id,"currency",e.target.value)}>
                         {CURRENCIES.map((c:string)=><option key={c}>{c}</option>)}</select></td>
                       <td><input className="input" value={item.hsCode||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"hsCode",e.target.value)}/></td>
+                      <td><input className="input" value={item.lotNo||""} placeholder="任意" onChange={(e:any)=>upd(item.id,"lotNo",e.target.value)}/></td>
                       <td><input className="input" type="text" placeholder="YYYY/MM" value={item.expiryDate||""} onChange={(e:any)=>upd(item.id,"expiryDate",e.target.value)}/></td>
                       <td style={{fontWeight:500,fontSize:12,textAlign:"right",paddingRight:6}}>{fmt(sub,ic)}</td>
                       <td><button className="btn btn-danger btn-xs" onClick={()=>del(item.id)}>✕</button></td>
@@ -1753,7 +1755,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
       </div>
       <div className="card">
         <div className="card-header no-print">
-          <div className="card-title">{activeDoc==="invoice"?(isProforma?"Proforma Invoice プレビュー":"Invoice プレビュー"):"Packing List プレビュー"}</div>
+          <div className="card-title">{activeDoc==="invoice"?(isProforma?"Proforma Invoice プレビュー":"Invoice プレビュー"):`${printTitle} プレビュー`}</div>
          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ {t.print}</button>
               {invoice.invoiceType!=="proforma"&&onRequestApproval&&invoice.approvalStatus!=="pending_approval"&&invoice.approvalStatus!=="approved"&&(
                 <button className="btn btn-purple btn-sm" disabled={submittingApproval} onClick={requestApprovalAllDocs}>
@@ -2867,7 +2869,7 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
     setInvoice((v:any)=>({...v,[itemsKey]:localItems,[remarksKey]:localRemarks}));
   },[localItems,localRemarks]);
 
-  const addItem=()=>setLocalItems(v=>[...v,{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:cur,hsCode:""}]);
+  const addItem=()=>setLocalItems(v=>[...v,{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:cur,hsCode:"",lotNo:""}]);
   const upd=(id:any,f:string,val:any)=>setLocalItems(v=>v.map((it:any)=>it.id===id?{...it,[f]:val}:it));
   const del=(id:any)=>setLocalItems(v=>v.filter((it:any)=>it.id!==id));
   const total=localItems.reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
