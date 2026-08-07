@@ -280,6 +280,13 @@ function aggregateByProductName(items: any[]): any[] {
   return order.map(k => map[k]);
 }
 
+// 梱包総数：packing配列の要素数ではなく、実際のCarton No（ユニーク値）の数で数える。
+// 同じCarton Noのカートンが複数登録されていても（入力ミス・データ不整合等）、物理的な箱数として二重に数えないようにする。
+function uniqueCartonCount(packing: any[]): number {
+  const nos = (packing || []).map((p: any) => String(p.cartonNo ?? "").trim()).filter((n: string) => n !== "");
+  return new Set(nos).size || (packing || []).length;
+}
+
 
 function validate(invoice: any, packing: any[]) {
   const errors: any[] = [], warnings: any[] = [];
@@ -1147,7 +1154,7 @@ function PackingForm({invoice,packing,setPacking,onNext,onBack,lang,products}:an
         ))}
         {packing.length>0&&(
           <div style={{display:"flex",gap:20,marginTop:10,padding:"10px 14px",background:"#F7F7F5",borderRadius:"var(--radius-lg)"}}>
-            <div><div className="total-label">カートン数</div><div className="total-value">{packing.length} ctns</div></div>
+            <div><div className="total-label">カートン数</div><div className="total-value">{uniqueCartonCount(packing)} ctns</div></div>
             <div><div className="total-label">合計数量</div><div className="total-value">{totalQty} pcs</div></div>
             <div><div className="total-label">総重量</div><div className="total-value">{totalGross.toFixed(2)} kg</div></div>
             <div><div className="total-label">正味重量</div><div className="total-value">{totalNet.toFixed(2)} kg</div></div>
@@ -1241,7 +1248,7 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
                 ["Incoterms",invoice.incoterms||"—"],["原産国",invoice.countryOfOrigin||"—"],
                 ["品目数",`${invoice.items?.length||0}件`],
                 ["合計金額",`${cur} ${fmt(total,cur)}`],
-                ["カートン数",`${packing.length} ctns`],
+                ["カートン数",`${uniqueCartonCount(packing)} ctns`],
                 ["総重量",`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`],
               ].map(([k,v]:any)=>(
                 <tr key={k}><td style={{color:"var(--text-muted)",padding:"4px 0",borderBottom:"1px solid var(--border)"}}>{k}</td>
@@ -1745,7 +1752,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
           {invoice.poNumber&&<MetaRow label={printLang==="en"?"P.O. No:":"発注番号："} value={invoice.poNumber}/>}
           {invoice.shippingMethod&&<MetaRow label={`${PT.shippingMethod}：`} value={invoice.shippingMethod}/>}
           {invoice.incoterms&&<MetaRow label={`${PT.incoterms}：`} value={invoice.incoterms}/>}
-          <MetaRow label={printLang==="en"?"Total Cartons：":"梱包総数："} value={`${packing.length} CTNS`}/>
+          <MetaRow label={printLang==="en"?"Total Cartons：":"梱包総数："} value={`${uniqueCartonCount(packing)} CTNS`}/>
           <MetaRow label={printLang==="en"?"Total G.W.：":"総重量合計："} value={`${packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2)} kg`}/>
         </div>
         <div>
