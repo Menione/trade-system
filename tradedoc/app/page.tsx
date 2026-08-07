@@ -85,14 +85,42 @@ async function generatePdfBase64FromElement(elementId: string): Promise<string> 
   const imgWidth = pageWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
+  // ページの一部だけがはみ出した場合、その部分がほぼ真っ白（余白のみ）なら
+  // 無駄な白紙ページを追加しない。（内容が実際にあるページは通常通り追加する）
+  const pxPerMm = canvas.width / imgWidth;
+  let ctx: CanvasRenderingContext2D | null = null;
+  try { ctx = canvas.getContext("2d"); } catch { ctx = null; }
+  const isRegionBlank = (yStartPx: number, hPx: number): boolean => {
+    if (!ctx || hPx <= 0) return true;
+    const y = Math.max(0, Math.floor(yStartPx));
+    const h = Math.max(0, Math.min(Math.floor(hPx), canvas.height - y));
+    if (h <= 0) return true;
+    try {
+      const { data } = ctx.getImageData(0, y, canvas.width, h);
+      let nonWhite = 0;
+      const step = 4 * 4; // 間引いてチェックし高解像度キャンバスでも高速に判定
+      for (let i = 0; i < data.length; i += step) {
+        if (data[i] < 245 || data[i + 1] < 245 || data[i + 2] < 245) nonWhite++;
+      }
+      const sampled = data.length / step;
+      return sampled === 0 ? true : nonWhite / sampled < 0.002;
+    } catch {
+      // getImageData失敗（クロスオリジン画像等でキャンバスが汚染された場合）は
+      // 安全側に倒して「空白ではない」とみなし、従来通りページを追加する
+      return false;
+    }
+  };
+
   let heightLeft = imgHeight;
   let position = 0;
 
   pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
   heightLeft -= pageHeight;
 
-  // 数mm程度のはみ出しは描画誤差とみなし、無駄な空白ページを作らない
-  while (heightLeft > 5) {
+  while (heightLeft > 0.5) {
+    const remainingPx = heightLeft * pxPerMm;
+    const yStartPx = canvas.height - remainingPx;
+    if (isRegionBlank(yStartPx, remainingPx)) break;
     position = heightLeft - imgHeight;
     pdf.addPage();
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
@@ -1805,9 +1833,13 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
         <div className="card-header no-print">
           <div className="card-title">{activeDoc==="invoice"?(isProforma?"Proforma Invoice プレビュー":"Invoice プレビュー"):`${printTitle} プレビュー`}</div>
          <button className="btn btn-primary btn-sm" onClick={handlePrint}>🖨️ {t.print}</button>
-              {invoice.invoiceType!=="proforma"&&onRequestApproval&&invoice.approvalStatus!=="pending_approval"&&invoice.approvalStatus!=="approved"&&(
+              {invoice.invoiceType!=="proforma"&&onRequestApproval&&(
                 <button className="btn btn-purple btn-sm" disabled={submittingApproval} onClick={requestApprovalAllDocs}>
-                  {submittingApproval?"⏳ 送信中...":"📨 承認依頼"}
+                  {submittingApproval
+                    ?"⏳ 送信中..."
+                    :(invoice.approvalStatus==="pending_approval"||invoice.approvalStatus==="approved")
+                      ?"🔄 Kintoneへ再連携（上書き）"
+                      :"📨 承認依頼"}
                 </button>
               )}
             </div>
@@ -3354,6 +3386,7 @@ export default function App(){
           currency:invoice.currency,
           customer:invoice.consignee,
           fileKeys,
+          kintoneRecordId:invoice.kintoneRecordId||null,
         }),
       });
       const d=await res.json();
