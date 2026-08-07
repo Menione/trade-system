@@ -1244,7 +1244,7 @@ function ReviewPage({invoice,packing,onNext,onBack,setStep,lang}:any){
 // ============================================================
 // PDF OUTPUT
 // ============================================================
-function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestApproval}:any){
+function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,onRequestApproval}:any){
   const [uploadError,setUploadError]=useState("");
   const t=T[lang||"ja"];
   const isProforma=invoice.invoiceType==="proforma";
@@ -1253,6 +1253,36 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
   const [commercialItems,setCommercialItems]=useState<any[]>(invoice.commercial_items||invoice.items||[]);
   const [invoiceRemarks,setInvoiceRemarks]=useState(invoice.invoice_remarks||invoice.remarks||"");
   const [commercialRemarks,setCommercialRemarks]=useState(invoice.commercial_remarks||invoice.remarks||"");
+
+  // ロット番号・使用期限はProforma（invoice.items）でしか入力できない項目のため、
+  // この画面を開いた時点・Proformaが変更された時点で常に最新の値をInvoice/Commercial/DeliveryNote/DeliveryReceiptへ反映する。
+  // （品名でマッチングするため、金額・品名などここで調整済みの値は保持される）
+  useEffect(()=>{
+    const proformaSource=invoice.items||[];
+    if(proformaSource.length===0)return;
+    const overlay=(list:any[])=>{
+      let changed=false;
+      const next=list.map((it:any)=>{
+        const match=proformaSource.find((p:any)=>p.productName&&p.productName===it.productName);
+        if(!match)return it;
+        const newLot=match.lotNo||"";
+        const newExp=match.expiryDate||"";
+        if((it.lotNo||"")===newLot&&(it.expiryDate||"")===newExp)return it;
+        changed=true;
+        return {...it,lotNo:newLot,expiryDate:newExp};
+      });
+      return changed?next:list;
+    };
+    setInvoiceItems((prev:any[])=>overlay(prev));
+    setCommercialItems((prev:any[])=>overlay(prev));
+  },[invoice.items]);
+
+  // この画面（Invoice/Commercial/Delivery Note/Delivery Receipt）で直接行った編集も
+  // 「💾 保存」時に失われないよう、親のinvoiceへ常に反映しておく
+  useEffect(()=>{
+    setInvoice&&setInvoice((v:any)=>({...v,invoice_items:invoiceItems,commercial_items:commercialItems,invoice_remarks:invoiceRemarks,commercial_remarks:commercialRemarks}));
+  },[invoiceItems,commercialItems,invoiceRemarks,commercialRemarks]);
+
   const total=(invoice.items||[]).reduce((s:number,it:any)=>s+(Number(it.quantity||0)*Number(it.unitPrice||0)),0);
   const cur=invoice.currency||"JPY";
 
@@ -2865,6 +2895,27 @@ function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,la
   });
   const [localRemarks,setLocalRemarks]=useState<string>(invoice[remarksKey]||invoice.remarks||"");
 
+  // ロット番号・使用期限はこの画面では編集できず、Proforma（invoice.items）でしか入力できない項目のため、
+  // 金額・品名などの調整値は保持したまま、Proforma側の最新のロット番号・使用期限だけを常に自動反映する。
+  // （品名でマッチングするため、Proformaで値を変更→保存するだけで②③⑤/DeliveryNote/DeliveryReceiptまで自動的に伝わる）
+  useEffect(()=>{
+    const proformaSource=invoice.items||[];
+    if(proformaSource.length===0)return;
+    setLocalItems((prev:any[])=>{
+      let changed=false;
+      const next=prev.map((it:any)=>{
+        const match=proformaSource.find((p:any)=>p.productName&&p.productName===it.productName);
+        if(!match)return it;
+        const newLot=match.lotNo||"";
+        const newExp=match.expiryDate||"";
+        if((it.lotNo||"")===newLot&&(it.expiryDate||"")===newExp)return it;
+        changed=true;
+        return {...it,lotNo:newLot,expiryDate:newExp};
+      });
+      return changed?next:prev;
+    });
+  },[invoice.items]);
+
   // ローカル変更をinvoiceに反映
   useEffect(()=>{
     setInvoice((v:any)=>({...v,[itemsKey]:localItems,[remarksKey]:localRemarks}));
@@ -3560,7 +3611,7 @@ export default function App(){
                     {step===4&&<PackingForm invoice={invoice} packing={packing} setPacking={setPacking} onNext={()=>{saveInvoice("in_progress");setStep(5);}} onBack={()=>setStep(3)} lang={lang} products={products}/>}
 
                     {/* ⑤ PDF出力 */}
-                    {step===5&&<OutputPage invoice={invoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)} onRequestApproval={requestApproval}/>}
+                    {step===5&&<OutputPage invoice={invoice} setInvoice={setInvoice} packing={packing} onBack={()=>setStep(4)} org={org} lang={lang} onSave={saveInvoice} onNext={()=>setStep(6)} onRequestApproval={requestApproval}/>}
 
                     {/* ⑥ 承認申請→承認 */}
                     {step===6&&(
