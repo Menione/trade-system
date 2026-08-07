@@ -1462,6 +1462,8 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
     #print-area>div{min-height:0 !important}
   `;
 
+  const printTitle=activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":activeDoc==="invoice"?"Invoice":activeDoc==="delivery"?"Delivery Note":activeDoc==="receipt"?"Delivery Receipt":"Packing List";
+
   const handlePrint=()=>{
     const el=document.getElementById("print-area");
     if(!el)return;
@@ -1473,7 +1475,6 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
 
     const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
-    const printTitle=activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":activeDoc==="invoice"?"Invoice":activeDoc==="delivery"?"Delivery Note":activeDoc==="receipt"?"Delivery Receipt":"Packing List";
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${printTitle}</title><style>@media print{html,body{margin:0 !important;padding:0 !important}}${printStyle}</style></head><body>${html}</body></html>`);
     w.document.close();
     setTimeout(()=>{w.print();},500);
