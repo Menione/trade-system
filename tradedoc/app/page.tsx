@@ -1264,7 +1264,7 @@ function OutputPage({invoice,packing,onBack,org,lang,onSave,onNext,onRequestAppr
   const [printCapturing,setPrintCapturing]=useState(false);
   const Field=({value,width,align,placeholder,onChange,inputMode,fontSize=10,display}:any)=>(
     printCapturing
-      ? <div style={{width,fontSize,textAlign:align||"left",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{value||"\u00A0"}</div>
+      ? <div style={{width,fontSize,textAlign:align||"left",whiteSpace:"normal",wordBreak:"break-word",lineHeight:1.4}}>{value||"\u00A0"}</div>
       : <input style={{width,border:"none",outline:"none",fontSize,background:"transparent",textAlign:align||"left",display}} type="text" inputMode={inputMode} placeholder={placeholder} value={value} onChange={onChange}/>
   );
 
