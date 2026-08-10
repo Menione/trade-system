@@ -16,22 +16,22 @@ type FileKeyEntry = {
   fileKey: string;
 };
 
-// メールアドレス → Kintoneログイン名（code）の対応表。
-// Kintoneのユーザー選択フィールドはメールアドレスではなくログイン名でしか値を設定できないため、
-// ここで変換してからレコードに反映する。
-// APIトークンにユーザー一覧取得の権限がなくても確実に動くよう、対応表を直接持たせる方式にしている。
-// 新しい申請者・承認者が増えたら、ここに1行追加するだけでよい。
-const APPLICANT_EMAIL_TO_LOGIN_NAME: Record<string, string> = {
-  "c-ohishi@menicon.co.jp": "c-ohishi", // ← 実際のKintoneログイン名と一致しているか要確認
-  "y-amamitsu@menicon.co.jp": "y-amamitsu", // ← 同上
-  "k-kawaminami@menicon.co.jp": "k-kawaminami", // ← 同上
-  "k-nishii@menicon.co.jp": "k-nishii", // ← 同上
+// このKintone環境では、ログイン名（code）＝メールアドレスであることを確認済み。
+// そのためメールアドレスをそのままユーザー選択フィールドのcodeとして使う。
+// もし将来、ログイン名がメールアドレスと異なるユーザーが出てきた場合は、
+// ここに個別の対応表（例: {"someone@menicon.co.jp": "実際のログイン名", ...}）を追加してください。
+const APPLICANT_EMAIL_TO_LOGIN_NAME_OVERRIDES: Record<string, string> = {
   // "someone@menicon.co.jp": "someone-login",
 };
 
 function getKintoneLoginName(email: string): string | null {
   if (!email) return null;
-  return APPLICANT_EMAIL_TO_LOGIN_NAME[email.toLowerCase()] || APPLICANT_EMAIL_TO_LOGIN_NAME[email] || null;
+  const trimmed = email.trim();
+  return (
+    APPLICANT_EMAIL_TO_LOGIN_NAME_OVERRIDES[trimmed.toLowerCase()] ||
+    APPLICANT_EMAIL_TO_LOGIN_NAME_OVERRIDES[trimmed] ||
+    trimmed
+  );
 }
 
 // 書類番号（INV番号）で既存のKintoneレコードを検索する。
