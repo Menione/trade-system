@@ -16,29 +16,22 @@ type FileKeyEntry = {
   fileKey: string;
 };
 
-// メールアドレスからKintoneのログイン名（code）を調べる。
+// メールアドレス → Kintoneログイン名（code）の対応表。
 // Kintoneのユーザー選択フィールドはメールアドレスではなくログイン名でしか値を設定できないため、
 // ここで変換してからレコードに反映する。
-// 見つからない場合はnullを返し、呼び出し側でテキスト欄へのフォールバックに使う。
-async function getKintoneLoginName(email: string): Promise<string | null> {
+// APIトークンにユーザー一覧取得の権限がなくても確実に動くよう、対応表を直接持たせる方式にしている。
+// 新しい申請者・承認者が増えたら、ここに1行追加するだけでよい。
+const APPLICANT_EMAIL_TO_LOGIN_NAME: Record<string, string> = {
+  "c-ohishi@menicon.co.jp": "c-ohishi", // ← 実際のKintoneログイン名と一致しているか要確認
+  "y-amamitsu@menicon.co.jp": "y-amamitsu", // ← 同上
+  "k-kawaminami@menicon.co.jp": "k-kawaminami", // ← 同上
+  "k-nishii@menicon.co.jp": "k-nishii", // ← 同上
+  // "someone@menicon.co.jp": "someone-login",
+};
+
+function getKintoneLoginName(email: string): string | null {
   if (!email) return null;
-  try {
-    const res = await fetch(`https://${KINTONE_DOMAIN}/v1/users.json`, {
-      headers: { "X-Cybozu-API-Token": KINTONE_API_TOKEN },
-    });
-    if (!res.ok) {
-      console.error("Kintoneユーザー一覧取得失敗:", await res.text());
-      return null;
-    }
-    const { users } = await res.json();
-    const matched = (users || []).find(
-      (u: any) => (u.email || "").toLowerCase() === email.toLowerCase()
-    );
-    return matched?.code || null;
-  } catch (e) {
-    console.error("Kintoneユーザー一覧取得エラー:", e);
-    return null;
-  }
+  return APPLICANT_EMAIL_TO_LOGIN_NAME[email.toLowerCase()] || APPLICANT_EMAIL_TO_LOGIN_NAME[email] || null;
 }
 
 // 書類番号（INV番号）で既存のKintoneレコードを検索する。
@@ -165,7 +158,7 @@ export async function POST(req: NextRequest) {
     // ※ Kintoneアプリ側で「applicant_user」というユーザー選択フィールドを
     //   あらかじめ作成しておく必要がある（まだの場合は下のuserFieldブロックはスキップされ、
     //   従来通りApplicant欄にメールアドレスが入るだけになる）。
-    const applicantLoginName = await getKintoneLoginName(applicantName);
+    const applicantLoginName = getKintoneLoginName(applicantName);
 
     const baseFields: Record<string, { value: any }> = {
       書類番号: { value: invoiceNo },
