@@ -194,6 +194,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "有効な添付ファイルがありませんでした" }, { status: 400 });
     }
 
+    // デバッグ用：実際にKintoneへ送るrecordの中身を必ずログに出す（成功・失敗にかかわらず）。
+    // applicant_userが正しい値で入っているか、Vercelのログで確認できる。
+    console.log("Kintone送信 record:", JSON.stringify(record));
+    console.log("Kintone送信 app:", KINTONE_APP_ID, "applicantLoginName:", applicantLoginName);
+
     // ① まず書類番号（INV番号）で既存レコードを検索する。
     // 同じINV番号のレコードが既にKintone上にあれば、tradedoc側のkintoneRecordId状態に
     // 関わらず必ずそのレコードを上書きする（承認差し戻し後の再送信などで
