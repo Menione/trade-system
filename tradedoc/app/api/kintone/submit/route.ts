@@ -41,6 +41,32 @@ async function getKintoneLoginName(email: string): Promise<string | null> {
   }
 }
 
+// 書類番号（INV番号）で既存のKintoneレコードを検索する。
+// tradedoc側が保持しているkintoneRecordIdの引き継ぎが何らかの理由で途切れても、
+// 同じINV番号のレコードが既にあれば必ずそちらを上書きするための仕組み。
+async function findKintoneRecordIdByInvoiceNo(invoiceNo: string): Promise<string | null> {
+  const escaped = invoiceNo.replace(/"/g, '\\"');
+  const query = `書類番号 = "${escaped}"`;
+  const url = `https://${KINTONE_DOMAIN}/k/v1/records.json?app=${encodeURIComponent(
+    KINTONE_APP_ID
+  )}&query=${encodeURIComponent(query)}&fields[0]=$id&totalCount=false`;
+  try {
+    const res = await fetch(url, { headers: { "X-Cybozu-API-Token": KINTONE_API_TOKEN } });
+    if (!res.ok) {
+      console.error("Kintone書類番号検索失敗:", await res.text());
+      return null;
+    }
+    const { records } = await res.json();
+    if (records && records.length > 0) {
+      return String(records[0].$id.value);
+    }
+    return null;
+  } catch (e) {
+    console.error("Kintone書類番号検索エラー:", e);
+    return null;
+  }
+}
+
 async function createKintoneRecord(record: Record<string, { value: any }>) {
   const body = JSON.stringify({ app: KINTONE_APP_ID, record });
   const res = await fetch(`https://${KINTONE_DOMAIN}/k/v1/record.json`, {
@@ -175,13 +201,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "有効な添付ファイルがありませんでした" }, { status: 400 });
     }
 
+    // ① まず書類番号（INV番号）で既存レコードを検索する。
+    // 同じINV番号のレコードが既にKintone上にあれば、tradedoc側のkintoneRecordId状態に
+    // 関わらず必ずそのレコードを上書きする（承認差し戻し後の再送信などで
+    // 別レコードが新規作成されてしまう問題への対策）。
+    const existingIdByInvoiceNo = await findKintoneRecordIdByInvoiceNo(invoiceNo);
+    if (existingIdByInvoiceNo) {
+      const updated = await updateKintoneRecord(existingIdByInvoiceNo, record);
+      return NextResponse.json({ kintoneRecordId: updated.id, updated: true });
+    }
+
+    // ② 書類番号で見つからなかった場合のフォールバック：
     // kintoneRecordIdが渡ってきて、かつ実際にKintone上に存在する場合のみ「更新」。
-    // それ以外（初回送信・レコードが削除済み等）は従来通り「新規作成」。
     if (kintoneRecordId && (await kintoneRecordExists(String(kintoneRecordId)))) {
       const updated = await updateKintoneRecord(String(kintoneRecordId), record);
       return NextResponse.json({ kintoneRecordId: updated.id, updated: true });
     }
 
+    // ③ どちらにも該当しなければ新規作成
     const created = await createKintoneRecord(record);
     return NextResponse.json({ kintoneRecordId: created.id, updated: false });
   } catch (e: any) {
