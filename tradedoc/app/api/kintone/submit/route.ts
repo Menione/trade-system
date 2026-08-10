@@ -15,6 +15,32 @@ type FileKeyEntry = {
   docType: string;
   fileKey: string;
 };
+
+// メールアドレスからKintoneのログイン名（code）を調べる。
+// Kintoneのユーザー選択フィールドはメールアドレスではなくログイン名でしか値を設定できないため、
+// ここで変換してからレコードに反映する。
+// 見つからない場合はnullを返し、呼び出し側でテキスト欄へのフォールバックに使う。
+async function getKintoneLoginName(email: string): Promise<string | null> {
+  if (!email) return null;
+  try {
+    const res = await fetch(`https://${KINTONE_DOMAIN}/v1/users.json`, {
+      headers: { "X-Cybozu-API-Token": KINTONE_API_TOKEN },
+    });
+    if (!res.ok) {
+      console.error("Kintoneユーザー一覧取得失敗:", await res.text());
+      return null;
+    }
+    const { users } = await res.json();
+    const matched = (users || []).find(
+      (u: any) => (u.email || "").toLowerCase() === email.toLowerCase()
+    );
+    return matched?.code || null;
+  } catch (e) {
+    console.error("Kintoneユーザー一覧取得エラー:", e);
+    return null;
+  }
+}
+
 async function createKintoneRecord(record: Record<string, { value: any }>) {
   const body = JSON.stringify({ app: KINTONE_APP_ID, record });
   const res = await fetch(`https://${KINTONE_DOMAIN}/k/v1/record.json`, {
@@ -107,6 +133,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "添付するファイルがありません" }, { status: 400 });
     }
     const safeAmount = Number.isFinite(amount) ? amount : 0;
+
+    // applicantNameはフロントエンドからメールアドレスとして渡ってくるため、
+    // Kintone側のログイン名（code）に変換する。
+    // ※ Kintoneアプリ側で「applicant_user」というユーザー選択フィールドを
+    //   あらかじめ作成しておく必要がある（まだの場合は下のuserFieldブロックはスキップされ、
+    //   従来通りApplicant欄にメールアドレスが入るだけになる）。
+    const applicantLoginName = await getKintoneLoginName(applicantName);
+
     const baseFields: Record<string, { value: any }> = {
       書類番号: { value: invoiceNo },
       Applicant: { value: applicantName || "" },
@@ -116,8 +150,20 @@ export async function POST(req: NextRequest) {
       コメント: { value: "" },
       tradedoc_id: { value: invoiceId != null ? String(invoiceId) : "" },
     };
+
     // 全書類を1レコードにまとめる
     const record: Record<string, { value: any }> = { ...baseFields };
+
+    // ログイン名が特定できた場合のみ、ユーザー選択フィールドにも値を設定する。
+    // フィールドコードは実際にKintone側で作成したものに合わせて変更すること。
+    if (applicantLoginName) {
+      record["applicant_user"] = { value: [{ code: applicantLoginName }] };
+    } else {
+      console.warn(
+        `Kintoneユーザーが見つからずapplicant_userを設定できませんでした（email: ${applicantName}）`
+      );
+    }
+
     let hasAnyFile = false;
     for (const f of fileKeys) {
       const fieldCode = DOC_TYPE_TO_FIELD[f.docType];
