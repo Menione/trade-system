@@ -2104,16 +2104,16 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
     </div>
     <div style={{height:2,background:"#000",marginBottom:16}}></div>
     {/* Meta info */}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
       <div>
         <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{PT.consigneeRecipient}</div>
         <div style={{fontWeight:700,fontSize:12,marginBottom:2}}>{invoice.consignee?.split("\n")[0]||""}</div>
         <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.consignee?.split("\n").slice(1).join("\n")||""}</div>
-        {invoice.shipTo&&<>
-          <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginTop:8,marginBottom:2}}>{PT.shipTo}</div>
-          <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.shipTo}</div>
-        </>}
       </div>
+      {invoice.shipTo&&<div>
+        <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as any,color:"#555",marginBottom:4}}>{PT.shipTo}</div>
+        <div style={{whiteSpace:"pre-wrap",fontSize:10,color:"#333"}}>{invoice.shipTo}</div>
+      </div>}
       <div style={{fontSize:11}}>
         {invoice.poNumber&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.poNumber}: </span><strong>{invoice.poNumber}</strong></div>}
         {invoice.incoterms&&<div style={{marginBottom:4}}><span style={{color:"#666"}}>{PT.incoterms}: </span>{invoice.incoterms}</div>}
