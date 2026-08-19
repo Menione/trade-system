@@ -1670,7 +1670,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
             </div>
           </div>
           <div style="height:2px;background:#000;margin-bottom:16px"></div>
-          <table style="width:100%;border-collapse:collapse;margin-top:12px">
+          <table style="width:100%;border-collapse:separate;border-spacing:0;margin-top:12px">
             <thead style="-webkit-print-color-adjust:exact;print-color-adjust:exact"><tr style="background:#222 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact">
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px;width:80px">${printLang==="en"?"Carton No":"番号"}</th>
               <th style="border:1px solid #444;padding:6px 8px;font-size:10px">${printLang==="en"?"Description":"商品 & 詳細"}</th>
@@ -1965,7 +1965,7 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
               {packingPages.map((pageRows,pi)=>(
                 <div key={pi} className={pi<packingPages.length-1?"pdf-page":""}>
                   <PackingHeader/>
-                  <table style={{width:"100%",borderCollapse:"collapse",marginTop:12}}>
+                  <table style={{width:"100%",borderCollapse:"separate",borderSpacing:0,marginTop:12}}>
                     <thead><tr style={{background:"#222",color:"#fff"}}>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600,width:80}}>{printLang==="en"?"Carton No":"番号"}</th>
                       <th style={{border:"1px solid #444",padding:"6px 8px",fontSize:10,fontWeight:600}}>{printLang==="en"?"Description":"商品 & 詳細"}</th>
