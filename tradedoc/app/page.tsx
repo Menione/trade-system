@@ -1486,9 +1486,11 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
 
   const ROWS_PER_PAGE=15;
   // 同じCarton No（番号）が連続する行をセル結合表示するための補助関数
-  // 番号だけでなく、総重量・正味重量・Dimensionsも同じ物理的な箱（同じCarton No）でまとめて
-  // 1回だけ表示する（商品ごとに重量を分割表示すると「商品ごとの重量」に見えてしまうため、
-  // 箱単位の合計値を1つのセルに結合する）
+  // 番号・総重量・正味重量・Dimensionsは同じ物理的な箱（同じCarton No）でまとめて
+  // 1回だけ表示する（商品ごとに重量を分割表示すると「商品ごとの重量」に見えてしまうため）。
+  // 注意：html2canvasは<td rowSpan>の内容を正しく描画できない既知の不具合があるため、
+  // 実際のrowSpanは使わず、先頭行にだけ値を表示しグループ内の罫線を消すことで
+  // 見た目だけ結合されているように見せる（PDF/Kintone添付でも崩れない安全な方式）。
   const withCartonRowSpan=(rows:any[]):any[]=>{
     const out:any[]=[];
     for(let i=0;i<rows.length;i++){
@@ -1505,6 +1507,9 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
         out.push({...rows[i],showCartonNo:true,cartonRowSpan:1});
       }
     }
+    for(let i=0;i<out.length;i++){
+      out[i].isGroupEnd=(i===out.length-1)||(out[i+1].cartonNo!==out[i].cartonNo);
+    }
     return out;
   };
   const packingPagesRaw:any[][]=[];
@@ -1513,6 +1518,15 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
   }
   if(packingPagesRaw.length===0)packingPagesRaw.push([]);
   const packingPages:any[][]=packingPagesRaw.map(withCartonRowSpan);
+  // 結合セル（番号・総重量・正味重量・Dimensions）用の罫線スタイルを算出。
+  // 先頭行はborder-bottomを消し、末尾行はborder-topを消すことで、
+  // グループ内が1つの箱のように見えるようにする（rowSpanは使わない）
+  const mergedCellBorder=(row:any,base:string)=>({
+    borderLeft:base,borderRight:base,
+    borderTop:row.showCartonNo?base:"none",
+    borderBottom:row.isGroupEnd?base:"none",
+  });
+
 
   const printStyle=`
     @page{margin:12mm 15mm 12mm 15mm;size:A4}
@@ -1645,14 +1659,15 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
 
     const buildPackingSection=()=>{
       const spannedRows=withCartonRowSpan(packingRows);
+      const mergedBorderCss=(row:any)=>`border-left:1px solid #ccc;border-right:1px solid #ccc;border-top:${row.showCartonNo?"1px solid #ccc":"none"};border-bottom:${row.isGroupEnd?"1px solid #ccc":"none"}`;
       const rows=spannedRows.map((row:any,i:number)=>`
         <tr style="background:#fff">
-          ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:center;vertical-align:middle">${row.cartonNo}</td>`:""}
+          <td style="text-align:center;${mergedBorderCss(row)}">${row.showCartonNo?row.cartonNo:""}</td>
           <td>${row.productName}</td>
           <td style="text-align:right">${fmtQty(row.totalQty)}</td>
-          ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:right;vertical-align:middle">${(row.cartonGrossTotal??Number(row.grossWeight)).toFixed(2)}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.grossPerCarton}${printLang==="en"?"/ctn":"/箱"})</div>`:""}</td>`:""}
-          ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="text-align:right;vertical-align:middle">${(row.cartonNetTotal??Number(row.netWeight)).toFixed(2)}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.netPerCarton}${printLang==="en"?"/ctn":"/箱"})</div>`:""}</td>`:""}
-          ${row.showCartonNo?`<td rowspan="${row.cartonRowSpan}" style="vertical-align:middle">${row.dimensions}</td>`:""}
+          <td style="text-align:right;${mergedBorderCss(row)}">${row.showCartonNo?`${(row.cartonGrossTotal??Number(row.grossWeight)).toFixed(2)}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.grossPerCarton}${printLang==="en"?"/ctn":"/箱"})</div>`:""}`:""}</td>
+          <td style="text-align:right;${mergedBorderCss(row)}">${row.showCartonNo?`${(row.cartonNetTotal??Number(row.netWeight)).toFixed(2)}${row.cartonCount>1?`<div style="font-size:8px;color:#888">(${row.netPerCarton}${printLang==="en"?"/ctn":"/箱"})</div>`:""}`:""}</td>
+          <td style="${mergedBorderCss(row)}">${row.showCartonNo?row.dimensions:""}</td>
           ${packingRows.some((r:any)=>r.expiryDate)?`<td>${fmtExpiry(row.expiryDate||"")}</td>`:""}
         </tr>`).join("");
       const totGW=packing.reduce((s:number,c:any)=>s+Number(c.grossWeight||0),0).toFixed(2);
@@ -1978,12 +1993,12 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
                     <tbody>
                       {pageRows.map((row:any,i:number)=>(
                         <tr key={i} style={{background:"#fff"}}>
-                          {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"center",verticalAlign:"middle"}}>{row.cartonNo}</td>}
+                          <td style={{padding:"4px 6px",textAlign:"center",...mergedCellBorder(row,"1px solid #ccc")}}>{row.showCartonNo?row.cartonNo:""}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{row.productName}</td>
                           <td style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right"}}>{fmtQty(row.totalQty)}</td>
-                          {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{(row.cartonGrossTotal??Number(row.grossWeight)).toFixed(2)}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.grossPerCarton}{printLang==="en"?"/ctn":"/箱"})</div>}</td>}
-                          {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",textAlign:"right",verticalAlign:"middle"}}>{(row.cartonNetTotal??Number(row.netWeight)).toFixed(2)}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.netPerCarton}{printLang==="en"?"/ctn":"/箱"})</div>}</td>}
-                          {row.showCartonNo&&<td rowSpan={row.cartonRowSpan} style={{border:"1px solid #ccc",padding:"4px 6px",verticalAlign:"middle"}}>{row.dimensions}</td>}
+                          <td style={{padding:"4px 6px",textAlign:"right",...mergedCellBorder(row,"1px solid #ccc")}}>{row.showCartonNo?<>{(row.cartonGrossTotal??Number(row.grossWeight)).toFixed(2)}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.grossPerCarton}{printLang==="en"?"/ctn":"/箱"})</div>}</>:""}</td>
+                          <td style={{padding:"4px 6px",textAlign:"right",...mergedCellBorder(row,"1px solid #ccc")}}>{row.showCartonNo?<>{(row.cartonNetTotal??Number(row.netWeight)).toFixed(2)}{row.cartonCount>1&&<div style={{fontSize:8,color:"#888"}}>({row.netPerCarton}{printLang==="en"?"/ctn":"/箱"})</div>}</>:""}</td>
+                          <td style={{padding:"4px 6px",...mergedCellBorder(row,"1px solid #ccc")}}>{row.showCartonNo?row.dimensions:""}</td>
                           {packingRows.some((r:any)=>r.expiryDate)&&<td style={{border:"1px solid #ccc",padding:"4px 6px"}}>{fmtExpiry(row.expiryDate||"")}</td>}
                         </tr>
                       ))}
