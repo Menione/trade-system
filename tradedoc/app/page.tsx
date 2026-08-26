@@ -1500,8 +1500,11 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
         while(j>=0&&!out[j].showCartonNo)j--;
         if(j>=0){
           out[j].cartonRowSpan=(out[j].cartonRowSpan||1)+1;
-          out[j].cartonGrossTotal=(out[j].cartonGrossTotal??Number(out[j].grossWeight||0))+Number(rows[i].grossWeight||0);
-          out[j].cartonNetTotal=(out[j].cartonNetTotal??Number(out[j].netWeight||0))+Number(rows[i].netWeight||0);
+          // 同一カートンに複数製品が混載されている場合、各製品行には
+          // カートン全体の重量がそのままコピーされているため、加算せず
+          // カートン単位の重量（最初の行の値）をそのまま使う
+          out[j].cartonGrossTotal=out[j].cartonGrossTotal??Number(out[j].grossWeight||0);
+          out[j].cartonNetTotal=out[j].cartonNetTotal??Number(out[j].netWeight||0);
         }
       }else{
         out.push({...rows[i],showCartonNo:true,cartonRowSpan:1});
