@@ -480,7 +480,7 @@ textarea{resize:vertical;min-height:64px}
 .tag-red{background:var(--red-light);color:var(--red)}
 .status-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
 .status-draft,.status-pending_approval{background:#F0EEE9;color:var(--text-muted)}
-.status-approved{background:var(--green-mid);color:#14532D}
+.status-approved{background:var(--blue-mid);color:#1E3A8A}
 .status-rejected{background:var(--red-mid);color:var(--red)}
 .status-in_progress{background:var(--amber-mid);color:#78350F}
 .status-completed{background:var(--green-mid);color:#14532D}
