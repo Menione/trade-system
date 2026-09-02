@@ -484,6 +484,7 @@ textarea{resize:vertical;min-height:64px}
 .status-rejected{background:var(--red-mid);color:var(--red)}
 .status-in_progress{background:var(--amber-mid);color:#78350F}
 .status-completed{background:var(--green-mid);color:#14532D}
+.status-pending_payment{background:var(--amber-mid);color:#78350F}
 .tabs{display:flex;gap:2px;background:#F0EEE9;padding:3px;border-radius:var(--radius-lg);margin-bottom:18px}
 .tab{padding:6px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;color:var(--text-muted);border:none;background:none}
 .tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
@@ -2245,7 +2246,13 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
   const [search,setSearch]=useState("");
   const [filterStatus,setFilterStatus]=useState("all");
   const [previewId,setPreviewId]=useState<string|null>(null);
-  const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"完了"};
+  // status==="completed" は「出荷完了」のみを意味し、入金確認(payment_confirmed)とは別管理。
+  // 一覧のバッジでは、出荷済みでも入金未確認の案件は「完了」と紛らわしく見えないよう分けて表示する。
+  const statusLabel:any={draft:"下書き",in_progress:"作業中",pending_approval:"承認待ち",approved:"承認済み",rejected:"差戻し",completed:"出荷完了",pending_payment:"出荷済み・入金待ち"};
+  // 一覧バッジ用のキー：出荷完了かつ入金確認済みのときだけ「完了」表示。出荷済みで入金未確認なら「入金待ち」表示。
+  const badgeKeyFor=(h:any)=>h.status==="completed"?(h.payment_confirmed?"completed":"pending_payment"):(h.approval_status||h.status||"draft");
+  // 完全に完了（出荷済み・入金済み）した案件かどうか
+  const isFullyDone=(h:any)=>h.status==="completed"&&!!h.payment_confirmed;
 
   const fetch=useCallback(async()=>{
     setLoading(true);
@@ -2277,7 +2284,9 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
     const mq=!q||(h.invoice_no||"").toLowerCase().includes(q)||(h.consignee||"").toLowerCase().includes(q)||(h.country_of_origin||"").toLowerCase().includes(q);
     const ms=filterStatus==="all"||h.status===filterStatus||h.approval_status===filterStatus;
     return mq&&ms;
-  });
+  // まだ作業が必要な案件（出荷未完了、または出荷済みでも入金未確認）を上に、
+  // 出荷・入金ともに完了した案件を下に表示する。同グループ内は元の並び順（更新日時順）を維持。
+  }).sort((a,b)=>Number(isFullyDone(a))-Number(isFullyDone(b)));
 
   return(
     <div className="fade-in">
@@ -2303,7 +2312,7 @@ function HistoryPage({onLoad,onCopy,onConvert,onEdit}:any){
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
               <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>onLoad(h)}>
                 <strong style={{fontSize:13}}>{h.invoice_no||"No Invoice No"}</strong>
-                <span className={`status-badge status-${h.status==="completed"?"completed":(h.approval_status||h.status||"draft")}`}>● {statusLabel[h.status==="completed"?"completed":(h.approval_status||h.status||"draft")]}</span>
+                <span className={`status-badge status-${badgeKeyFor(h)}`}>● {statusLabel[badgeKeyFor(h)]}</span>
                 {h.invoice_type==="proforma"&&<span className="tag tag-amber">Proforma</span>}
               </div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
