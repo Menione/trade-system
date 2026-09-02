@@ -1563,14 +1563,21 @@ function OutputPage({invoice,setInvoice,packing,onBack,org,lang,onSave,onNext,on
 
   const printTitle=activeDoc==="proforma"?"Proforma Invoice":activeDoc==="commercial"?"Commercial Invoice":activeDoc==="invoice"?"Invoice":activeDoc==="delivery"?"Delivery Note":activeDoc==="receipt"?"Delivery Receipt":"Packing List";
 
-  const handlePrint=()=>{
+  const handlePrint=async()=>{
+    // printCapturing=trueにして、備考欄などが「編集用のno-print textarea」ではなく
+    // 印刷にそのまま残る読み取り専用のdiv表示に切り替わるのを待つ
+    // （これをしないと備考（Remarks）がno-printクラスで印刷時に消えてしまう）
+    setPrintCapturing(true);
+    await new Promise(r=>setTimeout(r,50));
+
     const el=document.getElementById("print-area");
-    if(!el)return;
+    if(!el){setPrintCapturing(false);return;}
     // innerHTMLで文字列化する前に、input/textareaの現在値をHTML属性に反映しておく
     // （そうしないと品名・数量・単価などの入力欄が印刷/PDF保存時に空欄になる）
     const restoreInputs=syncInputValuesToDom(el);
     const html=el.innerHTML;
     restoreInputs();
+    setPrintCapturing(false);
 
     const w=window.open("","_blank","width=794,height=1123");
     if(!w)return;
