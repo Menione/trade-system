@@ -212,9 +212,32 @@ const INCOTERMS = ["EXW","FCA","CPT","CIP","DAP","DPU","DDP","FAS","FOB","CFR","
 const SHIPPING_METHODS = ["FedEx","DHL","Net International","EMS","Other","Sea Freight","Air Freight"];
 const PAYMENT_TERMS = ["Net 30","Net 45","Net 60","Net 90","Net 120","T/T in advance","T/T 30 days after B/L","T/T 60 days after B/L","T/T 90 days after B/L","L/C at sight","L/C 30 days","L/C 60 days","L/C 90 days","CAD","D/P","D/A 30 days","D/A 60 days","D/A 90 days","Open Account"];
 
+// 輸送方法マスタ（App側でSupabaseから読み込んだ内容を保持。追跡URL生成で参照）
+let SHIPPING_MASTER:any[]=[];
+const DEFAULT_SHIPPING_MASTER=[
+  {name:"FedEx",tracking_url:"https://www.fedex.com/fedextrack/?trknbr={no}"},
+  {name:"DHL",tracking_url:"https://www.dhl.com/jp-en/home/tracking/tracking-express.html?submit=1&tracking-id={no}"},
+  {name:"Net International",tracking_url:""},
+  {name:"EMS",tracking_url:"https://trackings.post.japanpost.jp/services/srv/search/?requestNo1={no}&locale=en"},
+  {name:"Other",tracking_url:""},
+  {name:"Sea Freight",tracking_url:""},
+  {name:"Air Freight",tracking_url:""},
+];
+// セレクト用の選択肢（マスタ未登録なら従来の固定リスト。保存済み案件の値がマスタに無くても表示できるよう現在値を補う）
+function shippingOptions(list:string[]|undefined,current?:string):string[]{
+  const base=(list&&list.length)?list:SHIPPING_METHODS;
+  return current&&!base.includes(current)?[...base,current]:base;
+}
 function getTrackingUrl(method:string,trackingNo:string):string|null{
   const no=(trackingNo||"").trim();
   if(!no)return null;
+  const entry=SHIPPING_MASTER.find((m:any)=>m.name===method);
+  if(entry){
+    const tpl=(entry.tracking_url||"").trim();
+    if(!tpl||!/^https?:\/\//i.test(tpl))return null;
+    return tpl.includes("{no}")?tpl.split("{no}").join(encodeURIComponent(no)):null;
+  }
+  // マスタ未登録時は従来の固定ロジック
   switch(method){
     case "FedEx":
       return `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(no)}`;
@@ -223,7 +246,7 @@ function getTrackingUrl(method:string,trackingNo:string):string|null{
     case "EMS":
       return `https://trackings.post.japanpost.jp/services/srv/search/?requestNo1=${encodeURIComponent(no)}&locale=en`;
     default:
-      return null; // Net International / Other / Sea Freight / Air Freight：公式の単一追跡URLがないため非対応
+      return null;
   }
 }
 const COUNTRIES = ["Japan","United States","China","Germany","France","United Kingdom","South Korea","Taiwan","Singapore","Hong Kong","Australia","Canada","Thailand","Vietnam","India","Indonesia","Malaysia","Philippines","Bangladesh","Brazil","Mexico","Netherlands","Belgium","Italy","Spain","Sweden","Switzerland","Poland","Turkey","Saudi Arabia"];
@@ -334,7 +357,7 @@ function validate(invoice: any, packing: any[]) {
 const T: any = {
   ja: {
     newDoc:"新規書類作成", history:"保存済み案件", customers:"得意先マスタ",
-    products:"製品マスタ", org:"組織設定", approval:"承認管理", countryDocs:"国別必要書類",
+    products:"製品マスタ", org:"組織設定", approval:"承認管理", countryDocs:"国別必要書類", shippingMethods:"輸送方法マスタ",
     invoiceType:"書類タイプ", basicInfo:"基本情報", tradeTerms:"貿易条件",
     items:"品目明細", remarks:"備考", shipper:"Shipper（出荷者）",
     consignee:"Consignee（荷受人・書類上の宛先）", shipTo:"Ship To（納品先・実際の届け先）",
@@ -351,7 +374,7 @@ const T: any = {
   },
   en: {
     newDoc:"New Document", history:"Saved Records", customers:"Customer Master",
-    products:"Product Master", org:"Organization Settings", approval:"Approval",countryDocs:"Country Documents",
+    products:"Product Master", org:"Organization Settings", approval:"Approval",countryDocs:"Country Documents", shippingMethods:"Shipping Method Master",
     invoiceType:"Document Type", basicInfo:"Basic Information", tradeTerms:"Trade Terms",
     items:"Line Items", remarks:"Remarks", shipper:"Shipper",
     consignee:"Consignee", shipTo:"Ship To",
@@ -704,7 +727,7 @@ function ValidationPanel({invoice,packing,setStep}:any){
 // ============================================================
 // INVOICE FORM
 // ============================================================
-function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,org,lang}:any){
+function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,org,lang,shippingMethods}:any){
   const t=T[lang||"ja"];
   const addItem=()=>setInvoice((v:any)=>({...v,items:[...(v.items||[]),{id:Date.now(),productName:"",quantity:"",unitPrice:"",currency:v.currency||"JPY",hsCode:"",countryOfOrigin:"",expiryDate:"",lotNo:""}]}));
   const upd=(id:number,f:string,val:any)=>setInvoice((v:any)=>({...v,items:v.items.map((it:any)=>it.id===id?{...it,[f]:val}:it)}));
@@ -904,7 +927,7 @@ function InvoiceForm({invoice,setInvoice,onNext,customers,products,countryDocs,o
             <select className="input" value={invoice.shippingMethod||""}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,shippingMethod:e.target.value}))}>
               <option value="">{lang==="en"?"Select":"選択"}</option>
-              {SHIPPING_METHODS.map((m:string)=><option key={m}>{m}</option>)}
+              {shippingOptions(shippingMethods,invoice.shippingMethod).map((m:string)=><option key={m}>{m}</option>)}
             </select></div>
           <div className="field"><label className="label"><span className="req">*</span>Country of Origin</label>
             <AcInput value={invoice.countryOfOrigin||""} suggestions={COUNTRIES} placeholder="Japan"
@@ -2971,6 +2994,120 @@ function CountryDocsPage({onCountryDocsChange}:any){
 }
 
 // ============================================================
+// 輸送方法マスタ
+// ============================================================
+function ShippingMethodPage({onShippingMethodsChange}:any){
+  const [items,setItems]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
+  const [showForm,setShowForm]=useState(false);
+  const [editId,setEditId]=useState<string|null>(null);
+  const empty={name:"",tracking_url:""};
+  const [form,setForm]=useState<any>({...empty});
+
+  const load=useCallback(async()=>{
+    setLoading(true);setError("");
+    try{
+      const d=await sb("shipping_methods?order=created_at.asc");
+      setItems(d||[]);onShippingMethodsChange?.(d||[]);
+    }catch(e:any){
+      setError("輸送方法マスタを読み込めませんでした。Supabaseに shipping_methods テーブルが作成されているか確認してください。");
+    }
+    setLoading(false);
+  },[onShippingMethodsChange]);
+
+  useEffect(()=>{load();},[load]);
+
+  const save=async()=>{
+    const name=form.name.trim();
+    const url=form.tracking_url.trim();
+    if(!name)return alert("輸送方法名を入力してください");
+    if(items.some((i:any)=>i.name.toLowerCase()===name.toLowerCase()&&i.id!==editId))return alert("同じ名前の輸送方法が既に登録されています");
+    if(url){
+      if(!/^https?:\/\//i.test(url))return alert("追跡URLは http:// または https:// で始めてください");
+      if(!url.includes("{no}"))return alert("追跡URLには追跡番号の挿入位置として {no} を含めてください");
+    }
+    try{
+      const payload={name,tracking_url:url};
+      if(editId){
+        await sb(`shipping_methods?id=eq.${editId}`,{method:"PATCH",body:JSON.stringify(payload)});
+      }else{
+        await sb("shipping_methods",{method:"POST",body:JSON.stringify(payload)});
+      }
+      setForm({...empty});setShowForm(false);setEditId(null);load();
+    }catch(e:any){alert("保存に失敗しました: "+(e?.message||e));}
+  };
+
+  const startEdit=(item:any)=>{
+    setForm({name:item.name,tracking_url:item.tracking_url||""});
+    setEditId(item.id);setShowForm(true);
+  };
+
+  const del=async(item:any)=>{
+    if(!confirm(`「${item.name}」を削除しますか？\n（保存済み案件に入力済みの値は変わりません）`))return;
+    try{await sb(`shipping_methods?id=eq.${item.id}`,{method:"DELETE"});load();}
+    catch(e:any){alert("削除に失敗しました: "+(e?.message||e));}
+  };
+
+  const seedDefaults=async()=>{
+    if(!confirm("初期値（FedEx / DHL / Net International / EMS / Other / Sea Freight / Air Freight）を登録しますか？"))return;
+    try{
+      await sb("shipping_methods",{method:"POST",body:JSON.stringify(DEFAULT_SHIPPING_MASTER)});
+      load();
+    }catch(e:any){alert("登録に失敗しました: "+(e?.message||e));}
+  };
+
+  return(
+    <div className="fade-in">
+      <div className="card">
+        <div className="card-header">
+          <div><div className="card-title">🚚 輸送方法マスタ</div><div className="card-subtitle">Shipping Method / 輸送業者の選択肢を管理。追跡URLを登録すると追跡ページへ自動リンクされます。</div></div>
+          <button className="btn btn-primary btn-sm" onClick={()=>{setForm({...empty});setEditId(null);setShowForm(v=>!v);}}>+ 追加</button>
+        </div>
+        {showForm&&(
+          <div style={{background:"#F7F7F5",borderRadius:"var(--radius-lg)",padding:16,marginBottom:14}}>
+            <div className="grid-2" style={{marginBottom:10}}>
+              <div className="field"><label className="label"><span className="req">*</span>輸送方法名</label>
+                <input className="input" value={form.name} placeholder="FedEx" onChange={(e:any)=>setForm((v:any)=>({...v,name:e.target.value}))}/></div>
+              <div className="field"><label className="label">追跡URL（任意）</label>
+                <input className="input" value={form.tracking_url} placeholder="https://example.com/track?no={no}" onChange={(e:any)=>setForm((v:any)=>({...v,tracking_url:e.target.value}))}/>
+                <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>追跡番号が入る位置に <code>{"{no}"}</code> を書いてください。</div></div>
+            </div>
+            <div style={{display:"flex",gap:7}}>
+              <button className="btn btn-primary btn-sm" onClick={save}>{editId?"更新":"保存"}</button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>{setShowForm(false);setEditId(null);}}>キャンセル</button>
+            </div>
+          </div>
+        )}
+        {error&&<div style={{padding:"10px 14px",background:"#FEF2F2",color:"#B91C1C",borderRadius:"var(--radius-lg)",fontSize:12,marginBottom:12}}>{error}</div>}
+        {loading?<div style={{textAlign:"center",padding:28}}><div className="spinner"/></div>
+        :items.length===0&&!error?(
+          <div className="empty-state">
+            <div className="empty-icon">🚚</div>
+            <div style={{fontSize:13,marginBottom:10}}>輸送方法が未登録です（現在は初期の選択肢が使われています）</div>
+            <button className="btn btn-secondary btn-sm" onClick={seedDefaults}>初期値を登録する</button>
+          </div>
+        ):items.map((item:any)=>(
+          <div key={item.id} style={{border:"1px solid var(--border)",borderRadius:"var(--radius-lg)",marginBottom:8,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+            <div style={{minWidth:0}}>
+              <div style={{fontWeight:600,fontSize:14}}>🚚 {item.name}</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:3,wordBreak:"break-all"}}>
+                {item.tracking_url?`追跡URL: ${item.tracking_url}`:"追跡リンクなし"}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:5,flexShrink:0}}>
+              <button className="btn btn-secondary btn-xs" onClick={()=>startEdit(item)}>✏️ 編集</button>
+              <button className="btn btn-danger btn-xs" onClick={()=>del(item)}>削除</button>
+            </div>
+          </div>
+        ))}
+        {items.length>0&&<div style={{fontSize:11,color:"var(--text-muted)",marginTop:8}}>※ 名前を変更しても、保存済み案件に入力済みの輸送方法名は自動では書き換わりません。</div>}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // INVOICE EDIT STEP (② Invoice編集 / ③ Commercial Invoice編集)
 // ============================================================
 function InvoiceEditStep({invoice,setInvoice,packing,onBack,onNext,onSave,org,lang,stepNum,title,itemsKey,remarksKey,nextLabel,hint,syncFrom,showToast}:any){
@@ -3186,7 +3323,7 @@ function ApprovalStep({invoice,setInvoice,onSave,onBack,onNext,showToast}:any){
 // ============================================================
 // TRACKING & PAYMENT PAGE
 // ============================================================
-function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
+function TrackingPage({invoice,setInvoice,onSave,lang,onBack,shippingMethods}:any){
   const t=T[lang||"ja"];
   const trackingUrl=getTrackingUrl(invoice.shippingMethod,invoice.trackingNumber);
   const [saving,setSaving]=useState(false);
@@ -3207,7 +3344,7 @@ function TrackingPage({invoice,setInvoice,onSave,lang,onBack}:any){
             <select className="input" value={invoice.shippingMethod||""}
               onChange={(e:any)=>setInvoice((v:any)=>({...v,shippingMethod:e.target.value}))}>
               <option value="">選択</option>
-              {SHIPPING_METHODS.map((m:string)=><option key={m}>{m}</option>)}
+              {shippingOptions(shippingMethods,invoice.shippingMethod).map((m:string)=><option key={m}>{m}</option>)}
             </select></div>
         </div>
         {invoice.trackingNumber&&(
@@ -3296,6 +3433,9 @@ export default function App(){
   const [customers,setCustomers]=useState<any[]>([]);
   const [products,setProducts]=useState<any[]>([]);
   const [countryDocs,setCountryDocs]=useState<any[]>([]);
+  const [shippingMethods,setShippingMethodsRaw]=useState<any[]>([]);
+  const shippingMethodNames=useMemo(()=>shippingMethods.map((m:any)=>m.name),[shippingMethods]);
+  const setShippingMethods=useCallback((d:any[])=>{SHIPPING_MASTER=d||[];setShippingMethodsRaw(d||[]);},[]);
   const [org,setOrg]=useState<any>(INIT_ORG);
   const [toast,setToast]=useState("");
   const [saving,setSaving]=useState(false);
@@ -3359,7 +3499,8 @@ export default function App(){
     sb("customers?order=created_at.desc").then(d=>setCustomers(d||[])).catch(()=>{});
     sb("products?order=created_at.desc").then(d=>setProducts(d||[])).catch(()=>{});
     sb("country_documents?order=country.asc").then(d=>setCountryDocs(d||[])).catch(()=>{});
-  },[authToken]);
+    sb("shipping_methods?order=created_at.asc").then(d=>setShippingMethods(d||[])).catch(()=>{});
+  },[authToken,setShippingMethods]);
 
   const showToast=(msg:string)=>setToast(msg);
 
@@ -3526,10 +3667,11 @@ export default function App(){
     {id:"products",label:t.products,icon:"🗂️"},
     {id:"approval",label:t.approval,icon:"✅"},
     {id:"countryDocs",label:t.countryDocs,icon:"🌏"},
+    {id:"shippingMethods",label:t.shippingMethods,icon:"🚚"},
     {id:"org",label:t.org,icon:"⚙️"},
   ];
 
-  const titles:any={new:t.newDoc,history:t.history,customers:t.customers,products:t.products,approval:t.approval,countryDocs:t.countryDocs,org:t.org};
+  const titles:any={new:t.newDoc,history:t.history,customers:t.customers,products:t.products,approval:t.approval,countryDocs:t.countryDocs,shippingMethods:t.shippingMethods,org:t.org};
 
   // ローディング中
   if(authLoading) return(
@@ -3625,7 +3767,7 @@ export default function App(){
 
                 {invoice.invoiceType==="proforma"?(
                   <>
-                    {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("draft");setStep(2);}} customers={customers} products={products} countryDocs={countryDocs} org={org} lang={lang}/>}
+                    {step===1&&<InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>{saveInvoice("draft");setStep(2);}} customers={customers} products={products} countryDocs={countryDocs} org={org} lang={lang} shippingMethods={shippingMethodNames}/>}
                     {step>=2&&<div className="card" style={{padding:24,textAlign:"center"}}>
                       <div style={{fontSize:32,marginBottom:12}}>📨</div>
                       <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>Proformaを保存しました</div>
@@ -3644,7 +3786,7 @@ export default function App(){
                             ?<div style={{fontSize:13,color:"#92400E"}}>✅ Proforma <strong>{invoice.proformaRef}</strong> から自動引用済みです</div>
                             :<div style={{fontSize:13,color:"#92400E"}}>⚠️ Proformaからの変換でない場合は②へ進んでください</div>}
                         </div>
-                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} countryDocs={countryDocs} org={org} lang={lang}/>
+                        <InvoiceForm invoice={invoice} setInvoice={setInvoice} onNext={()=>setStep(2)} customers={customers} products={products} countryDocs={countryDocs} org={org} lang={lang} shippingMethods={shippingMethodNames}/>
                         <div style={{display:"flex",justifyContent:"flex-end",marginTop:8,gap:8}}>
                           <button className="btn btn-amber" onClick={()=>{saveInvoice("draft");showToast("💾 保存しました");}}>💾 下書き保存</button>
                           <button className="btn btn-primary" onClick={()=>setStep(2)}>② Invoice編集へ →</button>
@@ -3694,7 +3836,7 @@ export default function App(){
                     )}
 
                     {/* ⑦ 出荷管理 */}
-                    {step===7&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(6)}/>}
+                    {step===7&&<TrackingPage invoice={invoice} setInvoice={setInvoice} onSave={saveInvoice} lang={lang} onBack={()=>setStep(6)} shippingMethods={shippingMethodNames}/>}
                   </>
                 )}
               </>
@@ -3704,6 +3846,7 @@ export default function App(){
             {page==="products"&&<ProductPage onProductsChange={setProducts}/>}
             {page==="approval"&&<ApprovalPage showToast={showToast}/>}
             {page==="countryDocs"&&<CountryDocsPage onCountryDocsChange={setCountryDocs}/>}
+            {page==="shippingMethods"&&<ShippingMethodPage onShippingMethodsChange={setShippingMethods}/>}
             {page==="org"&&<OrgPage org={org} setOrg={setOrg}/>}
           </div>
         </main>
